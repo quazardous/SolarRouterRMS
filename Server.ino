@@ -36,19 +36,19 @@ void Init_Server() {
 
 void handleRoot() {                  //Pages principales
   if (WiFi.getMode() != WIFI_STA) {  // en AP et STA mode
-    server.send(200, "text/html", String(ConnectAP_Html));
+    server.send(200, "text/html", String(pages[PAGE_CONNECT_HTML]));
   } else {  //Station Mode seul
-    server.send(200, "text/html", String(MainHtml));
+    server.send(200, "text/html", String(pages[PAGE_MAIN_HTML]));
   }
 }
 void handleMainJS() {                             //Code Javascript
-  server.send(200, "text/html", String(MainJS));  // Javascript code
+  server.send(200, "text/html", String(pages[PAGE_MAIN_JS]));  // Javascript code
 }
 void handleBrute() {  //Page données brutes
-  server.send(200, "text/html", String(PageBrute));
+  server.send(200, "text/html", String(pages[PAGE_BRUTE_HTML]));
 }
 void handleBruteJS() {                                 //Code Javascript
-  server.send(200, "text/html", String(PageBruteJS));  // Javascript code
+  server.send(200, "text/html", String(pages[PAGE_BRUTE_JS]));  // Javascript code
 }
 
 void handleAjaxRMS() {  // Envoi des dernières données  brutes reçues du RMS
@@ -251,10 +251,10 @@ void handleAjaxData10mn() {  // Envoi Historique de 10mn (300points)Energie Acti
   server.send(200, "text/html", Source_data + GS + S + GS + T);
 }
 void handleActions() {
-  server.send(200, "text/html", String(ActionsHtml));
+  server.send(200, "text/html", String(pages[PAGE_ACTIONS_HTML]));
 }
 void handleActionsJS() {
-  server.send(200, "text/html", String(ActionsJS));
+  server.send(200, "text/html", String(pages[PAGE_ACTIONS_JS]));
 }
 void handleActionsUpdate() {
   int adresse_max = 0;
@@ -280,7 +280,7 @@ void handleActionsAjax() {
   server.send(200, "text/html", S);
 }
 void handlePara() {
-  server.send(200, "text/html", String(ParaHtml));
+  server.send(200, "text/html", String(pages[PAGE_PARA_HTML]));
 }
 void handleParaUpdate() {
   String Vp[24];
@@ -324,10 +324,10 @@ void handleParaUpdate() {
   LastHeureEDF = -1;
 }
 void handleParaJS() {
-  server.send(200, "text/html", String(ParaJS));
+  server.send(200, "text/html", String(pages[PAGE_PARA_JS]));
 }
 void handleParaRouteurJS() {
-  server.send(200, "text/html", String(ParaRouteurJS));
+  server.send(200, "text/html", String(pages[PAGE_GLOBAL_PARA_JS]));
 }
 void handleParaAjax() {
   String S = String(dhcpOn) + RS + String(IP_Fixe) + RS + String(Gateway) + RS + String(masque) + RS + String(dns) + RS + Source + RS + String(RMSextIP) + RS;

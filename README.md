@@ -35,6 +35,7 @@ Install miscellaneous tools. Open an admin PowerShell/Terminal and type the foll
 choco install make
 choco install curl
 choco install arduino-cli
+choco install python3 --pre
 ```
 
 Next we will clone the repo. Open Git-Bash and type the following commands:
@@ -94,6 +95,8 @@ Update the Terminal profiles (JSON), and add this in `profiles.list[]`:
 Install [Arduino IDE 2.0](https://www.arduino.cc/en/software) (so you can share the `arduino-cli.yaml`).
 
 Intall Arduino Cli somewhere.
+
+Install Python3.
 
 ```bash
 sudo -i

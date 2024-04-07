@@ -1,3 +1,5 @@
 /.env.local
 /build/
 /.vscode/
+/src/pages/*.cpp
+/src/pages/*.h

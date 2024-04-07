@@ -1,7 +1,3 @@
-// **********************************************************
-//  Page de connexion 'Acces Point' pour définir réseau WIFI
-// **********************************************************
-const char *ConnectAP_Html = R"====(
 <!doctype html>
 <html><head><meta charset="UTF-8">
     <script src="/ParaRouteurJS"></script>
@@ -65,15 +61,15 @@ const char *ConnectAP_Html = R"====(
     var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() { 
           if (this.readyState == 4 && this.status == 200) {
-             var Resp=this.responseText;
-             var Txt=Resp.split(RS); 
-             GH("ListeWifi", Txt[1]);
-             GID("attente2").style.display = "none";
-             GID("form-passe").style.display = "none";
-             GID("envoyer").style.display = "none";
-             if (Txt[0] == "Ok") {
+            var Resp=this.responseText;
+            var Txt=Resp.split(RS); 
+            GH("ListeWifi", Txt[1]);
+            GID("attente2").style.display = "none";
+            GID("form-passe").style.display = "none";
+            GID("envoyer").style.display = "none";
+            if (Txt[0] == "Ok") {
               GID("scanReseau").style.display = "none";      
-             }
+            }
           }         
         };
         var adr ="/AP_SetWifi?ssid="+clean(ssid)+"&passe=" + clean(GID("passe").value);
@@ -91,4 +87,3 @@ const char *ConnectAP_Html = R"====(
   }
 </script>
 </body></html>
-)====";

@@ -75,14 +75,11 @@
 #include "UrlEncode.h"
 #include <HardwareSerial.h>
 
-//Program routines
-#include "pageHtmlBrute.h"
-#include "pageHtmlMain.h"
-#include "pageHtmlConnect.h"
-#include "pageHtmlPara.h"
-#include "pageHtmlActions.h"
+// Program routines
 #include "Actions.h"
 
+// Web Pages
+#include "pages.h"
 
 //Watchdog de 180 secondes. Le systeme se Reset si pas de dialoque avec le LINKY ou JSY-MK-194T ou Enphase-Envoye pendant 180s
 //Watchdog for 180 seconds. The system resets if no dialogue with the Linky or  JSY-MK-194T or Enphase-Envoye for 180s
@@ -395,6 +392,8 @@ void IRAM_ATTR onTimer() {  //Interruption every 100 micro second
 // SETUP
 //*******
 void setup() {
+  setupPages();
+  
   startMillis = millis();
   previousLEDsMillis = startMillis;
 
