@@ -114,7 +114,7 @@ Plug in your ESP and run `arduino-cli board list` to list the available devices 
 
 You may need to add your unix user in the `dialout` group.
 
-NB: the default `CONFIG_FILE` assume your using Arduino IDE 2.O.
+NB: the default `CONFIG_FILE` assume your using Arduino IDE 2.0.
 
 Finally we need to setup Arduino Cli dependencies.
 ```bash
