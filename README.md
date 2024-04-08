@@ -18,6 +18,12 @@ It utilizes Arduino and other components to measure and monitor various paramete
 
 ## Installation
 
+The following steps are for developpers and provide a full dev stack.
+
+If you intend to only compile the firmware use the code from [Zip](https://github.com/quazardous/SolarRouterRMS/archive/refs/heads/main.zip).  
+Don't forget to rename the folder in `SolarRouterRMS`.  
+Visit [https://f1atb.fr](https://f1atb.fr/fr/programmation-de-lesp32-application-au-routeur-photovoltaique/) for more help.  
+
 ### Windows
 
 Install [Arduino IDE 2.0](https://www.arduino.cc/en/software) (so you can share the `arduino-cli.yaml`).
@@ -89,9 +95,6 @@ Update the Terminal profiles (JSON), and add this in `profiles.list[]`:
     "useAcrylic": true
 }
 ```
-
-Using code from [Zip](https://github.com/quazardous/SolarRouterRMS/archive/refs/heads/main.zip).  
-Don't forget to rename the folder in `SolarRouterRMS`.
 
 ### Linux
 
