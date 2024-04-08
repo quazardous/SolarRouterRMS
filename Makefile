@@ -58,7 +58,6 @@ compile-pages:
 	python3 tools/gen-pages.py ./pages/ ./src/pages/
 
 compile: ## Compile the sketch
-compile: compile-pages
 	$(COMPILE_CMD)
 
 upload: ## Upload the sketch to the board
