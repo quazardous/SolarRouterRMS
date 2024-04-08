@@ -90,6 +90,9 @@ Update the Terminal profiles (JSON), and add this in `profiles.list[]`:
 }
 ```
 
+Using code from [Zip](https://github.com/quazardous/SolarRouterRMS/archive/refs/heads/main.zip).  
+Don't forget to rename the folder in `SolarRouterRMS`.
+
 ### Linux
 
 Install [Arduino IDE 2.0](https://www.arduino.cc/en/software) (so you can share the `arduino-cli.yaml`).
