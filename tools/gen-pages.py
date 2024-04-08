@@ -29,7 +29,7 @@ def gen_page_setup_function(dictionary_header_filename, pages_header_filename, f
     with open(os.path.join(input_folder, filename), "r") as file:
         file_content = file.read()
 
-    cpp_filename = os.path.join(output_folder, f"{variable_basename}.cpp")
+    cpp_filename = os.path.join(output_folder, f"{variable_basename.lower()}_{ext.lower()}.cpp")
 
     dictionary_entry = f"PAGE_{variable_basename.upper()}_{ext.upper()}"
     setup_function = f"setup_page_{variable_basename.lower()}_{ext.lower()}"
