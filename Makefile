@@ -4,6 +4,8 @@
 
 include ./.env.local
 
+VERSION = $(shell cat ./VERSION)
+
 # HELP
 .DEFAULT_GOAL := help
 help:
@@ -69,4 +71,8 @@ env: .env.local
 
 .env.local: .env.local-dist
 	$(call dist_copy,.env.local)
+
+zip: ## Create a zip file with the sketch
+	rm -f ../SolarRouterRMS-$(VERSION).zip
+	cd .. && zip -r ./SolarRouterRMS-$(VERSION).zip ./SolarRouterRMS -x ./SolarRouterRMS/.git/\* -x .env.local -x ./SolarRouterRMS/build/\* -x ./SolarRouterRMS/.vscode/\*
 
