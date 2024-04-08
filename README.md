@@ -96,14 +96,14 @@ Install [Arduino IDE 2.0](https://www.arduino.cc/en/software) (so you can share 
 
 Intall Arduino Cli somewhere.
 
-Install Python3.
-
 ```bash
 sudo -i
 curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=/usr/local/bin/ sh
 ```
 
 Make sure `arduino-cli` is in your `PATH`.
+
+Install Python3.
 
 Next we will clone the repo.
 ```bash

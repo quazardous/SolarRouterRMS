@@ -74,7 +74,7 @@ def generate_files(input_folder, output_folder):
     pages_header_filename = os.path.join(output_folder, "_pages.h")
     pages_cpp_filename = os.path.join(output_folder, "_pages.cpp")
 
-    append_gen_file(dictionary_header_filename, init=True);
+    append_gen_file(dictionary_header_filename, "#pragma once\n\n", init=True);
     append_gen_file(pages_header_filename, init=True);
 
     content = """\
