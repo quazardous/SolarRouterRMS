@@ -58,7 +58,7 @@ Finally we need to setup Arduino Cli dependencies.
 make setup
 ```
 
-#### Opionally
+#### Optionally
 
 Use `git` with `ssh`: https://stackoverflow.com/questions/2643502/git-how-to-solve-permission-denied-publickey-error-when-using-git
 
