@@ -41,7 +41,7 @@ def gen_page_setup_function(dictionary_header_filename, pages_header_filename, f
     append_gen_file(pages_header_filename, f"void {setup_function}();\n")
 
     content = """\
-    #include "_dictionary.h";
+    #include "_dictionary.h"
 
     extern char* pages[];
     
@@ -78,7 +78,7 @@ def generate_files(input_folder, output_folder):
     append_gen_file(pages_header_filename, init=True);
 
     content = """\
-    #include "_pages.h";
+    #include "_pages.h"
 
     void setupPages()
     {
