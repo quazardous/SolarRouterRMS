@@ -29,39 +29,15 @@ def gen_page_setup_function(dictionary_header_filename, pages_header_filename, f
     with open(os.path.join(input_folder, filename), "r") as file:
         file_content = file.read()
 
-    cpp_filename = os.path.join(output_folder, f"{variable_basename.lower()}_{ext.lower()}.cpp")
-
-    dictionary_entry = f"PAGE_{variable_basename.upper()}_{ext.upper()}"
-    setup_function = f"setup_page_{variable_basename.lower()}_{ext.lower()}"
+    dictionary_entry = f"RMS_PAGE_{variable_basename.upper()}_{ext.upper()}"
 
     # Append an incremental #define in _dictionary.h named from the variable in UPPERCASE
     append_gen_file(dictionary_header_filename, f"#define {dictionary_entry} {counter}\n")
     counter += 1
 
-    append_gen_file(pages_header_filename, f"void {setup_function}();\n")
-
-    content = """\
-    #include "_dictionary.h"
-
-    extern char* pages[];
-    
-    void {setup_function}()
-    {{
-        // This file part is generated from {file}
-    """.format(
-        setup_function=setup_function,
-        file=os.path.join(input_folder, filename),
-        dictionary_entry=dictionary_entry)
-    append_gen_file(cpp_filename, textwrap.dedent(content), init=True)
-
-    append_gen_file(cpp_filename, f"    pages[{dictionary_entry}] = R\"=====(\n{file_content}\n)=====\";\n")
-
-    content = """
-    }} // end of {setup_function}()
-    """.format(setup_function=setup_function)
-    append_gen_file(cpp_filename, textwrap.dedent(content))
-
-    return setup_function, counter
+    append_gen_file(pages_header_filename, f"    // Generated from {filename}\n")
+    append_gen_file(pages_header_filename, f"    R\"=====(\n{file_content}\n)=====\",\n")
+    return counter
 
 def generate_files(input_folder, output_folder):
     # Remove all .h and .cpp files from the output folder
@@ -72,32 +48,32 @@ def generate_files(input_folder, output_folder):
 
     dictionary_header_filename = os.path.join(output_folder, "_dictionary.h")
     pages_header_filename = os.path.join(output_folder, "_pages.h")
-    pages_cpp_filename = os.path.join(output_folder, "_pages.cpp")
 
     append_gen_file(dictionary_header_filename, "#pragma once\n\n", init=True);
-    append_gen_file(pages_header_filename, init=True);
 
     content = """\
-    #include "_pages.h"
+    #pragma once
 
-    void setupPages()
+    #include "_dictionary.h"
+
+    const char* pages[] =
     {
     """
-    append_gen_file(pages_cpp_filename, textwrap.dedent(content), init=True);
-    
+
+    append_gen_file(pages_header_filename, textwrap.dedent(content), init=True);
+
     counter = 0
     # Loop through the input folder
     for filename in os.listdir(input_folder):
         if filename.endswith(".html") or filename.endswith(".js"):
-            setup_function, counter = gen_page_setup_function(dictionary_header_filename, pages_header_filename, filename, counter)
-            append_gen_file(pages_cpp_filename, f"    {setup_function}();\n")
+            counter = gen_page_setup_function(dictionary_header_filename, pages_header_filename, filename, counter)
 
     content = """\
-    }}
+        "" // dummy content to avoid trailing comma
+    };
 
-    char* pages[{counter}];
-    """.format(counter=counter)
-    append_gen_file(pages_cpp_filename, textwrap.dedent(content));
+    """
+    append_gen_file(pages_header_filename, textwrap.dedent(content));
 
 # Check if the correct number of command line arguments is provided
 if len(sys.argv) != 3:
