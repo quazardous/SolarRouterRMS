@@ -23,4 +23,7 @@ namespace ModuleMQTT
     const char *getPrefix();
     void setDeviceName(const char *device);
     const char *getDeviceName();
+
+    // helpers
+    void envoiAuMQTT();
 } // namespace ModuleMQTT

@@ -273,6 +273,7 @@ namespace ModuleMQTT
     void SendDataToHomeAssistant()
     {
         ModulePowerMeter::source_t source = ModulePowerMeter::getSource();
+        ModulePowerMeter::electric_data_t *elecDataTriac = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_TRIAC);
         // common state topic for all entities of this ESP32 Device
         String StateTopic = String(MQTTPrefix) + "/" + MQTTdeviceName + "_state";
         String ActType;
@@ -280,16 +281,16 @@ namespace ModuleMQTT
         char buffer[1024];
         if (source == ModulePowerMeter::SOURCE_UXIX2 || source == ModulePowerMeter::SOURCE_SHELLYEM)
         {
-            doc["PuissanceS_T"] = ModulePowerMeter::inPower(false); // Triac
-            doc["PuissanceI_T"] = ModulePowerMeter::outPower(false); // Triac
-            doc["Tension_T"] = Tension_T;
-            doc["Intensite_T"] = Intensite_T;
-            doc["PowerFactor_T"] = PowerFactor_T;
-            doc["Energie_T_Soutiree"] = Energie_T_Soutiree;
-            doc["Energie_T_Injectee"] = Energie_T_Injectee;
-            doc["EnergieJour_T_Soutiree"] = EnergieJour_T_Soutiree;
-            doc["EnergieJour_T_Injectee"] = EnergieJour_T_Injectee;
-            doc["Frequence"] = Frequence;
+            doc["PuissanceS_T"] = elecDataTriac->powerIn; // Triac
+            doc["PuissanceI_T"] = elecDataTriac->powerOut; // Triac
+            doc["Tension_T"] = elecDataTriac->voltage;
+            doc["Intensite_T"] = elecDataTriac->current;
+            doc["PowerFactor_T"] = elecDataTriac->powerFactor;
+            doc["Energie_T_Soutiree"] = elecDataTriac->energyIn;
+            doc["Energie_T_Injectee"] = elecDataTriac->energyOut;
+            doc["EnergieJour_T_Soutiree"] = elecDataTriac->energyDayIn;
+            doc["EnergieJour_T_Injectee"] = elecDataTriac->energyDayOut;
+            doc["Frequence"] = elecDataTriac->frequency;
         }
         
         if (ModuleSensor::getTemperature() > -100)
@@ -327,15 +328,16 @@ namespace ModuleMQTT
                 code = 19;
             doc["Code_Tarifaire"] = code;
         }
-        doc["PuissanceS_M"] = PuissanceS_M; // Maison
-        doc["PuissanceI_M"] = PuissanceI_M; // Maison
-        doc["Tension_M"] = Tension_M;
-        doc["Intensite_M"] = Intensite_M;
-        doc["PowerFactor_M"] = PowerFactor_M;
-        doc["Energie_M_Soutiree"] = Energie_M_Soutiree;
-        doc["Energie_M_Injectee"] = Energie_M_Injectee;
-        doc["EnergieJour_M_Soutiree"] = EnergieJour_M_Soutiree;
-        doc["EnergieJour_M_Injectee"] = EnergieJour_M_Injectee;
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_HOUSE);
+        doc["PuissanceS_M"] = elecDataHouse->energyIn; // Maison
+        doc["PuissanceI_M"] = elecDataHouse->energyOut; // Maison
+        doc["Tension_M"] = elecDataHouse->voltage;
+        doc["Intensite_M"] = elecDataHouse->current;
+        doc["PowerFactor_M"] = elecDataHouse->powerFactor;
+        doc["Energie_M_Soutiree"] = elecDataHouse->energyIn;
+        doc["Energie_M_Injectee"] = elecDataHouse->energyOut;
+        doc["EnergieJour_M_Soutiree"] = elecDataHouse->energyDayIn;
+        doc["EnergieJour_M_Injectee"] = elecDataHouse->energyDayOut;
 
         byte count = ModuleTriggers::getTriggersCount();
         for (byte i = 0; i < count; i++)
