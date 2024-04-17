@@ -80,6 +80,8 @@ namespace ModulePowerMeter
     void setSlowSmoothing(bool smoothing);
     bool getSlowSmoothing();
     electric_data_t *getElectricData(domain_t domain = DOMAIN_HOUSE);
+    float get_kV();
+    float get_kI();
 
     // states
     const cpu_load_t *getCpuLoad0();

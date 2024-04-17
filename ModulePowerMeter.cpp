@@ -305,6 +305,12 @@ namespace ModulePowerMeter
     electric_data_t *getElectricData(domain_t domain = DOMAIN_HOUSE) {
         return &elecData[domain];
     }
+    float get_kV() {
+        return kV;
+    }
+    float get_kI() {
+        return kI;
+    }
 
     // states
     bool sourceIsValid() {
