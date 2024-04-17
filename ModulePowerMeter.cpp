@@ -1,193 +1,351 @@
+#include <esp_task_wdt.h> //Pour un Watchdog
 #include "ModulePowerMeter.h"
+#include "ModulePowerMeterEnphase.h"
+#include "ModulePowerMeterUxI.h"
+#include "ModulePowerMeterUxIx2.h"
+#include "ModulePowerMeterLinky.h"
+#include "ModulePowerMeterSmartG.h"
+#include "ModulePowerMeterShellyEm.h"
+#include "ModulePowerMeterProxy.h"
+#include "helpers.h"
+#include <stdarg.h>
+
+// Watchdog de 180 secondes. Le systeme se Reset si pas de dialoque avec le LINKY ou JSY-MK-194T ou Enphase-Envoye pendant 180s
+// Watchdog for 180 seconds. The system resets if no dialogue with the Linky or JSY-MK-194T or Enphase-Envoye for 180s
+#define RMS_POWER_METER_WDT_TIMEOUT 180
+
+#define RMS_POWER_METER_KV 0.2083
+#define RMS_POWER_METER_KI 0.0642
 
 namespace ModulePowerMeter
 {
-    bool EnergieActiveValide = false;
-    
-    void setup() {
+    // external IP for some sources
+    unsigned long RMSextIP = 0;
 
-        //Tableau Longueur Pulse et Longueur Trame pour Multi-Sinus de 0 à 100%
-        float erreur;
-        float vrai;
-        float target;
-        for (int I = 0; I < 101; I++) {
-            tabPulseSinusTotal[I] = -1;
-            tabPulseSinusOn[I] = -1;
-            target = float(I) / 100.0;
-            for (int T = 20; T < 101; T++) {
-            for (int N = 0; N <= T; N++) {
-                if (T % 2 == 1 || N % 2 == 0) {  // Valeurs impair du total ou pulses pairs pour éviter courant continu
-                vrai = float(N) / float(T);
-                erreur = abs(vrai - target);
-                if (erreur < 0.004) {
-                    tabPulseSinusTotal[I] = T;
-                    tabPulseSinusOn[I] = N;
-                    N = 101;
-                    T = 101;
-                }
-                }
-            }
-            }
-        }
+    TaskHandle_t powerMeterLoopTask; // Multicoeur - Processeur 0 - Collecte données RMS local ou distant
+
+    bool EnergieActiveValide = false;
+    source_t activeSource = SOURCE_UXI;
+    // Real source used after proxy
+    source_t activeSourceSource = SOURCE_UXI;
+
+    cpu_load_t cpuLoad0;
+    float previousTimeRMSMin = 1000;
+    float previousTimeRMSMax = 0;
+    float previousTimeRMSMoy = 0;
+    unsigned long variableThrottle = 1000;
+    unsigned long lastTock;
+
+    float PmaxReseau = 36000;  //Puissance Max pour eviter des débordements
+    bool slowSmoothing = false;
+
+    // float EMI_Wh = 0;        //Energie entrée Maison Injecté Wh
+    // float EMS_Wh = 0;        //Energie entrée Maison Injecté Wh
+
+    unsigned int CalibU = 1000;  // Calibration Routeur UxI
+    unsigned int CalibI = 1000;
+
+    // FIXME: remove?
+    const float KV = RMS_POWER_METER_KV;  //Calibration coefficient for the voltage. Value for CalibU=1000 at startup
+    const float KI = RMS_POWER_METER_KI;  //Calibration coefficient for the current. Value for CalibI=1000 at startup
+
+    float kV = RMS_POWER_METER_KV;  //Calibration coefficient for the voltage. Corrected value
+    float kI = RMS_POWER_METER_KI;  //Calibration coefficient for the current. Corrected value
+
+    // Paramètres électriques
+    // Triac
+    long Energie_T_Soutiree = 0;
+    long Energie_T_Injectee = 0;
+    // Maison
+    long Energie_M_Soutiree = 0;
+    long Energie_M_Injectee = 0;
+
+    float tension[2];
+    float intensity[2];
+    float powerFactor[2];
+    float avgPower[2];
+    float avgVaPower[2];
+    float frequency;
+
+    long energy[2][2];  
+    int power[2][2];  // Puissance en Watt 
+    int vaPower[2][2];  // Puissance en VA
+    float instPower[2][2];  // Puissance instantanée en Watt
+    float instVaPower[2][2];  // Puissance instantanée en VA 
+
+    void setup() {
 
         init_puissance();
         //Adaptation à la Source
-        Serial.println("Source : " + Source);
+        Serial.println("Source : " + String(getSourceName()));
 
-        if (Source == "UxIx2") {
-            Setup_UxIx2();
+        activeSourceSource = activeSource;
+        switch (activeSource)
+        {
+        case SOURCE_UXI:
+            ModulePowerMeterUxI::setup();
+            break;
+        case SOURCE_UXIX2:
+            ModulePowerMeterUxIx2::setup();
+            break;
+        case SOURCE_LINKY:
+            ModulePowerMeterLinky::setup();
+            break;
+        case SOURCE_ENPHASE:
+            ModulePowerMeterEnphase::setup();
+            break;
+        case SOURCE_SMARTG:
+            ModulePowerMeterSmartG::setup();
+            break;
+        case SOURCE_SHELLYEM:
+            ModulePowerMeterShellyEm::setup();
+            break;
+        case SOURCE_PROXY:
+            ModulePowerMeterProxy::setup();
+            activeSourceSource = ModulePowerMeterProxy::getProxySource();
+            break;
         }
-        if (Source == "UxI") {
-            Setup_UxI();
-        }
-        if (Source == "Linky") {
-            Setup_Linky();
-        }
-        if (Source == "Enphase") {
-            Setup_Enphase();
-        }
-        if (Source == "Ext") {
-        } else {
-            Source_data = Source;
+
+        // Watchdog initialisation
+        // enable panic so ESP32 restarts
+        esp_task_wdt_init(RMS_POWER_METER_WDT_TIMEOUT, true);
+
+    }
+
+    void startPowerMeterLoop() {
+        unsigned long msNow = millis();
+        // init timers
+        lastTock = msNow;
+        cpuLoad0.lastTock = msNow;
+
+        xTaskCreatePinnedToCore(  //Préparation Tâche Multi Coeur
+            powerMeterLoopCallback,        /* Task function. */
+            "powerMeterLoopCallback",      /* name of task. */
+            10000,                  /* Stack size of task */
+            NULL,                   /* parameter of the task */
+            10,                     /* priority of the task */
+            &powerMeterLoopTask,    /* Task handle to keep track of created task */
+            0);                     /* pin task to core 0 */
+    }
+
+    /* **********************
+    * ****************** *
+    * * Tâches Coeur 0 * *
+    * ****************** *
+    **********************
+    */
+
+    void powerMeterLoopCallback(void *pvParameters) {
+        esp_task_wdt_add(NULL);  //add current thread to WDT watch
+        ping();
+        for (;;) {
+            unsigned long msNow = millis();
+            estimate_cpu_load(msNow, &cpuLoad0);
+            powerMeterLoop(msNow);
         }
     }
 
-    void realtimeLoop() {
-        unsigned long tps = millis();
-        float deltaT = float(tps - previousTimeRMS);
-        previousTimeRMS = tps;
-        previousTimeRMSMin = min(previousTimeRMSMin, deltaT);
-        previousTimeRMSMin = previousTimeRMSMin + 0.001;
-        previousTimeRMSMax = max(previousTimeRMSMax, deltaT);
-        previousTimeRMSMax = previousTimeRMSMax * 0.9999;
-        previousTimeRMSMoy = deltaT * 0.001 + previousTimeRMSMoy * 0.999;
+    // Signal task loop that we are still alive and OK
+    void ping() {
+        esp_task_wdt_reset();
+    }
 
+    void signalSourceValid() {
+        EnergieActiveValide = true;
+    }
 
+    void powerMeterLoop(unsigned long msNow) {
         //Recupération des données RMS
         //******************************
-        if (tps - LastRMS_Millis > PeriodeProgMillis) {  //Attention delicat pour eviter pb overflow
-            LastRMS_Millis = tps;
-            unsigned long ralenti = long(PuissanceS_M / 10);  // On peut ralentir échange sur Wifi si grosse puissance en cours
-            if (Source == "UxI") {
-                LectureUxI();
-                PeriodeProgMillis = 40;
-            }
-            if (Source == "UxIx2") {
-                LectureUxIx2();
-                PeriodeProgMillis = 400;
-            }
-            if (Source == "Linky") {
-                LectureLinky();
-                PeriodeProgMillis = 2;
-            }
-            if (Source == "Enphase") {
-                LectureEnphase();
-                LastRMS_Millis = millis();
-                PeriodeProgMillis = 200 + ralenti;  //On s'adapte à la vitesse réponse Envoye-S metered
-            }
-            if (Source == "SmartG") {
-                LectureSmartG();
-                LastRMS_Millis = millis();
-                PeriodeProgMillis = 200 + ralenti;  //On s'adapte à la vitesse réponse SmartGateways
-            }
-            if (Source == "ShellyEm") {
-                LectureShellyEm();
-                LastRMS_Millis = millis();
-                PeriodeProgMillis = 200 + ralenti;  //On s'adapte à la vitesse réponse ShellyEm
-            }
-            if (Source == "Ext") {
-                CallESP32_Externe();
-                LastRMS_Millis = millis();
-                PeriodeProgMillis = 200 + ralenti;  //Après pour ne pas surchargé Wifi
+        if (TICKTOCK(msNow, lastTock, variableThrottle)) {  //Attention delicat pour eviter pb overflow
+            unsigned long ralenti = long(power[DOMAIN_HOUSE][SENS_IN] / 10);  // On peut ralentir échange sur Wifi si grosse puissance en cours
+            switch (activeSource) {
+            case SOURCE_UXI:
+                ModulePowerMeterUxI::gauge(msNow);
+                throttle(40);
+                break;
+            case SOURCE_UXIX2:
+                ModulePowerMeterUxIx2::gauge(msNow);
+                throttle(400);
+                break;
+            case SOURCE_LINKY:
+                ModulePowerMeterLinky::gauge(msNow);
+                throttle(2);
+                break;
+            case SOURCE_ENPHASE:
+                ModulePowerMeterEnphase::gauge(msNow);
+                // On s'adapte à la vitesse réponse Envoye-S metered
+                throttle(200 + ralenti, true);
+                break;
+            case SOURCE_SMARTG:
+                ModulePowerMeterSmartG::gauge(msNow);
+                // On s'adapte à la vitesse réponse SmartGateways
+                throttle(200 + ralenti, true);
+                break;
+            case SOURCE_SHELLYEM:
+                ModulePowerMeterShellyEm::gauge(msNow);
+                // On s'adapte à la vitesse réponse ShellyEm
+                throttle(200 + ralenti, true);
+                break;
+            case SOURCE_PROXY:
+                ModulePowerMeterProxy::gauge(msNow);
+                // Après pour ne pas surcharger Wifi
+                throttle(200 + ralenti, true);
+                break;
             }
         }
         delay(2);
     }
 
+    // some modules have additional stuff to do in the loop
+    void loop(unsigned long msLoop) {
+        switch (activeSource)
+        {
+        case SOURCE_ENPHASE:
+            ModulePowerMeterEnphase::loop(msLoop);
+            break;
+        }
+    }
+
     //*************
     //* Test Pmax *
     //*************
-    float PfloatMax(float Pin) {
+    float PMax(float Pin) {
         float P = max(-PmaxReseau, Pin);
         P = min(PmaxReseau, P);
         return P;
     }
 
-    int PintMax(int Pin) {
+    int PMax(int Pin) {
         int M = int(PmaxReseau);
         int P = max(-M, Pin);
         P = min(M, P);
         return P;
     }
     
-    void filtre_puissance() {  //Filtre RC
+    void powerFilter()
+    {
+        // Filtre RC
 
-        float A = 0.3;  //Coef pour un lissage en multi-sinus et train de sinus sur les mesures de puissance courte
-        float B = 0.7;
-        if (!LissageLong) {
-            A = 1;
-            B = 0;
+        // Coef pour un lissage en multi-sinus et train de sinus sur les mesures de puissance courte
+        float S = slowSmoothing ? 0.3 : 1.0;
+
+        for (int i = DOMAIN_TRIAC; i <= DOMAIN_HOUSE; i++) {
+            powerSmoothing(S, instPower[i][SENS_IN], instPower[i][SENS_OUT], avgPower[i], power[i][SENS_IN], power[i][SENS_OUT]);
+            powerSmoothing(S, instVaPower[i][SENS_IN], instVaPower[i][SENS_OUT], avgVaPower[i], vaPower[i][SENS_IN], vaPower[i][SENS_OUT]);
         }
+    }
 
-        Puissance_T_moy = A * (PuissanceS_T_inst - PuissanceI_T_inst) + B * Puissance_T_moy;
-        if (Puissance_T_moy < 0) {
-            PuissanceI_T = -int(Puissance_T_moy);  //Puissance Watt affichée en entier  Triac
-            PuissanceS_T = 0;
+    void powerSmoothing(float S, float instPowerIn, float instPowerOut, float &avgPower, int &powerIn, int &powerOut) {
+        avgPower = S * (instPowerIn - instPowerOut) + (1.0 - S) * avgPower;
+        if (avgPower < 0) {
+            powerOut = -int(avgPower); // Puissance Watt affichée en entier
+            powerIn = 0;
         } else {
-            PuissanceS_T = int(Puissance_T_moy);
-            PuissanceI_T = 0;
-        }
-
-
-        Puissance_M_moy = A * (PuissanceS_M_inst - PuissanceI_M_inst) + B * Puissance_M_moy;
-        if (Puissance_M_moy < 0) {
-            PuissanceI_M = -int(Puissance_M_moy);  //Puissance Watt affichée en entier Maison
-            PuissanceS_M = 0;
-        } else {
-            PuissanceS_M = int(Puissance_M_moy);
-            PuissanceI_M = 0;
-        }
-
-
-        PVA_T_moy = A * (PVAS_T_inst - PVAI_T_inst) + B * PVA_T_moy;  //Puissance VA affichée en entiers
-        if (PVA_T_moy < 0) {
-            PVAI_T = -int(PVA_T_moy);
-            PVAS_T = 0;
-        } else {
-            PVAS_T = int(PVA_T_moy);
-            PVAI_T = 0;
-        }
-
-        PVA_M_moy = A * (PVAS_M_inst - PVAI_M_inst) + B * PVA_M_moy;
-        if (PVA_M_moy < 0) {
-            PVAI_M = -int(PVA_M_moy);
-            PVAS_M = 0;
-        } else {
-            PVAS_M = int(PVA_M_moy);
-            PVAI_M = 0;
+            powerOut = 0;
+            powerIn = int(avgPower);
         }
     }
 
     void init_puissance() {
-        PuissanceS_T = 0;
-        PuissanceS_M = 0;
-        PuissanceI_T = 0;
-        PuissanceI_M = 0;  //Puissance Watt affichée en entiers Maison et Triac
-        PVAS_T = 0;
-        PVAS_M = 0;
-        PVAI_T = 0;
-        PVAI_M = 0;  //Puissance VA affichée en entiers Maison et Triac
-        PuissanceS_T_inst = 0.0;
-        PuissanceS_M_inst = 0.0;
-        PuissanceI_T_inst = 0.0;
-        PuissanceI_M_inst = 0.0;
-        PVAS_T_inst = 0.0;
-        PVAS_M_inst = 0.0;
-        PVAI_T_inst = 0.0;
-        PVAI_M_inst = 0.0;
-        Puissance_T_moy = 0.0;
-        Puissance_M_moy = 0.0;
-        PVA_T_moy = 0.0;
-        PVA_M_moy = 0.0;
+        for (int i = DOMAIN_TRIAC; i <= DOMAIN_HOUSE; i++) {
+            avgPower[i] = 0.0;
+            avgVaPower[i] = 0.0;
+            for (int j = SENS_IN; j <= SENS_OUT; j++) {
+                power[i][j] = 0; // Puissance Watt affichée en entiers Maison et Triac
+                vaPower[i][j] = 0; // Puissance VA affichée en entiers Maison et Triac
+                instPower[i][j] = 0.0;
+                instVaPower[i][j] = 0.0;
+            }
+        }
+    }
+
+    const cpu_load_t *getCpuLoad0() {
+        return &cpuLoad0;
+    }
+
+    void resetCpuLoad0() {
+        cpuLoad0.lastTock = millis();
+        cpuLoad0.min = 1000;
+        // FIXME: why 1 not 0?
+        cpuLoad0.max = 1;
+        cpuLoad0.avg = 1;
+    }
+
+    void throttle(unsigned long throttle, bool yield = false) {
+        if (yield) {
+            lastTock = millis();
+        }
+        variableThrottle = throttle;
+    }
+
+    // getters / setters
+    const source_t getSource() {
+        return activeSource;
+    }
+    void setSourceByName(const char *name) {
+        activeSource = getSourceFromName(name);
+    }
+    const char *getSourceName() {
+        return sourceNames[(int) activeSource];
+    }
+    void setExtIp(unsigned long ip) {
+        RMSextIP = ip;
+    }
+    unsigned long getExtIp() {
+        return RMSextIP;
+    }
+    void setCalibU(unsigned short calibU) {
+        CalibU = calibU;
+        kV = RMS_POWER_METER_KV * float(calibU) / 1000.0; // Calibration coefficient to be applied
+    }
+    unsigned short getCalibU() {
+        return RMS_POWER_METER_KV * 1000;
+    }
+    void setCalibI(unsigned short calibI) {
+        CalibI = calibI;
+        kI = RMS_POWER_METER_KI * float(calibI) / 1000.0; // Calibration coefficient to be applied
+    }
+    unsigned short getCalibI() {
+        return RMS_POWER_METER_KI * 1000;
+    }
+    void setSlowSmoothing(bool smoothing) {
+        slowSmoothing = smoothing;
+    }
+    bool getSlowSmoothing() {
+        return slowSmoothing;
+    }
+
+    // states
+    bool sourceIsValid() {
+        return EnergieActiveValide;
+    }
+    float getPower(domain_t domain = DOMAIN_HOUSE) {
+        return float(power[domain][SENS_IN] - power[domain][SENS_OUT]);
+    }
+    float getVAPower(domain_t domain = DOMAIN_HOUSE) {
+        return float(vaPower[domain][SENS_IN] - vaPower[domain][SENS_OUT]);
+    }
+    float inPower(domain_t domain = DOMAIN_HOUSE) {
+        return float(power[domain][SENS_IN]);
+    }
+    float outPower(domain_t domain = DOMAIN_HOUSE) {
+        return float(power[domain][SENS_OUT]);
+    }
+    float inVAPower(domain_t domain = DOMAIN_HOUSE) {
+        return float(vaPower[domain][SENS_IN]);
+    }
+    float outVAPower(domain_t domain = DOMAIN_HOUSE) {
+        return float(vaPower[domain][SENS_OUT]);
+    }
+
+    // helpers
+    const source_t getSourceFromName(const char *name) {
+        for (int i = 0; i < sizeof(sourceNames) / sizeof(char*); i++) {
+            if (strcmp(name, sourceNames[i]) == 0) {
+                return (source_t) i;
+            }
+        }
+        return SOURCE_ERROR;
     }
 } // namespace ModulePowerMeter

@@ -1,14 +1,16 @@
-#pragma once
+#include "ModuleOTAUpdate.h"
+#include <ArduinoOTA.h>   //Modification On The Air
+#include "ModuleCore.h"
 
 namespace ModuleOTAUpdate
 {
     void setup() {
         // Modification du programme par le Wifi  - OTA(On The Air)
         //***************************************************
-        ArduinoOTA.setHostname((const char *)hostname.c_str());
+        ArduinoOTA.setHostname(ModuleCore::getHostname());
         ArduinoOTA.begin();  //Mandatory
     }
-    void loop() {
+    void loop(unsigned long msLoop) {
         ArduinoOTA.handle();
     }
 } // namespace ModuleOTAUpdate

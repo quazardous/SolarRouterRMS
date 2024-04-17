@@ -1,7 +1,7 @@
 /*
   PV Router / Routeur Solaire
   ****************************************
-  Version V_8.06_RMS
+  Version V_8.07ng
 
   RMS=Routeur Multi Sources
 
@@ -42,33 +42,26 @@
               Début couleur Tempo du jour à 6h00 du matin et non Oh
               Modification loi de lissage pour les mesures courtes. Pour les multi-sinus et train-sinus.
               Correction bug sur régulation On/Off
+  - V8.07ng   Refactor: split code in modules
 
 
   Les détails sont disponibles sur / Details are available here:
   https://f1atb.fr  Section Domotique / Home Automation
 
-  F1ATB Mars 2024
+  Authors:
+  - F1ATB André
+  - David Berlioz<berliozdavid@gmail.com>
+
 
   GNU General Public License v3.0
 
-
-
 */
-#define Version "8.06_RMS"
-#define HOSTNAME "RMS-ESP32-"
 
 // Librairies
-#include <WiFiClientSecure.h>
 #include <ESPmDNS.h>
-#include <ArduinoOTA.h>   //Modification On The Air
-#include <PubSubClient.h> //Librairie pour la gestion Mqtt
-#include <esp_sntp.h>
 #include <ArduinoJson.h>
 #include <UrlEncode.h>
 #include <HardwareSerial.h>
-
-// Web Pages
-#include "pages.h"
 
 // Modules
 #include "ModuleCore.h"
@@ -82,49 +75,62 @@
 #include "ModuleTriggers.h"
 #include "ModuleHardware.h"
 #include "ModulePowerMeter.h"
+#include "ModuleEDF.h"
+#include "ModuleMQTT.h"
 
 // SETUP
 //*******
 void setup()
 {
-  setupPages();
-  ModuleCore::setup();
-  ModuleSensor::setup();
-  ModuleStockage::setup();
-  ModuleTime::setup();
-  ModuleWifi::setup();
-  ModuleDebug::setup(); // init remote debug
-  ModuleServer::setup();
-  ModuleOTAUpdate::setup();
-  ModulePowerMeter::setup();
-  ModuleCore::setupRealtimeLoop(realtimeLoop);
+    // "slow" setup
+    ModuleCore::setup();
+    ModuleHardware::setup();
+    ModuleSensor::setup();
+    ModuleStockage::setup();
+    ModuleMQTT::setup();
+    ModuleTime::setup();
+    ModuleWifi::setup();
+    ModuleEDF::setup();
+    ModuleDebug::setup(); // init remote debug
+    ModuleServer::setup();
+    ModuleOTAUpdate::setup();
+    ModulePowerMeter::setup();
+    ModuleTriggers::setup();
+
+    // Core 0 Task Loop
+    // The Power Meter Loop is near real time
+    ModulePowerMeter::startPowerMeterLoop();
+    // Triac Interrupt and Phase Cutting
+    ModuleTriggers::startIntTimers();
+
+    // "fast" setup (timers)
+    unsigned long msNow = millis();
+    ModuleCore::loopTimer(msNow);
+    ModuleHardware::loopTimer(msNow);
+    ModuleSensor::loopTimer(msNow);
+    ModuleStockage::loopTimer(msNow);
+    ModuleMQTT::loopTimer(msNow);
+    ModuleTime::loopTimer(msNow);
+    ModuleWifi::loopTimer(msNow);
+    ModuleEDF::setupTimer(msNow);
+    ModuleTriggers::loopTimer(msNow);
 }
 
-/* **********************
- * ****************** *
- * * Tâches Coeur 0 * *
- * ****************** *
- **********************
- */
-void realtimeLoop()
-{
-  // "realtime" loop (for RMS power meter)
-  ModulePowerMeter::realtimeLoop();
-}
-
-/* **********************
- * ****************** *
- * * Tâches Coeur 1 * *
- * ****************** *
- **********************
- */
+// Core 1 Default Loop
+// The default loop handles non "real time" tasks
 void loop()
 {
-  // "normal" loop
-  ModuleCore::loop();
-  ModuleOTAUpdate::loop();
-  ModuleDebug::loop();
-  ModuleServer::loop();
-  ModuleStockage::loop();
-  ModuleWifi::loop();
+    unsigned long msLoop = millis();
+    ModuleCore::loop(msLoop);
+    ModuleHardware::loop(msLoop);
+    ModuleOTAUpdate::loop(msLoop);
+    ModuleTime::loop(msLoop);
+    ModuleSensor::loop(msLoop);
+    ModuleDebug::loop(msLoop);
+    ModuleServer::loop(msLoop); // TODO: use async server
+    ModuleStockage::loop(msLoop);
+    ModuleMQTT::loop(msLoop);
+    ModuleWifi::loop(msLoop);
+    ModuleEDF::loop(msLoop);
+    ModuleTriggers::loop(msLoop);
 }

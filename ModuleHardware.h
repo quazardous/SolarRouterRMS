@@ -1,6 +1,13 @@
 #pragma once
 
-namespace ModuleHarware
+#include <Arduino.h>
+
+namespace ModuleHardware
 {
-    
-} // namespace ModuleHarware
+    void setup();
+    void loopTimer(unsigned long mtsNow);
+    void loop(unsigned long msLoop);
+
+    // helpers
+    void Gestion_LEDs();
+} // namespace ModuleHardware
