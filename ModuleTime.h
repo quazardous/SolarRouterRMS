@@ -8,7 +8,14 @@ namespace ModuleTime
     void setup();
     void loopTimer(unsigned long mtsNow);
     void loop(unsigned long msLoop);
-    // getters
+    // setters / getters
+    const char *getJourCourant();
+    void setDateCeJour(const char *date);
+    const char *getDateCeJour();
+
     // states
     bool timeIsValid();
+
+    // helpers
+    time_t JourHeureChange();
 } // namespace ModuleTime

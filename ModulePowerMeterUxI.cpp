@@ -52,11 +52,14 @@ namespace ModulePowerMeterUxI
     }
     void ComputePower()
     {
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
         float PWcal = 0; // Computation Power in Watt
         float V;
         float I;
         float Uef2 = 0;
         float Ief2 = 0;
+        float kV = ModulePowerMeter::get_kV();
+        float kI = ModulePowerMeter::get_kI();
         for (int i = 0; i < 100; i++)
         {
             voltM[i] = (19 * voltM[i] + float(volt[i])) / 20; // Mean value. First Order Filter. Short Integration
@@ -68,39 +71,41 @@ namespace ModulePowerMeterUxI
             PWcal += V * I;
         }
         Uef2 = Uef2 / 100;        // square of voltage
-        Tension_M = sqrt(Uef2);   // RMS voltage
+        elecDataHouse->voltage = sqrt(Uef2);   // RMS voltage
         Ief2 = Ief2 / 100;        // square of current
-        Intensite_M = sqrt(Ief2); // RMS current
+        elecDataHouse->current = sqrt(Ief2); // RMS current
         PWcal = ModulePowerMeter::PMax(PWcal / 100);
-        float PVA = ModulePowerMeter::PMax(floor(Tension_M * Intensite_M));
+        float PVA = ModulePowerMeter::PMax(floor(elecDataHouse->voltage * elecDataHouse->current));
         float PowerFactor = 0;
         if (PVA > 0)
         {
             PowerFactor = floor(100 * PWcal / PVA) / 100;
         }
-        PowerFactor_M = PowerFactor;
+        elecDataHouse->powerFactor = PowerFactor;
         if (PWcal >= 0)
         {
-            EASfloat += PWcal / 90000;          // Watt Hour,Every 40ms. Soutirée
-            Energie_M_Soutiree = int(EASfloat); // Watt Hour,Every 40ms. Soutirée
-            PuissanceS_M_inst = PWcal;
-            PuissanceI_M_inst = 0;
-            PVAS_M_inst = PVA;
-            PVAI_M_inst = 0;
+            // Watt Hour,Every 40ms. Soutirée
+            EASfloat += PWcal / 90000;
+            // Watt Hour,Every 40ms. Soutirée
+            elecDataHouse->energyIn = int(EASfloat);
+            elecDataHouse->instPowerIn = PWcal;
+            elecDataHouse->instPowerOut = 0;
+            elecDataHouse->instVaPowerIn = PVA;
+            elecDataHouse->instVaPowerOut = 0;
         }
         else
         {
             EAIfloat += -PWcal / 90000;
-            Energie_M_Injectee = int(EAIfloat);
-            PuissanceS_M_inst = 0;
-            PuissanceI_M_inst = -PWcal;
-            PVAS_M_inst = 0;
-            PVAI_M_inst = PVA;
+            elecDataHouse->energyOut = int(EAIfloat);
+            elecDataHouse->instPowerIn = 0; 
+            elecDataHouse->instPowerOut = -PWcal;
+            elecDataHouse->instVaPowerIn = 0;
+            elecDataHouse->instVaPowerOut = PVA;
         }
         ModulePowerMeter::powerFilter();
         ModulePowerMeter::signalSourceValid();
         ModulePowerMeter::ping();
-        ModuleHardware::resetConnectivityLed()
+        ModuleHardware::resetConnectivityLed();
     }
 
 } // namespace ModulePowerMeterUxi

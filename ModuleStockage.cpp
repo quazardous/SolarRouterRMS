@@ -5,33 +5,22 @@
 #include <EEPROM.h> //Librairie pour le stockage en EEPROM historique quotidien
 #include "ModuleDebug.h"
 #include "ModulePowerMeter.h"
+#include "ModuleTriggers.h"
+#include "ModuleSensor.h"
 #include "ModuleCore.h"
+#include "ModuleTime.h"
+#include "ModuleMQTT.h"
+#include "ModuleRomMap.h"
 #include "helpers.h"
-
-#define CLE_Rom_Init 812567808 // Valeur pour tester si ROM vierge ou pas. Un changement de valeur remet à zéro toutes les données. / Value to test whether blank ROM or not.
-
-// Plan stockage
-#define EEPROM_SIZE 4090
-#define NbJour 370              // Nb jour historique stocké
-#define adr_HistoAn 0           // taille 2* 370*4=1480
-#define adr_E_T_soutire0 1480   // 1 long. Taille 4 Triac
-#define adr_E_T_injecte0 1484   // 1 long. Taille 4.
-#define adr_E_M_soutire0 1488   // 1 long. Taille 4 Maison
-#define adr_E_M_injecte0 1492   // 1 long. Taille 4
-#define adr_DateCeJour 1496     // String 8+1
-#define adr_lastStockConso 1505 // Short taille 2
-#define adr_ParaActions 1507    // Clé + ensemble parametres peu souvent modifiés
 
 namespace ModuleStockage
 {
+    long histoEnergy[RMS_EEPROM_HISTO_RANGE];
     unsigned long Cle_ROM;
     unsigned long previousHistoryTock;
     unsigned long previousTimer2sMillis;
-    String nomSondeMobile = "Données Maison";
-    String nomSondeFixe = "Données seconde sonde";
-    String nomTemperature = "Température";
 
-    int P_cent_EEPROM;
+    byte currentEepromUsage; // percentage of EEPROM used
 
     int idxPromDuJour = 0;
     // int adr_debut_para = 0;  //Adresses Para après le Wifi
@@ -43,31 +32,28 @@ namespace ModuleStockage
     int IdxStock2s = 0;
     int IdxStockPW = 0;
 
-    long EnergieJour_T_Injectee = 0;
-    long EnergieJour_M_Injectee = 0;
-    long EnergieJour_T_Soutiree = 0;
-    long EnergieJour_M_Soutiree = 0;
-
-    int tabPw_Maison_5mn[600];  //Puissance Active:Soutiré-Injecté toutes les 5mn
-    int tabPw_Triac_5mn[600];
-    int tabTemperature_5mn[600];
-    int tabPw_Maison_2s[300];   //Puissance Active: toutes les 2s
-    int tabPw_Triac_2s[300];    //Puissance Triac: toutes les 2s
-    int tabPva_Maison_2s[300];  //Puissance Active: toutes les 2s
-    int tabPva_Triac_2s[300];
+    int tabPw_Maison_5mn[RMS_POWER_HISTORY_SIZE_5MIN];  //Puissance Active:Soutiré-Injecté toutes les 5mn
+    int tabPw_Triac_5mn[RMS_POWER_HISTORY_SIZE_5MIN];
+    int tabTemperature_5mn[RMS_POWER_HISTORY_SIZE_5MIN];
+    int tabPw_Maison_2s[RMS_POWER_HISTORY_SIZE_2SEC];   //Puissance Active: toutes les 2s
+    int tabPw_Triac_2s[RMS_POWER_HISTORY_SIZE_2SEC];    //Puissance Triac: toutes les 2s
+    int tabPva_Maison_2s[RMS_POWER_HISTORY_SIZE_2SEC];  //Puissance Active: toutes les 2s
+    int tabPva_Triac_2s[RMS_POWER_HISTORY_SIZE_2SEC];
 
     void setup()
     {
         INIT_EEPROM();
         // Lecture Clé pour identifier si la ROM a déjà été initialisée
-        Cle_ROM = CLE_Rom_Init;
+        Cle_ROM = RMS_EEPROM_KEY;
         unsigned long Rcle = LectureCle();
         Serial.println("cle : " + String(Rcle));
         if (Rcle == Cle_ROM)
-        { // Programme déjà executé
+        {
+            // Programme déjà executé
+            readHisto();
             LectureEnROM();
             LectureConsoMatinJour();
-            resetGpioActions();
+            ModuleTriggers::resetGpioActions();
         }
         else
         {
@@ -91,58 +77,61 @@ namespace ModuleStockage
 
         unsigned long msNow = millis();
 
+        
         // Historique consommation par pas de 5mn
         if (TICKTOCK(msNow, previousHistoryTock, 300000))
         {
-            tabPw_Maison_5mn[IdxStockPW] = PuissanceS_M - PuissanceI_M;
-            tabPw_Triac_5mn[IdxStockPW] = PuissanceS_T - PuissanceI_T;
-            tabTemperature_5mn[IdxStockPW] = int(temperature);
-            IdxStockPW = (IdxStockPW + 1) % 600;
+            tabPw_Maison_5mn[IdxStockPW] = ModulePowerMeter::getPower(ModulePowerMeter::DOMAIN_HOUSE);
+            tabPw_Triac_5mn[IdxStockPW] = ModulePowerMeter::getPower(ModulePowerMeter::DOMAIN_TRIAC);
+            tabTemperature_5mn[IdxStockPW] = int(ModuleSensor::getTemperature());
+            IdxStockPW = (IdxStockPW + 1) % RMS_POWER_HISTORY_SIZE_5MIN;
         }
 
+        // Historique consommation par pas de 2s
         if (TICKTOCK(msNow, previousTimer2sMillis, 2000))
         {
-            tabPw_Maison_2s[IdxStock2s] = PuissanceS_M - PuissanceI_M;
-            tabPw_Triac_2s[IdxStock2s] = PuissanceS_T - PuissanceI_T;
-            tabPva_Maison_2s[IdxStock2s] = PVAS_M - PVAI_M;
-            tabPva_Triac_2s[IdxStock2s] = PVAS_T - PVAI_T;
-            IdxStock2s = (IdxStock2s + 1) % 300;
-            envoiAuMQTT();
-            JourHeureChange();
+            tabPw_Maison_2s[IdxStock2s] = ModulePowerMeter::getPower(ModulePowerMeter::DOMAIN_HOUSE);
+            tabPw_Triac_2s[IdxStock2s] = ModulePowerMeter::getPower(ModulePowerMeter::DOMAIN_TRIAC);
+            tabPva_Maison_2s[IdxStock2s] = ModulePowerMeter::getVAPower(ModulePowerMeter::DOMAIN_HOUSE);
+            tabPva_Triac_2s[IdxStock2s] = ModulePowerMeter::getVAPower(ModulePowerMeter::DOMAIN_TRIAC);
+            IdxStock2s = (IdxStock2s + 1) % RMS_POWER_HISTORY_SIZE_2SEC;
+            ModuleMQTT::envoiAuMQTT();
+            ModuleTime::JourHeureChange();
             EnergieQuotidienne();
         }
     }
 
     void INIT_EEPROM(void)
     {
-        if (!EEPROM.begin(EEPROM_SIZE))
+        if (!EEPROM.begin(RMS_EEPROM_MAX_SIZE))
         {
-            Serial.println("Failed to initialise EEPROM");
-            Serial.println("Restarting...");
-            ModuleDebug::getDebug().println("Failed to initialise EEPROM");
-            ModuleDebug::getDebug().println("Restarting...");
-            delay(10000);
-            ESP.restart();
+            ModuleCore::reboot("Failed to initialise EEPROM", 10000);
         }
     }
 
-    // called if the day changes
+    // called if the day changes (end of the day)
     void onNewDay()
     {
         if (!ModulePowerMeter::sourceIsValid())
             return;
 
+        ModulePowerMeter::electric_data_t *elecDataTriac = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_TRIAC);
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_HOUSE);
+
         // Données recues
-        idxPromDuJour = (idxPromDuJour + 1 + NbJour) % NbJour;
+        idxPromDuJour = (idxPromDuJour + 1 + RMS_EEPROM_HISTO_RANGE) % RMS_EEPROM_HISTO_RANGE;
         // On enregistre les conso en début de journée pour l'historique de l'année
-        long energie = Energie_M_Soutiree - Energie_M_Injectee; // Bilan energie du jour
-        EEPROM.writeLong(idxPromDuJour * 4, energie);
-        EEPROM.writeULong(adr_E_T_soutire0, long(Energie_T_Soutiree));
-        EEPROM.writeULong(adr_E_T_injecte0, long(Energie_T_Injectee));
-        EEPROM.writeULong(adr_E_M_soutire0, long(Energie_M_Soutiree));
-        EEPROM.writeULong(adr_E_M_injecte0, long(Energie_M_Injectee));
-        EEPROM.writeString(adr_DateCeJour, JourCourant);
-        EEPROM.writeUShort(adr_lastStockConso, idxPromDuJour);
+        long energie = ModulePowerMeter::getEnergy(); // Bilan energie du jour
+
+        const char *JourCourant = ModuleTime::getJourCourant();
+        EEPROM.writeLong(RMS_EEPROM_OFFSET_HISTO + idxPromDuJour * sizeof(long), energie);
+        histoEnergy[idxPromDuJour] = energie;
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_IN, long(elecDataTriac->energyIn));
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_OUT, long(elecDataTriac->energyOut));
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_HOUSE_ENERGY_IN, long(elecDataHouse->energyIn));
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_HOUSE_ENERGY_OUT, long(elecDataHouse->energyOut));
+        EEPROM.writeString(RMS_EEPROM_OFFSET_TODAY, JourCourant);
+        EEPROM.writeUShort(RMS_EEPROM_OFFSET_HISTO_IDX, idxPromDuJour);
         EEPROM.commit();
         LectureConsoMatinJour();
     }
@@ -150,296 +139,94 @@ namespace ModuleStockage
     void RAZ_Histo_Conso()
     {
         // Mise a zero Zone stockage
-        int Adr_SoutInjec = adr_HistoAn;
-        for (int i = 0; i < NbJour; i++)
+        int address = RMS_EEPROM_OFFSET_HISTO;
+        for (int i = 0; i < RMS_EEPROM_HISTO_RANGE; i++)
         {
-            EEPROM.writeLong(Adr_SoutInjec, 0);
-            Adr_SoutInjec = Adr_SoutInjec + 4;
+            EEPROM.writeLong(address, 0);
+            histoEnergy[i] = 0;
+            address += sizeof(long);
         }
-        EEPROM.writeULong(adr_E_T_soutire0, 0);
-        EEPROM.writeULong(adr_E_T_injecte0, 0);
-        EEPROM.writeULong(adr_E_M_soutire0, 0);
-        EEPROM.writeULong(adr_E_M_injecte0, 0);
-        EEPROM.writeString(adr_DateCeJour, "");
-        EEPROM.writeUShort(adr_lastStockConso, 0);
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_IN, 0);
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_OUT, 0);
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_HOUSE_ENERGY_IN, 0);
+        EEPROM.writeULong(RMS_EEPROM_OFFSET_HOUSE_ENERGY_OUT, 0);
+        EEPROM.writeString(RMS_EEPROM_OFFSET_TODAY, "");
+        EEPROM.writeUShort(RMS_EEPROM_OFFSET_HISTO_IDX, 0);
         EEPROM.commit();
     }
 
     void LectureConsoMatinJour(void)
     {
-        EAS_T_J0 = EEPROM.readULong(adr_E_T_soutire0); // Triac
-        EAI_T_J0 = EEPROM.readULong(adr_E_T_injecte0);
-        EAS_M_J0 = EEPROM.readULong(adr_E_M_soutire0); // Maison
-        EAI_M_J0 = EEPROM.readULong(adr_E_M_injecte0);
-        DateCeJour = EEPROM.readString(adr_DateCeJour);
-        idxPromDuJour = EEPROM.readUShort(adr_lastStockConso);
-        if (Energie_T_Soutiree < EAS_T_J0)
+        EAS_T_J0 = EEPROM.readULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_IN); // Triac
+        EAI_T_J0 = EEPROM.readULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_OUT);
+        EAS_M_J0 = EEPROM.readULong(RMS_EEPROM_OFFSET_HOUSE_ENERGY_IN); // Maison
+        EAI_M_J0 = EEPROM.readULong(RMS_EEPROM_OFFSET_HOUSE_ENERGY_OUT);
+        String DateCeJour = EEPROM.readString(RMS_EEPROM_OFFSET_TODAY);
+        ModuleTime::setDateCeJour(DateCeJour.c_str());
+        idxPromDuJour = EEPROM.readUShort(RMS_EEPROM_OFFSET_HISTO_IDX);
+
+        ModulePowerMeter::electric_data_t *elecDataTriac = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_TRIAC);
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_HOUSE);
+
+        // Check if data are OK (reboot ESP, etc)
+        if (elecDataTriac->energyIn < EAS_T_J0)
         {
-            Energie_T_Soutiree = EAS_T_J0;
+            elecDataTriac->energyIn = EAS_T_J0;
         }
-        if (Energie_T_Injectee < EAI_T_J0)
+        if (elecDataTriac->energyOut < EAI_T_J0)
         {
-            Energie_T_Injectee = EAI_T_J0;
+            elecDataTriac->energyOut = EAI_T_J0;
         }
-        if (Energie_M_Soutiree < EAS_M_J0)
+        if (elecDataHouse->energyIn < EAS_M_J0)
         {
-            Energie_M_Soutiree = EAS_M_J0;
+            elecDataHouse->energyIn = EAS_M_J0;
         }
-        if (Energie_M_Injectee < EAI_M_J0)
+        if (elecDataHouse->energyOut < EAI_M_J0)
         {
-            Energie_M_Injectee = EAI_M_J0;
+            elecDataHouse->energyOut = EAI_M_J0;
         }
     }
 
-    String HistoriqueEnergie1An(void)
+    void readHisto()
     {
-        String S = "";
-        int Adr_SoutInjec = 0;
-        long EnergieJour = 0;
-        long DeltaEnergieJour = 0;
-        int iS = 0;
-        long lastDay = 0;
-
-        for (int i = 0; i < NbJour; i++)
+        // put histo in RAM
+        int address = RMS_EEPROM_OFFSET_HISTO;
+        for (int i = 0; i < RMS_EEPROM_HISTO_RANGE; i++)
         {
-            iS = (idxPromDuJour + i + 1) % NbJour;
-            Adr_SoutInjec = adr_HistoAn + iS * 4;
-            EnergieJour = EEPROM.readLong(Adr_SoutInjec);
-            if (lastDay == 0)
-            {
-                lastDay = EnergieJour;
-            }
-            DeltaEnergieJour = EnergieJour - lastDay;
-            lastDay = EnergieJour;
-            S += String(DeltaEnergieJour) + ",";
+            histoEnergy[i] = EEPROM.readLong(address);
+            address += sizeof(int32_t);
         }
-        return S;
     }
 
     unsigned long LectureCle()
     {
-        return EEPROM.readULong(adr_ParaActions);
+        return EEPROM.readULong(RMS_EEPROM_OFFSET_PARAMS);
     }
 
     void LectureEnROM()
     {
-        int Hdeb;
-        int address = adr_ParaActions;
-        Cle_ROM = EEPROM.readULong(address);
-        address += sizeof(unsigned long);
-        ssid = EEPROM.readString(address);
-        address += ssid.length() + 1;
-        password = EEPROM.readString(address);
-        address += password.length() + 1;
-        dhcpOn = EEPROM.readByte(address);
-        address += sizeof(byte);
-        IP_Fixe = EEPROM.readULong(address);
-        address += sizeof(unsigned long);
-        Gateway = EEPROM.readULong(address);
-        address += sizeof(unsigned long);
-        masque = EEPROM.readULong(address);
-        address += sizeof(unsigned long);
-        dns = EEPROM.readULong(address);
-        address += sizeof(unsigned long);
-        Source = EEPROM.readString(address);
-        address += Source.length() + 1;
-        RMSextIP = EEPROM.readULong(address);
-        address += sizeof(unsigned long);
-        EnphaseUser = EEPROM.readString(address);
-        address += EnphaseUser.length() + 1;
-        EnphasePwd = EEPROM.readString(address);
-        address += EnphasePwd.length() + 1;
-        EnphaseSerial = EEPROM.readString(address);
-        address += EnphaseSerial.length() + 1;
-        MQTTRepet = EEPROM.readUShort(address);
-        address += sizeof(unsigned short);
-        MQTTIP = EEPROM.readULong(address);
-        address += sizeof(unsigned long);
-        MQTTPort = EEPROM.readUShort(address);
-        address += sizeof(unsigned short);
-        MQTTUser = EEPROM.readString(address);
-        address += MQTTUser.length() + 1;
-        MQTTPwd = EEPROM.readString(address);
-        address += MQTTPwd.length() + 1;
-        MQTTPrefix = EEPROM.readString(address);
-        address += MQTTPrefix.length() + 1;
-        MQTTdeviceName = EEPROM.readString(address);
-        address += MQTTdeviceName.length() + 1;
-        String nomRouteur = EEPROM.readString(address);
-        ModuleCore::setName(nomRouteur.c_str());
-        address += nomRouteur.length() + 1;
-        nomSondeFixe = EEPROM.readString(address);
-        address += nomSondeFixe.length() + 1;
-        nomSondeMobile = EEPROM.readString(address);
-        address += nomSondeMobile.length() + 1;
-        nomTemperature = EEPROM.readString(address);
-        address += nomTemperature.length() + 1;
-        CalibU = EEPROM.readUShort(address);
-        address += sizeof(unsigned short);
-        CalibI = EEPROM.readUShort(address);
-        address += sizeof(unsigned short);
-        TempoEDFon = EEPROM.readByte(address);
-        address += sizeof(byte);
-        // Zone des actions
-        NbActions = EEPROM.readUShort(address);
-        address += sizeof(unsigned short);
-        for (int iAct = 0; iAct < NbActions; iAct++)
-        {
-            LesActions[iAct].Active = EEPROM.readByte(address);
-            address += sizeof(byte);
-            LesActions[iAct].Titre = EEPROM.readString(address);
-            address += LesActions[iAct].Titre.length() + 1;
-            LesActions[iAct].Host = EEPROM.readString(address);
-            address += LesActions[iAct].Host.length() + 1;
-            LesActions[iAct].Port = EEPROM.readUShort(address);
-            address += sizeof(unsigned short);
-            LesActions[iAct].OrdreOn = EEPROM.readString(address);
-            address += LesActions[iAct].OrdreOn.length() + 1;
-            LesActions[iAct].OrdreOff = EEPROM.readString(address);
-            address += LesActions[iAct].OrdreOff.length() + 1;
-            LesActions[iAct].Repet = EEPROM.readUShort(address);
-            address += sizeof(unsigned short);
-            LesActions[iAct].Tempo = EEPROM.readUShort(address);
-            address += sizeof(unsigned short);
-            LesActions[iAct].React = EEPROM.readByte(address);
-            address += sizeof(byte);
-            LesActions[iAct].NbPeriode = EEPROM.readByte(address);
-            address += sizeof(byte);
-            Hdeb = 0;
-            for (byte i = 0; i < LesActions[iAct].NbPeriode; i++)
-            {
-                LesActions[iAct].Type[i] = EEPROM.readByte(address);
-                address += sizeof(byte);
-                LesActions[iAct].Hfin[i] = EEPROM.readUShort(address);
-                LesActions[iAct].Hdeb[i] = Hdeb;
-                Hdeb = LesActions[iAct].Hfin[i];
-                address += sizeof(unsigned short);
-                LesActions[iAct].Vmin[i] = EEPROM.readShort(address);
-                address += sizeof(unsigned short);
-                LesActions[iAct].Vmax[i] = EEPROM.readShort(address);
-                address += sizeof(unsigned short);
-                LesActions[iAct].Tinf[i] = EEPROM.readShort(address);
-                address += sizeof(unsigned short);
-                LesActions[iAct].Tsup[i] = EEPROM.readShort(address);
-                address += sizeof(unsigned short);
-                LesActions[iAct].Tarif[i] = EEPROM.readByte(address);
-                address += sizeof(byte);
-            }
-        }
-        Calibration(address);
+        int address = RMS_EEPROM_OFFSET_PARAMS;
+        address = ModuleRomMap::readParameters(address);
+        eepromUsage(address);
     }
     int EcritureEnROM()
     {
-        int address = adr_ParaActions;
-        EEPROM.writeULong(address, Cle_ROM);
-        address += sizeof(unsigned long);
-        EEPROM.writeString(address, ssid);
-        address += ssid.length() + 1;
-        EEPROM.writeString(address, password);
-        address += password.length() + 1;
-        EEPROM.writeByte(address, dhcpOn);
-        address += sizeof(byte);
-        EEPROM.writeULong(address, IP_Fixe);
-        address += sizeof(unsigned long);
-        EEPROM.writeULong(address, Gateway);
-        address += sizeof(unsigned long);
-        EEPROM.writeULong(address, masque);
-        address += sizeof(unsigned long);
-        EEPROM.writeULong(address, dns);
-        address += sizeof(unsigned long);
-        EEPROM.writeString(address, Source);
-        address += Source.length() + 1;
-        EEPROM.writeULong(address, RMSextIP);
-        address += sizeof(unsigned long);
-        EEPROM.writeString(address, EnphaseUser);
-        address += EnphaseUser.length() + 1;
-        EEPROM.writeString(address, EnphasePwd);
-        address += EnphasePwd.length() + 1;
-        EEPROM.writeString(address, EnphaseSerial);
-        address += EnphaseSerial.length() + 1;
-        EEPROM.writeUShort(address, MQTTRepet);
-        address += sizeof(unsigned short);
-        EEPROM.writeULong(address, MQTTIP);
-        address += sizeof(unsigned long);
-        EEPROM.writeUShort(address, MQTTPort);
-        address += sizeof(unsigned short);
-        EEPROM.writeString(address, MQTTUser);
-        address += MQTTUser.length() + 1;
-        EEPROM.writeString(address, MQTTPwd);
-        address += MQTTPwd.length() + 1;
-        EEPROM.writeString(address, MQTTPrefix);
-        address += MQTTPrefix.length() + 1;
-        EEPROM.writeString(address, MQTTdeviceName);
-        address += MQTTdeviceName.length() + 1;
-        EEPROM.writeString(address, nomRouteur);
-        address += nomRouteur.length() + 1;
-        EEPROM.writeString(address, nomSondeFixe);
-        address += nomSondeFixe.length() + 1;
-        EEPROM.writeString(address, nomSondeMobile);
-        address += nomSondeMobile.length() + 1;
-        EEPROM.writeString(address, nomTemperature);
-        address += nomTemperature.length() + 1;
-        EEPROM.writeUShort(address, CalibU);
-        address += sizeof(unsigned short);
-        EEPROM.writeUShort(address, CalibI);
-        address += sizeof(unsigned short);
-        EEPROM.writeByte(address, TempoEDFon);
-        address += sizeof(byte);
-        // Enregistrement des Actions
-        EEPROM.writeUShort(address, NbActions);
-        address += sizeof(unsigned short);
-        for (int iAct = 0; iAct < NbActions; iAct++)
-        {
-            EEPROM.writeByte(address, LesActions[iAct].Active);
-            address += sizeof(byte);
-            EEPROM.writeString(address, LesActions[iAct].Titre);
-            address += LesActions[iAct].Titre.length() + 1;
-            EEPROM.writeString(address, LesActions[iAct].Host);
-            address += LesActions[iAct].Host.length() + 1;
-            EEPROM.writeUShort(address, LesActions[iAct].Port);
-            address += sizeof(unsigned short);
-            EEPROM.writeString(address, LesActions[iAct].OrdreOn);
-            address += LesActions[iAct].OrdreOn.length() + 1;
-            EEPROM.writeString(address, LesActions[iAct].OrdreOff);
-            address += LesActions[iAct].OrdreOff.length() + 1;
-            EEPROM.writeUShort(address, LesActions[iAct].Repet);
-            address += sizeof(unsigned short);
-            EEPROM.writeUShort(address, LesActions[iAct].Tempo);
-            address += sizeof(unsigned short);
-            EEPROM.writeByte(address, LesActions[iAct].React);
-            address += sizeof(byte);
-            EEPROM.writeByte(address, LesActions[iAct].NbPeriode);
-            address += sizeof(byte);
-            for (byte i = 0; i < LesActions[iAct].NbPeriode; i++)
-            {
-                EEPROM.writeByte(address, LesActions[iAct].Type[i]);
-                address += sizeof(byte);
-                EEPROM.writeUShort(address, LesActions[iAct].Hfin[i]);
-                address += sizeof(unsigned short);
-                EEPROM.writeShort(address, LesActions[iAct].Vmin[i]);
-                address += sizeof(unsigned short);
-                EEPROM.writeShort(address, LesActions[iAct].Vmax[i]);
-                address += sizeof(unsigned short);
-                EEPROM.writeShort(address, LesActions[iAct].Tinf[i]);
-                address += sizeof(unsigned short);
-                EEPROM.writeShort(address, LesActions[iAct].Tsup[i]);
-                address += sizeof(unsigned short);
-                EEPROM.writeByte(address, LesActions[iAct].Tarif[i]);
-                address += sizeof(byte);
-            }
-        }
-        Calibration(address);
+        int address = RMS_EEPROM_OFFSET_PARAMS;
+        address = ModuleRomMap::writeParameters(address, false);
+        eepromUsage(address);
         EEPROM.commit();
         return address;
     }
-    void Calibration(int address)
+    void eepromUsage(int address)
     {
-        // done in setters
+        // done in ModulePowerMeter setters
         // kV = KV * CalibU / 1000; // Calibration coefficient to be applied
         // kI = KI * CalibI / 1000;
-        P_cent_EEPROM = int(100 * address / EEPROM_SIZE);
-        Serial.println("Mémoire EEPROM utilisée : " + String(P_cent_EEPROM) + "%");
-        ModuleDebug::getDebug().println("Mémoire EEPROM utilisée : " + String(P_cent_EEPROM) + "%");
+        int size = address - RMS_EEPROM_OFFSET_HISTO;
+        currentEepromUsage = int(100.0 * size / RMS_EEPROM_MAX_SIZE);
+        String m = "EEPROM usage : " + String(currentEepromUsage) + "%" + " (" + String(size) + "/" + String(RMS_EEPROM_MAX_SIZE) + " bytes)";
+        Serial.println(m);
+        ModuleDebug::getDebug().println(m);
     }
 
     // ***********************************
@@ -448,39 +235,59 @@ namespace ModuleStockage
 
     void EnergieQuotidienne()
     {
-        if (!DATEvalid)
+        if (!ModuleTime::timeIsValid())
             return;
 
-        if (Source == "Ext")
+        if (ModulePowerMeter::getSource() == ModulePowerMeter::SOURCE_PROXY)
             return;
 
-        if (Energie_M_Soutiree < EAS_M_J0 || EAS_M_J0 == 0)
+        ModulePowerMeter::electric_data_t *elecDataTriac = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_TRIAC);
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_HOUSE);
+        
+        if (elecDataTriac->energyIn < EAS_T_J0 || EAS_T_J0 == 0)
         {
-            EAS_M_J0 = Energie_M_Soutiree;
+            EAS_T_J0 = elecDataTriac->energyIn;
         }
-        EnergieJour_M_Soutiree = Energie_M_Soutiree - EAS_M_J0;
-        if (Energie_M_Injectee < EAI_M_J0 || EAI_M_J0 == 0)
+        elecDataTriac->energyDayIn = elecDataTriac->energyIn - EAS_T_J0;
+        if (elecDataTriac->energyOut < EAI_T_J0 || EAI_T_J0 == 0)
         {
-            EAI_M_J0 = Energie_M_Injectee;
+            EAI_T_J0 = elecDataTriac->energyOut;
         }
-        EnergieJour_M_Injectee = Energie_M_Injectee - EAI_M_J0;
-        if (Energie_T_Soutiree < EAS_T_J0 || EAS_T_J0 == 0)
+        elecDataTriac->energyDayOut = elecDataTriac->energyOut - EAI_T_J0;
+
+        if (elecDataHouse->energyIn < EAS_M_J0 || EAS_M_J0 == 0)
         {
-            EAS_T_J0 = Energie_T_Soutiree;
+            EAS_M_J0 = elecDataHouse->energyIn;
         }
-        EnergieJour_T_Soutiree = Energie_T_Soutiree - EAS_T_J0;
-        if (Energie_T_Injectee < EAI_T_J0 || EAI_T_J0 == 0)
+        elecDataHouse->energyDayIn = elecDataHouse->energyIn - EAS_M_J0;
+        if (elecDataHouse->energyOut < EAI_M_J0 || EAI_M_J0 == 0)
         {
-            EAI_T_J0 = Energie_T_Injectee;
+            EAI_M_J0 = elecDataHouse->energyOut;
         }
-        EnergieJour_T_Injectee = Energie_T_Injectee - EAI_T_J0;
+        elecDataHouse->energyDayOut = elecDataHouse->energyOut - EAI_M_J0;
+
+    }
+
+    // states
+    byte getEepromUsage()
+    {
+        return currentEepromUsage;
+    }
+
+    // setters / getters
+    long *getHistoEnergy()
+    {
+        return histoEnergy;
+    }
+    int getHistoEnergyIdx()
+    {
+        return idxPromDuJour;
     }
 
     void setEepromKey(unsigned long key)
     {
         Cle_ROM = key;
     }
-
     unsigned long getEepromKey()
     {
         return Cle_ROM;

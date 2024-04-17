@@ -322,6 +322,9 @@ namespace ModulePowerMeter
     float getVAPower(domain_t domain = DOMAIN_HOUSE) {
         return float(elecData[domain].vaPowerIn - elecData[domain].vaPowerOut);
     }
+    float getEnergy(domain_t domain = DOMAIN_HOUSE) {
+        return float(elecData[domain].energyIn - elecData[domain].energyOut);
+    }
     float inPower(domain_t domain = DOMAIN_HOUSE) {
         return float(elecData[domain].powerIn);
     }

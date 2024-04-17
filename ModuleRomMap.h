@@ -4,6 +4,6 @@
 
 namespace ModuleRomMap
 {
-    int readEeprom(int address);
-    int writeEeprom(int address);
+    int readParameters(int address);
+    int writeParameters(int address, bool commit = true);
 } // namespace ModuleRomMap

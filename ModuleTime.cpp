@@ -16,6 +16,9 @@ namespace ModuleTime
     const char *ntpServer1 = NTP_SERVER1;
     const char *ntpServer2 = NTP_SERVER2;
     unsigned long lastTock;
+    // reference date computed from time()
+    String JourCourant = "";
+    // reference date read from EEPROM
     String DateCeJour = "";
     time_t now = 0;
     float decimalHour = 0;
@@ -44,7 +47,7 @@ namespace ModuleTime
         if (!DATEvalid) return 0;
         // Time Update / de l'heure
         now = time(NULL);
-        String JourCourant = String(ts2str(now, "%d%m%Y"));
+        JourCourant = String(ts2str(now, "%d%m%Y"));
 
         int hour;
         int minute;
@@ -53,9 +56,10 @@ namespace ModuleTime
         ts2YmdHis(now, NULL, NULL, NULL, &hour, &minute, &second);
 
         decimalHour = hour + (minute + second / 60.0) / 60.0;
+        // compare with the last date read from EEPROM and/or from 24h ago
         if (DateCeJour != JourCourant)
         {
-            // Changement de jour
+            // It's a new day !!
             if (DateCeJour != "")
                 onNewDay();
             DateCeJour = JourCourant;
@@ -63,6 +67,7 @@ namespace ModuleTime
         return now;
     }
 
+    // Event once a day at the end of the day
     void onNewDay()
     {
         ModuleStockage::onNewDay();
@@ -86,5 +91,16 @@ namespace ModuleTime
 
     bool timeIsValid() {
         return DATEvalid;
+    }
+
+    // setters / getters
+    const char *getJourCourant() {
+        return JourCourant.c_str();
+    }
+    void setDateCeJour(const char *date) {
+        DateCeJour = date;
+    }
+    const char *getDateCeJour() {
+        return DateCeJour.c_str();
     }
 }

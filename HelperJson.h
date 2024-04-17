@@ -9,4 +9,5 @@ namespace HelperJson
     float ValJson(String nom, String Json);
     long LongJson(String nom, String Json);
     long shiftedLongJson(String nom, String Json, char sep = ',', int shift = 999);
+    float ValJsonSG(String nom, String Json);
 } // namespace HelperJson

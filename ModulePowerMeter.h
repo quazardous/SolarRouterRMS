@@ -24,6 +24,10 @@ namespace ModulePowerMeter
         SOURCE_UXIX2,
         SOURCE_ERROR,
     };
+    enum domain_t {
+        DOMAIN_TRIAC,
+        DOMAIN_HOUSE,
+    };
 
     const char *sourceNames[] = {
         RMS_POWER_METER_SOURCE_ENPHASE,
@@ -42,7 +46,7 @@ namespace ModulePowerMeter
         float powerFactor;
         float avgPower;
         float avgVaPower;
-        float frequency;
+        float frequency; // Used for Triac only ?
 
         int powerIn, powerOut;  // Puissance en Watt 
         int vaPowerIn, vaPowerOut;  // Puissance en VA
@@ -91,14 +95,12 @@ namespace ModulePowerMeter
     
     float getVAPower(bool house = true);
 
-    enum domain_t {
-        DOMAIN_TRIAC,
-        DOMAIN_HOUSE,
-    };
     // power in Watt, < 0 if power is produced/injected, > 0 if power is consumed
     float getPower(domain_t domain = DOMAIN_HOUSE);
     // apparent power in VA
     float getVAPower(domain_t domain = DOMAIN_HOUSE);
+    float getEnergy(domain_t domain = DOMAIN_HOUSE);
+    
     float inPower(domain_t domain = DOMAIN_HOUSE);
     float outPower(domain_t domain = DOMAIN_HOUSE);
     float inVAPower(domain_t domain = DOMAIN_HOUSE);

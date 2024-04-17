@@ -44,6 +44,8 @@ namespace ModulePowerMeterUxIx2
             a++;
         }
 
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
+        ModulePowerMeter::electric_data_t *elecDataTriac = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_TRIAC);
         if (a == 61)
         { // Message complet reçu
             j = 3;
@@ -63,59 +65,60 @@ namespace ModulePowerMeterUxIx2
             Sens_2 = ByteArray[28];
 
             // Données du Triac
-            Tension_T = LesDatas[0] * .0001;
-            Intensite_T = LesDatas[1] * .0001;
-            float Puiss_1 = PfloatMax(LesDatas[2] * .0001);
-            Energie_T_Soutiree = int(LesDatas[3] * .1);
-            PowerFactor_T = LesDatas[4] * .001;
-            Energie_T_Injectee = int(LesDatas[5] * .1);
-            Frequence = LesDatas[7] * .01;
+            elecDataTriac->voltage = LesDatas[0] * .0001;
+            elecDataTriac->current = LesDatas[1] * .0001;
+            float Puiss_1 = ModulePowerMeter::PMax(float(LesDatas[2] * .0001));
+            elecDataTriac->energyIn = int(LesDatas[3] * .1);
+            elecDataTriac->powerFactor = LesDatas[4] * .001;
+            elecDataTriac->energyOut = int(LesDatas[5] * .1);
+            elecDataTriac->frequency = LesDatas[7] * .01;
             float PVA1 = 0;
-            if (PowerFactor_T > 0)
+            if (elecDataTriac->powerFactor > 0)
             {
-                PVA1 = Puiss_1 / PowerFactor_T;
+                PVA1 = Puiss_1 / elecDataTriac->powerFactor;
             }
             if (Sens_1 > 0)
             {
-                // Injection sur TRiac. Ne devrait pas arriver
-                PuissanceI_T_inst = Puiss_1;
-                PuissanceS_T_inst = 0;
-                PVAI_T_inst = PVA1;
-                PVAS_T_inst = 0;
+                // Injection sur Triac. Ne devrait pas arriver
+                elecDataTriac->instPowerIn = 0;
+                elecDataTriac->instPowerOut = Puiss_1;
+                elecDataTriac->instVaPowerIn = 0;
+                elecDataTriac->instVaPowerOut = PVA1;
             }
             else
             {
-                PuissanceS_T_inst = Puiss_1;
-                PuissanceI_T_inst = 0;
-                PVAI_T_inst = 0;
-                PVAS_T_inst = PVA1;
+                elecDataTriac->instPowerIn = Puiss_1;
+                elecDataTriac->instPowerOut = 0;
+                elecDataTriac->instVaPowerIn = PVA1;
+                elecDataTriac->instVaPowerOut = 0;
             }
+
             // Données générale de la Maison
-            Tension_M = LesDatas[8] * .0001;
-            Intensite_M = LesDatas[9] * .0001;
-            float Puiss_2 = PfloatMax(LesDatas[10] * .0001);
-            Energie_M_Soutiree = int(LesDatas[11] * .1);
-            PowerFactor_M = LesDatas[12] * .001;
-            Energie_M_Injectee = int(LesDatas[13] * .1);
+            elecDataHouse->voltage = LesDatas[8] * .0001;
+            elecDataHouse->current = LesDatas[9] * .0001;
+            float Puiss_2 = ModulePowerMeter::PMax(float(LesDatas[10] * .0001));
+            elecDataHouse->energyIn = int(LesDatas[11] * .1);
+            elecDataHouse->powerFactor = LesDatas[12] * .001;
+            elecDataHouse->energyOut = int(LesDatas[13] * .1);
             float PVA2 = 0;
-            if (PowerFactor_M > 0)
+            if (elecDataHouse->powerFactor > 0)
             {
-                PVA2 = Puiss_2 / PowerFactor_M;
+                PVA2 = Puiss_2 / elecDataHouse->powerFactor;
             }
             if (Sens_2 > 0)
             {
                 // Injection en entrée de Maison
-                PuissanceI_M_inst = Puiss_2;
-                PuissanceS_M_inst = 0;
-                PVAI_M_inst = PVA2;
-                PVAS_M_inst = 0;
+                elecDataHouse->instPowerIn = 0;
+                elecDataHouse->instPowerOut = Puiss_2;
+                elecDataHouse->instVaPowerIn = 0;
+                elecDataHouse->instVaPowerOut = PVA2;
             }
             else
             {
-                PuissanceS_M_inst = Puiss_2;
-                PuissanceI_M_inst = 0;
-                PVAI_M_inst = 0;
-                PVAS_M_inst = PVA2;
+                elecDataHouse->instPowerIn = Puiss_2;
+                elecDataHouse->instPowerOut = 0;
+                elecDataHouse->instVaPowerIn = PVA2;
+                elecDataHouse->instVaPowerOut = 0;
             }
             ModulePowerMeter::powerFilter();
             ModulePowerMeter::signalSourceValid();

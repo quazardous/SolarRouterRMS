@@ -22,4 +22,7 @@ namespace ModuleCore
 
     // states
     const cpu_load_t *getCpuLoad1();
+
+    // helpers
+    void reboot(String $m = "", int $delay = 0);
 } // namespace ModuleCore

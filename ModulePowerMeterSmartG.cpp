@@ -6,6 +6,7 @@
 #include "ModuleDebug.h"
 #include "ModuleWifi.h"
 #include "ModuleHardware.h"
+#include "HelperJson.h"
 #include "helpers.h"
 #include <WiFi.h>
 
@@ -63,36 +64,21 @@ namespace ModulePowerMeterSmartG
         SmartG_Data = SmartG_Data.substring(p + 1);
         p = SmartG_Data.indexOf("}");
         SmartG_Data = SmartG_Data.substring(0, p);
-        PuissanceS_M_inst = ModulePowerMeter::PMax(ValJsonSG("PowerDelivered_total", SmartG_Data));
-        PuissanceI_M_inst = ModulePowerMeter::PMax(ValJsonSG("PowerReturned_total", SmartG_Data));
-        long EnergyDeliveredTariff1 = int(1000 * ValJsonSG("EnergyDeliveredTariff1", SmartG_Data));
-        long EnergyDeliveredTariff2 = int(1000 * ValJsonSG("EnergyDeliveredTariff2", SmartG_Data));
-        Energie_M_Soutiree = EnergyDeliveredTariff1 + EnergyDeliveredTariff2;
-        long EnergyReturnedTariff1 = int(1000 * ValJsonSG("EnergyReturnedTariff1", SmartG_Data));
-        long EnergyReturnedTariff2 = int(1000 * ValJsonSG("EnergyReturnedTariff2", SmartG_Data));
-        Energie_M_Injectee = EnergyReturnedTariff1 + EnergyReturnedTariff2;
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
+        elecDataHouse->instPowerIn = ModulePowerMeter::PMax(HelperJson::ValJsonSG("PowerDelivered_total", SmartG_Data));
+        elecDataHouse->instPowerOut = ModulePowerMeter::PMax(HelperJson::ValJsonSG("PowerReturned_total", SmartG_Data));
+        long EnergyDeliveredTariff1 = int(1000 * HelperJson::ValJsonSG("EnergyDeliveredTariff1", SmartG_Data));
+        long EnergyDeliveredTariff2 = int(1000 * HelperJson::ValJsonSG("EnergyDeliveredTariff2", SmartG_Data));
+        elecDataHouse->energyIn = EnergyDeliveredTariff1 + EnergyDeliveredTariff2;
+        long EnergyReturnedTariff1 = int(1000 * HelperJson::ValJsonSG("EnergyReturnedTariff1", SmartG_Data));
+        long EnergyReturnedTariff2 = int(1000 * HelperJson::ValJsonSG("EnergyReturnedTariff2", SmartG_Data));
+        elecDataHouse->energyOut = EnergyReturnedTariff1 + EnergyReturnedTariff2;
         SG_dataBrute = SmartG_Data;
         ModulePowerMeter::powerFilter();
         ModulePowerMeter::signalSourceValid();
         // Reset du Watchdog à chaque trame du SmartGateways reçue
         ModulePowerMeter::ping();
         ModuleHardware::resetConnectivityLed();
-    }
-
-    float ValJsonSG(String nom, String Json)
-    {
-        int p = Json.indexOf(nom);
-        Json = Json.substring(p);
-        p = Json.indexOf(":");
-        Json = Json.substring(p + 2);
-        p = Json.indexOf(",");
-        float val = 0;
-        if (p > 0)
-        {
-            Json = Json.substring(0, p);
-            val = Json.toFloat();
-        }
-        return val;
     }
 
 } // namespace ModulePowerMeterSmartG

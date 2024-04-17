@@ -188,7 +188,7 @@ namespace ModuleRomMap
     };
     const int triggerPeriodRomMapSize = sizeof(triggerPeriodRomMap) / sizeof(triggerPeriodRomMap[0]);
 
-    int readEeprom(int address)
+    int readParameters(int address)
     {
         byte triggersCount = ModuleTriggers::getTriggersCount();
         address = readRomMap(mainRomMap, mainRomMapSize, address);
@@ -209,7 +209,7 @@ namespace ModuleRomMap
         return address;
     }
 
-    int writeEeprom(int address)
+    int writeParameters(int address, bool commit = true)
     {
         byte triggersCount = ModuleTriggers::getTriggersCount();
         address = writeRomMap(mainRomMap, mainRomMapSize, address);
@@ -228,6 +228,7 @@ namespace ModuleRomMap
                 address = writeRomMap(triggerPeriodRomMap, triggerPeriodRomMapSize, address, tuple);
             }
         }
+        if (commit) EEPROM.commit();
         return address;
     }
 
