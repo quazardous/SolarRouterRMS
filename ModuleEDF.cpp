@@ -8,6 +8,7 @@
 #include "ModuleWifi.h"
 #include "ModulePowerMeter.h"
 #include <ArduinoJson.h>
+#include "HelperJson.h"
 #include "helpers.h"
 
 namespace ModuleEDF {
@@ -110,12 +111,12 @@ namespace ModuleEDF {
                     clientSecuEDF.stop();
 
                     // C'est EDF qui donne la couleur
-                    String LTARFrecu = StringJson("couleurJourJ", EDFdata); // Remplace code du Linky
+                    String LTARFrecu = HelperJson::StringJson("couleurJourJ", EDFdata); // Remplace code du Linky
                     if (LTARFrecu.indexOf("TEMPO") >= 0)
                     {
                         // here we have a valid tempo color
                         LTARF = LTARFrecu;
-                        String couleurJourJ1 = StringJson("couleurJourJ1", EDFdata);
+                        String couleurJourJ1 = HelperJson::StringJson("couleurJourJ1", EDFdata);
                         line = "0";
                         if (couleurJourJ1 == "TEMPO_BLEU")
                             line = "4";
@@ -167,5 +168,14 @@ namespace ModuleEDF {
     unsigned int getBinaryLTARF()
     {
         return LTARFbin;
+    }
+
+    void setSTGE(const char *stge)
+    {
+        STGE = String(stge);
+    }
+    const char *getSTGE()
+    {
+        return STGE.c_str();
     }
 } // namespace ModuleEDF

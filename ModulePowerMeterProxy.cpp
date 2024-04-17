@@ -3,6 +3,10 @@
 // ***************************************************************
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterProxy.h"
+#include "ModuleWifi.h"
+#include "ModuleEDF.h"
+#include "ModuleStockage.h"
+#include "ModuleHardware.h"
 #include "ModuleDebug.h"
 
 namespace ModulePowerMeterProxy
@@ -30,7 +34,7 @@ namespace ModulePowerMeterProxy
         {
             ModuleDebug::stockMessage("connection to client ESP_RMS failed : " + host);
             delay(200);
-            WIFIbug++;
+            ModuleWifi::incrWifiBug();
             return;
         }
         String url = "/ajax_data";
@@ -61,10 +65,10 @@ namespace ModulePowerMeterProxy
             RMSExtDataB = RMSExtDataB.substring(0, RMSExtDataB.indexOf("Fin") + 3);
             String Sval = "";
             int idx = 0;
-            while (RMSExtDataB.indexOf(GS) > 0)
+            while (RMSExtDataB.indexOf(ModuleStockage::GS) > 0)
             {
-                Sval = RMSExtDataB.substring(0, RMSExtDataB.indexOf(GS));
-                RMSExtDataB = RMSExtDataB.substring(RMSExtDataB.indexOf(GS) + 1);
+                Sval = RMSExtDataB.substring(0, RMSExtDataB.indexOf(ModuleStockage::GS));
+                RMSExtDataB = RMSExtDataB.substring(RMSExtDataB.indexOf(ModuleStockage::GS) + 1);
                 Gr[idx] = Sval;
                 idx++;
             }
@@ -72,86 +76,89 @@ namespace ModulePowerMeterProxy
             idx = 0;
             for (int i = 0; i < 3; i++)
             {
-                while (Gr[i].indexOf(RS) >= 0)
+                while (Gr[i].indexOf(ModuleStockage::RS) >= 0)
                 {
-                    Sval = Gr[i].substring(0, Gr[i].indexOf(RS));
-                    Gr[i] = Gr[i].substring(Gr[i].indexOf(RS) + 1);
+                    Sval = Gr[i].substring(0, Gr[i].indexOf(ModuleStockage::RS));
+                    Gr[i] = Gr[i].substring(Gr[i].indexOf(ModuleStockage::RS) + 1);
                     data_[idx] = Sval;
                     idx++;
                 }
                 data_[idx] = Gr[i];
                 idx++;
             }
+            ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_HOUSE);
+            ModulePowerMeter::electric_data_t *elecDataTriac = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_TRIAC);
             for (int i = 0; i <= idx; i++)
             {
                 switch (i)
                 {
 
                 case 1:
-                    proxySource = String(data_[i]);
+                    proxySource = ModulePowerMeter::getSourceFromName(data_[i].c_str());
                     break;
                 case 2:
-                    if (TempoEDFon == 0)
-                        LTARF = data_[i];
+                    if (!ModuleEDF::getTempo())
+                        ModuleEDF::setLTARF(data_[i].c_str());
                     break;
                 case 3:
-                    if (TempoEDFon == 0)
-                        STGE = data_[i];
+                    if (!ModuleEDF::getTempo())
+                        ModuleEDF::setSTGE(data_[i].c_str());
                     break;
                 case 4:
                     // Temperature non utilisé
                     break;
                 case 5:
-                    PuissanceS_M = PintMax(data_[i].toInt());
+                    elecDataHouse->powerIn = ModulePowerMeter::PMax(data_[i].toInt());
                     break;
                 case 6:
-                    PuissanceI_M = PintMax(data_[i].toInt());
+                    elecDataHouse->powerOut = ModulePowerMeter::PMax(data_[i].toInt());
                     break;
                 case 7:
-                    PVAS_M = PintMax(data_[i].toInt());
+                    elecDataHouse->vaPowerIn = ModulePowerMeter::PMax(data_[i].toInt());
                     break;
                 case 8:
-                    PVAI_M = PintMax(data_[i].toInt());
+                    elecDataHouse->vaPowerOut = ModulePowerMeter::PMax(data_[i].toInt());
                     break;
                 case 9:
-                    EnergieJour_M_Soutiree = data_[i].toInt();
+                    elecDataHouse->energyDayIn = data_[i].toInt();
                     break;
                 case 10:
-                    EnergieJour_M_Injectee = data_[i].toInt();
+                    elecDataHouse->energyDayOut = data_[i].toInt();
                     break;
                 case 11:
-                    Energie_M_Soutiree = data_[i].toInt();
+                    elecDataHouse->energyIn = data_[i].toInt();
                     break;
                 case 12:
-                    Energie_M_Injectee = data_[i].toInt();
+                    elecDataHouse->energyOut = data_[i].toInt();
                     // Reset du Watchdog à chaque trame du RMS reçue
                     ModulePowerMeter::signalSourceValid();
-                    WifiLedCounter = 4;
+                    ModuleHardware::resetConnectivityLed();
                     ModulePowerMeter::ping();
                     break;
-                case 13: // CAS UxIx2 avec une deuxieme sonde
-                    PuissanceS_T = data_[i].toInt();
+                case 13:
+                    // CAS UxIx2 avec une deuxieme sonde
+                    elecDataTriac->powerIn = data_[i].toInt();
                     break;
                 case 14:
-                    PuissanceI_T = data_[i].toInt();
+                    elecDataTriac->powerOut = data_[i].toInt();
                     break;
                 case 15:
-                    PVAS_T = data_[i].toInt();
+                    elecDataTriac->vaPowerIn = data_[i].toInt();
                     break;
                 case 16:
-                    PVAI_T = data_[i].toInt();
+                    elecDataTriac->vaPowerOut = data_[i].toInt();
                     break;
                 case 17:
-                    EnergieJour_T_Soutiree = data_[i].toInt();
+                    elecDataTriac->energyDayIn = data_[i].toInt();
                     break;
                 case 18:
-                    EnergieJour_T_Injectee = data_[i].toInt();
+                    elecDataTriac->energyDayOut = data_[i].toInt();
                     break;
                 case 19:
-                    Energie_T_Soutiree = data_[i].toInt();
+                    elecDataTriac->energyIn = data_[i].toInt();
                     break;
                 case 20:
-                    Energie_T_Injectee = data_[i].toInt();
+                    elecDataTriac->energyOut = data_[i].toInt();
                     break;
                 }
             }

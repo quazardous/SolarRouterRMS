@@ -3,7 +3,9 @@
 // ****************************
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterLinky.h"
+#include "ModuleHardware.h"
 #include "ModuleDebug.h"
+#include "ModuleEDF.h"
 #include "hardware.h"
 
 namespace ModulePowerMeterLinky
@@ -74,7 +76,7 @@ namespace ModulePowerMeterLinky
             case 3:
                 // ETX (End Text)
                 // previousETX = millis();
-                WifiLedCounter = 4;
+                ModuleHardware::resetConnectivityLed();
                 LFon = false;
                 break;
             case 10:
@@ -83,6 +85,7 @@ namespace ModulePowerMeterLinky
                 IdxBufDecodLinky = IdxDataRawLinky;
                 break;
             case 13:
+                ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
                 // Line Feed. Debut Groupe
                 if (LFon)
                 {
@@ -129,7 +132,7 @@ namespace ModulePowerMeterLinky
                     {
                         if (checksum != checkLinky)
                         {
-                            Debug.println("Erreur checksum code : " + code + " " + String(checksum) + "," + String(checkLinky));
+                            ModuleDebug::getDebug().println("Erreur checksum code : " + code + " " + String(checksum) + "," + String(checkLinky));
                             ModuleDebug::stockMessage("Erreur checksum code : " + code + " " + String(checksum) + "," + String(checkLinky));
                         }
                         else
@@ -137,16 +140,16 @@ namespace ModulePowerMeterLinky
                             if (code.indexOf("EAST") == 0)
                             {
 
-                                OldWh = Energie_M_Soutiree;
+                                OldWh = elecDataHouse->energyIn;
                                 if (OldWh == 0)
                                 {
                                     OldWh = val.toInt();
                                 }
-                                Energie_M_Soutiree = val.toInt();
+                                elecDataHouse->energyIn = val.toInt();
                                 Tm = millis();
                                 deltaT = float(Tm - TlastEASTvalide);
                                 deltaT = deltaT / float(3600000);
-                                if (Energie_M_Soutiree == OldWh)
+                                if (elecDataHouse->energyIn == OldWh)
                                 {
                                     // Pas de resultat en Wh
                                     Pmax = 1.3 / deltaT;
@@ -155,7 +158,7 @@ namespace ModulePowerMeterLinky
                                 else
                                 {
                                     TlastEASTvalide = Tm;
-                                    deltaWh = float(Energie_M_Soutiree - OldWh);
+                                    deltaWh = float(elecDataHouse->energyIn - OldWh);
                                     deltaWS = deltaWh / deltaT;
                                     Pmin = (deltaWh - 1) / deltaT;
                                     moyPWS = max(moyPWS, Pmin); // saut à la montée en puissance
@@ -170,16 +173,16 @@ namespace ModulePowerMeterLinky
                             }
                             if (code.indexOf("EAIT") == 0)
                             {
-                                OldWh = Energie_M_Injectee;
+                                OldWh = elecDataHouse->energyOut;
                                 if (OldWh == 0)
                                 {
                                     OldWh = val.toInt();
                                 }
-                                Energie_M_Injectee = val.toInt();
+                                elecDataHouse->energyOut = val.toInt();
                                 Tm = millis();
                                 deltaT = float(Tm - TlastEAITvalide);
                                 deltaT = deltaT / float(3600000);
-                                if (Energie_M_Injectee == OldWh)
+                                if (elecDataHouse->energyOut == OldWh)
                                 { 
                                     // Pas de resultat en Wh
                                     Pmax = 1.3 / deltaT;
@@ -188,7 +191,7 @@ namespace ModulePowerMeterLinky
                                 else
                                 {
                                     TlastEAITvalide = Tm;
-                                    deltaWh = float(Energie_M_Injectee - OldWh);
+                                    deltaWh = float(elecDataHouse->energyOut - OldWh);
                                     deltaWI = deltaWh / deltaT;
                                     Pmin = (deltaWh - 1) / deltaT;
                                     moyPWI = max(moyPWI, Pmin); // saut à la montée en puissance
@@ -203,30 +206,30 @@ namespace ModulePowerMeterLinky
                             if (code == "SINSTS")
                             {
                                 // Puissance apparente soutirée. Egalité pour ne pas confondre avec SINSTS1 (triphasé)
-                                PVAS_M = ModulePowerMeter::PMax(int(val.toInt()));
-                                moyPVAS = 0.05 * float(PVAS_M) + 0.95 * moyPVAS;
+                                elecDataHouse->vaPowerIn = ModulePowerMeter::PMax(int(val.toInt()));
+                                moyPVAS = 0.05 * float(elecDataHouse->vaPowerIn) + 0.95 * moyPVAS;
                                 moyPWS = min(moyPWS, moyPVAS);
                                 if (moyPVAS > 0)
                                 {
                                     COSphiS = moyPWS / moyPVAS;
                                     COSphiS = min(float(1.0), COSphiS);
-                                    PowerFactor_M = COSphiS;
+                                    elecDataHouse->powerFactor = COSphiS;
                                 }
-                                PuissanceS_M = ModulePowerMeter::PMax(int(COSphiS * float(PVAS_M)));
+                                elecDataHouse->powerIn = ModulePowerMeter::PMax(int(COSphiS * float(elecDataHouse->vaPowerIn)));
                             }
                             if (code.indexOf("SINSTI") == 0)
                             {
                                 // Puissance apparente injectée
-                                PVAI_M = ModulePowerMeter::PMax(int(val.toInt()));
-                                moyPVAI = 0.05 * float(PVAI_M) + 0.95 * moyPVAI;
+                                elecDataHouse->vaPowerOut = ModulePowerMeter::PMax(int(val.toInt()));
+                                moyPVAI = 0.05 * float(elecDataHouse->vaPowerOut) + 0.95 * moyPVAI;
                                 moyPWI = min(moyPWI, moyPVAI);
                                 if (moyPVAI > 0)
                                 {
                                     COSphiI = moyPWI / moyPVAI;
                                     COSphiI = min(float(1.0), COSphiI);
-                                    PowerFactor_M = COSphiI;
+                                    elecDataHouse->powerFactor = COSphiI;
                                 }
-                                PuissanceI_M = ModulePowerMeter::PMax(int(COSphiI * float(PVAI_M)));
+                                elecDataHouse->powerOut = ModulePowerMeter::PMax(int(COSphiI * float(elecDataHouse->vaPowerOut)));
                             }
                         }
                     }
@@ -237,24 +240,27 @@ namespace ModulePowerMeterLinky
                     }
                     if (code.indexOf("URMS1") == 0)
                     {
-                        Tension_M = val.toFloat(); // phase 1 uniquement
+                        elecDataHouse->voltage = val.toFloat(); // phase 1 uniquement
                     }
                     if (code.indexOf("IRMS1") == 0)
                     {
-                        Intensite_M = val.toFloat(); // Phase 1 uniquement
+                        elecDataHouse->current = val.toFloat(); // Phase 1 uniquement
                     }
-                    if (TempoEDFon == 0)
-                    { // On prend tarif sur Linky
+                    if (!ModuleEDF::getTempo())
+                    {
+                        // On prend tarif sur Linky
                         if (code.indexOf("LTARF") == 0)
                         {
-                            LTARF = val; // Option Tarifaire
+                            String LTARF = val; // Option Tarifaire
                             LTARF.trim();
+                            ModuleEDF::setLTARF(LTARF.c_str());
                         }
                         if (code.indexOf("STGE") == 0)
                         {
-                            STGE = val; // Status
+                            String STGE = val; // Status
                             STGE.trim();
                             STGE = STGE.substring(1, 2); // Tempo lendemain et jour sur 1 octet
+                            ModuleEDF::setSTGE(STGE.c_str());
                         }
                     }
                 }

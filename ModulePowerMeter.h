@@ -36,6 +36,27 @@ namespace ModulePowerMeter
         RMS_POWER_METER_SOURCE_ERROR
     };
 
+    struct electric_data_t {
+        float voltage; // Volt
+        float current; // Amp
+        float powerFactor;
+        float avgPower;
+        float avgVaPower;
+        float frequency;
+
+        int powerIn, powerOut;  // Puissance en Watt 
+        int vaPowerIn, vaPowerOut;  // Puissance en VA
+        float instPowerIn, instPowerOut;  // Puissance instantanée en Watt
+        float instVaPowerIn, instVaPowerOut;  // Puissance instantanée en VA
+
+        float setInstPower(float power);
+        float setInstVaPower(float power);
+
+        // historized data
+        long energyIn, energyOut;
+        long energyDayIn, energyDayOut;
+    };
+
     // events
     void setup();
     void startPowerMeterLoop();
@@ -58,6 +79,7 @@ namespace ModulePowerMeter
     unsigned short getCalibI();
     void setSlowSmoothing(bool smoothing);
     bool getSlowSmoothing();
+    electric_data_t *getElectricData(domain_t domain = DOMAIN_HOUSE);
 
     // states
     const cpu_load_t *getCpuLoad0();
@@ -70,10 +92,6 @@ namespace ModulePowerMeter
     enum domain_t {
         DOMAIN_TRIAC,
         DOMAIN_HOUSE,
-    };
-    enum direction_t {
-        SENS_IN, // power is consumed
-        SENS_OUT, // power is produced
     };
     // power in Watt, < 0 if power is produced/injected, > 0 if power is consumed
     float getPower(domain_t domain = DOMAIN_HOUSE);
@@ -88,4 +106,6 @@ namespace ModulePowerMeter
     const source_t getSourceFromName(const char *name);
     float PMax(float Pin);
     int PMax(int Pin);
+    long PMax(long Pin);
+    void powerFilter();
 } // namespace ModulePowerMeter

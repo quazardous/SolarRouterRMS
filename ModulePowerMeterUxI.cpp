@@ -4,6 +4,8 @@
 // ****************************
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterUxI.h"
+#include "ModuleHardware.h"
+#include "ModulePowerMeter.h"
 
 namespace ModulePowerMeterUxI
 {
@@ -69,8 +71,8 @@ namespace ModulePowerMeterUxI
         Tension_M = sqrt(Uef2);   // RMS voltage
         Ief2 = Ief2 / 100;        // square of current
         Intensite_M = sqrt(Ief2); // RMS current
-        PWcal = PfloatMax(PWcal / 100);
-        float PVA = PfloatMax(floor(Tension_M * Intensite_M));
+        PWcal = ModulePowerMeter::PMax(PWcal / 100);
+        float PVA = ModulePowerMeter::PMax(floor(Tension_M * Intensite_M));
         float PowerFactor = 0;
         if (PVA > 0)
         {
@@ -95,13 +97,10 @@ namespace ModulePowerMeterUxI
             PVAS_M_inst = 0;
             PVAI_M_inst = PVA;
         }
-        if (WifiLedCounter > 30)
-        {
-            WifiLedCounter = 4;
-        }
-        powerFilter();
+        ModulePowerMeter::powerFilter();
         ModulePowerMeter::signalSourceValid();
         ModulePowerMeter::ping();
+        ModuleHardware::resetConnectivityLed()
     }
 
 } // namespace ModulePowerMeterUxi

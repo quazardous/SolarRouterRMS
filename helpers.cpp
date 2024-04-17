@@ -42,18 +42,6 @@ void ts2char(char *str, time_t timestamp, const char *format) {
     strftime(str, RMS_MAX_TIME_T_SIZE, format, pTime);
 }
 
-String StringJson(String nom, String Json) {
-    int p = Json.indexOf(nom);
-    Json = Json.substring(p);
-    p = Json.indexOf(":");
-    Json = Json.substring(p + 1);
-    p = Json.indexOf("\"");
-    Json = Json.substring(p + 1);
-    p = Json.indexOf("\"");
-    Json = Json.substring(0, p);
-    return Json;
-}
-
 void estimate_cpu_load(unsigned long msNow, cpu_load_t *load) {
         float deltaT = float(msNow - load->lastTock);
         load->lastTock = msNow;

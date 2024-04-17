@@ -3,7 +3,7 @@
 ## Author
 [F1ATB André](https://f1atb.fr/fr/)
 
-This repository is just a technical tool to support the great work of [F1ATB André](https://f1atb.fr/fr/).
+This repository is a refactor of the [F1ATB André](https://f1atb.fr/fr/) firmware.
 
 The original work can be found on [https://f1atb.fr](https://f1atb.fr/fr/routeur-photovoltaique-realisation-logicielle/).
 

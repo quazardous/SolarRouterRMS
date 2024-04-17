@@ -12,6 +12,7 @@ namespace ModuleWifi
     // helpers
     void resetWifiBug();
     unsigned int incrWifiBug();
+    bool canConnectWifi(unsigned long msTimeout);
 
     // getters / setters
     void setWifiSsid(const char *ssid);

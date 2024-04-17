@@ -9,6 +9,6 @@ namespace ModulePowerMeterShellyEm
     void gauge(unsigned long msLoop);
 
     // getters / setters
-    void setChannel(unsigned short channel);
-    unsigned short getChannel();
+    void setPhasesNumber(unsigned short channel);
+    unsigned short getPhasesNumber();
 } // namespace ModulePowerMeterShellyEm

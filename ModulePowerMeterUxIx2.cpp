@@ -4,6 +4,7 @@
 // *******************************
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterUxIx2.h"
+#include "ModuleHardware.h"
 #include "hardware.h"
 
 namespace ModulePowerMeterUxIx2
@@ -116,14 +117,11 @@ namespace ModulePowerMeterUxIx2
                 PVAI_M_inst = 0;
                 PVAS_M_inst = PVA2;
             }
-            powerFilter();
+            ModulePowerMeter::powerFilter();
             ModulePowerMeter::signalSourceValid();
             // Reset du Watchdog à chaque trame du module JSY-MK-194 reçue
             ModulePowerMeter::ping();
-            if (WifiLedCounter > 30)
-            {
-                WifiLedCounter = 4;
-            }
+            ModuleHardware::resetConnectivityLed();
         }
     }
 } // namespace ModulePowerMeterUxIx2

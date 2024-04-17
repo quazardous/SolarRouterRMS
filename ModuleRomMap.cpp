@@ -34,7 +34,7 @@ namespace ModuleRomMap
         ELEM_ROM_ENPHASE_USER,
         ELEM_ROM_ENPHASE_PWD,
         ELEM_ROM_ENPHASE_SERIAL,
-        ELEM_ROM_SHELLYEM_CHANNEL,
+        ELEM_ROM_SHELLYEM_PHASES,
         ELEM_ROM_MQTT_REPEAT,
         ELEM_ROM_MQTT_IP,
         ELEM_ROM_MQTT_PORT,
@@ -129,7 +129,7 @@ namespace ModuleRomMap
         RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(ENPHASE_USER, CSTRING, EnphaseUser, CString),
         RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(ENPHASE_PWD, CSTRING, EnphasePwd, CString),
         RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(ENPHASE_SERIAL, ULONG, EnphaseSerial, ULong),
-        RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(SHELLYEM_CHANNEL, USHORT, ShellyEmChannel, UShort),
+        RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(SHELLYEM_PHASES, USHORT, ShellyEmChannel, UShort),
         RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(MQTT_REPEAT, USHORT, MqttRepeat, UShort),
         RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(MQTT_IP, ULONG, MqttIp, ULong),
         RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(MQTT_PORT, USHORT, MqttPort, UShort),
@@ -356,7 +356,7 @@ namespace ModuleRomMap
     RMS_ROM_MAP_MAIN_FN_ACCESSORS(EnphaseUser, const char *, ModulePowerMeterEnphase::setUser, ModulePowerMeterEnphase::getUser)
     RMS_ROM_MAP_MAIN_FN_ACCESSORS(EnphasePwd, const char *, ModulePowerMeterEnphase::setPwd, ModulePowerMeterEnphase::getPwd)
     RMS_ROM_MAP_MAIN_FN_ACCESSORS(EnphaseSerial, unsigned long, ModulePowerMeterEnphase::setSerial, ModulePowerMeterEnphase::getSerial)
-    RMS_ROM_MAP_MAIN_FN_ACCESSORS(ShellyEmChannel, unsigned short, ModulePowerMeterShellyEm::setChannel, ModulePowerMeterShellyEm::getChannel)
+    RMS_ROM_MAP_MAIN_FN_ACCESSORS(ShellyEmChannel, unsigned short, ModulePowerMeterShellyEm::setPhasesNumber, ModulePowerMeterShellyEm::getPhasesNumber)
     RMS_ROM_MAP_MAIN_FN_ACCESSORS(MqttRepeat, unsigned short, ModuleMQTT::setRepeat, ModuleMQTT::getRepeat)
     RMS_ROM_MAP_MAIN_FN_ACCESSORS(MqttIp, unsigned long, ModuleMQTT::setIp, ModuleMQTT::getIp)
     RMS_ROM_MAP_MAIN_FN_ACCESSORS(MqttPort, unsigned short, ModuleMQTT::setPort, ModuleMQTT::getPort)
@@ -392,7 +392,6 @@ namespace ModuleRomMap
 
     // Trigger sub elements
     RMS_ROM_MAP_TRIGGER_ACCESSORS(Title, const char *, String, .c_str())
-    RMS_ROM_MAP_TRIGGER_ACCESSORS(Active, byte, , )
     RMS_ROM_MAP_TRIGGER_ACCESSORS(Host, const char *, String, .c_str())
     RMS_ROM_MAP_TRIGGER_ACCESSORS(Port, unsigned short, , )
     RMS_ROM_MAP_TRIGGER_ACCESSORS(OrdreOn, const char *, String, .c_str())
@@ -400,6 +399,14 @@ namespace ModuleRomMap
     RMS_ROM_MAP_TRIGGER_ACCESSORS(Repeat, unsigned short, , )
     RMS_ROM_MAP_TRIGGER_ACCESSORS(Tempo, unsigned short, , )
     RMS_ROM_MAP_TRIGGER_ACCESSORS(React, byte, , )
+
+    // RMS_ROM_MAP_TRIGGER_ACCESSORS(Active, byte, , )
+    byte elemGetRomTriggerActive(void *context) { return (((Action *)context)->Active); }
+    void elemSetRomTriggerActive(byte value, void *context) {
+        if (value >= Action::CUTTING_MODE_ERROR)
+            value = Action::CUTTING_MODE_NONE;
+        (((Action *)context)->Active) = (Action::cutting_mode_t)(value);
+    }
     // Trigger periods
     RMS_ROM_MAP_TRIGGER_ACCESSORS(PeriodsCount, unsigned short, , )
 
@@ -417,7 +424,6 @@ namespace ModuleRomMap
         }
 
     // Trigger Periods sub sub elements
-    RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Type, byte)
     RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Hfin, unsigned short)
     RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Hdeb, unsigned short)
     RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Vmin, unsigned short)
@@ -425,5 +431,12 @@ namespace ModuleRomMap
     RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Tinf, unsigned short)
     RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Tsup, unsigned short)
     RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Tarif, byte)
+    // RMS_ROM_MAP_TRIGGER_PERIOD_ACCESSORS(Type, byte)
+    byte elemGetRomTriggerPeriodType(void *context) { return RMS_ROM_MAP_CONTEXT_TRIGGER_PERIOD_ARRAY_ATTR_ELEM_TUPLE(context, Type); }
+    void elemSetRomTriggerPeriodType(byte value, void *context) { 
+        if (value >= Action::TRIGGER_TYPE_ERROR)
+            value = Action::TRIGGER_TYPE_NONE;
+        RMS_ROM_MAP_CONTEXT_TRIGGER_PERIOD_ARRAY_ATTR_ELEM_TUPLE(context, Type) = (Action::trigger_type_t) value;
+    }
 
 } // namespace ModuleRomMap

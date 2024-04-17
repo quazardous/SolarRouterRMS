@@ -3,8 +3,10 @@
 #include "ModulePowerMeterEnphase.h"
 #include "ModuleWifi.h"
 #include "ModuleDebug.h"
+#include "ModuleHardware.h"
 #include <UrlEncode.h>
 #include <WiFiClientSecure.h>
+#include "HelperJson.h"
 
 #define RMS_POWER_METER_ENPHASE_SESSION_SERVER "enlighten.enphaseenergy.com"
 #define RMS_POWER_METER_ENPHASE_TOKEN_SERVER "entrez.enphaseenergy.com"
@@ -71,7 +73,7 @@ namespace ModulePowerMeterEnphase
                 }
                 clientSecu.stop();
             }
-            strncpy(Session_id, StringJson("session_id", JsonToken).c_str(), sizeof(Session_id));
+            strncpy(Session_id, HelperJson::StringJson("session_id", JsonToken).c_str(), sizeof(Session_id));
             String m = String("session_id :");
             m += String(Session_id);
             Serial.println(m);
@@ -229,42 +231,26 @@ namespace ModulePowerMeterEnphase
         }
 
         // On utilise pas la librairie ArduinoJson.h, pour décoder message Json, qui crache sur de grosses données
-        String TotConso = PrefiltreJson("total-consumption", "cumulative", JsonEnPhase);
-        PactConso_M = int(ValJson("actPower", TotConso));
-        String NetConso = PrefiltreJson("net-consumption", "cumulative", JsonEnPhase);
-        float PactReseau = ValJson("actPower", NetConso);
-        PactReseau = ModulePowerMeter::PfloatMax(PactReseau);
-        if (PactReseau < 0)
-        {
-            PuissanceS_M_inst = 0;
-            PuissanceI_M_inst = int(-PactReseau);
-        }
-        else
-        {
-            PuissanceI_M_inst = 0;
-            PuissanceS_M_inst = int(PactReseau);
-        }
-        float PvaReseau = ValJson("apprntPwr", NetConso);
-        PvaReseau = PfloatMax(PvaReseau);
-        if (PvaReseau < 0)
-        {
-            PVAS_M_inst = 0;
-            PVAI_M_inst = int(-PvaReseau);
-        }
-        else
-        {
-            PVAI_M_inst = 0;
-            PVAS_M_inst = int(PvaReseau);
-        }
-        powerFilter();
+        String TotConso = HelperJson::PrefiltreJson("total-consumption", "cumulative", JsonEnPhase);
+        PactConso_M = int(HelperJson::ValJson("actPower", TotConso));
+        String NetConso = HelperJson::PrefiltreJson("net-consumption", "cumulative", JsonEnPhase);
+        float PactReseau = HelperJson::ValJson("actPower", NetConso);
+        float PvaReseau = HelperJson::ValJson("apprntPwr", NetConso);
+
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
+        PactReseau = elecDataHouse->setInstPower(PactReseau);
+        PvaReseau = elecDataHouse->setInstVaPower(PvaReseau);
+        ModulePowerMeter::powerFilter();
+        
         float PowerFactor = 0;
-        if ((PVA_M_moy) != 0)
+        if ((elecDataHouse->avgVaPower) != 0)
         {
-            PowerFactor = floor(100 * abs(Puissance_M_moy) / PVA_M_moy) / 100;
-            PowerFactor = min(PowerFactor, float(1));
+            PowerFactor = floor(100 * abs(elecDataHouse->avgPower) / elecDataHouse->avgVaPower) / 100;
+            PowerFactor = min(PowerFactor, float(1.0));
         }
-        PowerFactor_M = PowerFactor;
-        long whDlvdCum = LongJson("whDlvdCum", NetConso);
+        elecDataHouse->powerFactor = PowerFactor;
+
+        long whDlvdCum = HelperJson::LongJson("whDlvdCum", NetConso);
         long DeltaWh = 0;
         if (whDlvdCum != 0)
         { // bonne donnée
@@ -276,26 +262,23 @@ namespace ModulePowerMeterEnphase
             LastwhDlvdCum = whDlvdCum;
             if (DeltaWh < 0)
             {
-                Energie_M_Injectee = Energie_M_Injectee - DeltaWh;
+                elecDataHouse->energyOut = elecDataHouse->energyOut - DeltaWh;
             }
             else
             {
-                Energie_M_Soutiree = Energie_M_Soutiree + DeltaWh;
+                elecDataHouse->energyIn = elecDataHouse->energyIn + DeltaWh;
             }
         }
-        Tension_M = ValJson("rmsVoltage", NetConso);
-        Intensite_M = ValJson("rmsCurrent", NetConso);
+        elecDataHouse->voltage = HelperJson::ValJson("rmsVoltage", NetConso);
+        elecDataHouse->current = HelperJson::ValJson("rmsCurrent", NetConso);
         PactProd = PactConso_M - int(PactReseau);
         ModulePowerMeter::signalSourceValid();
         if (PactReseau != 0 || PvaReseau != 0)
         {
-            // Reset du Watchdog à chaque trame  reçue de la passerelle Envoye-S metered
+            // Reset du Watchdog à chaque trame reçue de la passerelle Envoye-S metered
             ModulePowerMeter::ping();
         }
-        if (WifiLedCounter > 30)
-        {
-            WifiLedCounter = 4;
-        }
+        ModuleHardware::resetConnectivityLed();
     }
 
     void loop(unsigned long msLoop)
@@ -311,73 +294,6 @@ namespace ModulePowerMeterEnphase
                 setup();
             }
         }
-    }
-
-    String PrefiltreJson(String F1, String F2, String Json)
-    {
-        int p = Json.indexOf(F1);
-        Json = Json.substring(p);
-        p = Json.indexOf(F2);
-        Json = Json.substring(p);
-        return Json;
-    }
-
-    float ValJson(String nom, String Json)
-    {
-        int p = Json.indexOf(nom);
-        Json = Json.substring(p);
-        p = Json.indexOf(":");
-        Json = Json.substring(p + 1);
-        int q = Json.indexOf(",");
-        p = Json.indexOf("}");
-        p = min(p, q);
-        float val = 0;
-        if (p > 0)
-        {
-            Json = Json.substring(0, p);
-            val = Json.toFloat();
-        }
-        return val;
-    }
-
-    long LongJson(String nom, String Json)
-    {
-        // Pour éviter des problèmes d'overflow
-        int p = Json.indexOf(nom);
-        Json = Json.substring(p);
-        p = Json.indexOf(":");
-        Json = Json.substring(p + 1);
-        int q = Json.indexOf(".");
-        p = Json.indexOf("}");
-        p = min(p, q);
-        long val = 0;
-        if (p > 0)
-        {
-            Json = Json.substring(0, p);
-            val = Json.toInt();
-        }
-        return val;
-    }
-
-    long myLongJson(String nom, String Json)
-    { 
-        // Alternative a LongJson au dessus pour extraire chez EDF nb jour Tempo  https://particulier.edf.fr/services/rest/referentiel/getNbTempoDays?TypeAlerte=TEMPO
-        int p = Json.indexOf(nom);
-        Json = Json.substring(p);
-        p = Json.indexOf(":");
-        Json = Json.substring(p + 1);
-        int q = Json.indexOf(","); //<==== Recherche d'une virgule et non d'un point
-        if (q == -1)
-            q = 999; //  /<==== Ajout de ces 2 lignes pour que la ligne p = min(p, q); ci dessous donne le bon résultat
-        p = Json.indexOf("}");
-        p = min(p, q);
-        long val = 0;
-        if (p > 0)
-        {
-            Json = Json.substring(0, p);
-            val = Json.toInt();
-        }
-        return val;
     }
 
     // setter / getter

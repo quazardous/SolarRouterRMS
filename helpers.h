@@ -1,3 +1,4 @@
+// common helper functions
 #pragma once
 
 #include <Arduino.h>
@@ -9,8 +10,6 @@ bool TICKTOCK(unsigned long mtsNow, unsigned long &mtsLastToc, unsigned int tocI
 const char *ts2str(time_t timestamp, const char *format);
 void ts2char(char *str, time_t timestamp, const char *format);
 void ts2YmdHis(time_t timestamp, int *year = NULL, int *month = NULL, int *day = NULL, int *hour = NULL, int *minute = NULL, int *second = NULL);
-
-String StringJson(String nom, String Json);
 
 struct cpu_load_t
 {

@@ -15,9 +15,6 @@ namespace ModuleWifi
     char ssid[33] = RMS_WIFI_SSID;
     char password[64] = RMS_WIFI_KEY;
 
-    unsigned long startMillis; // Start time
-    unsigned long previousWifiMillis;
-
     unsigned int WIFIbug = 0;
 
     void setup() {
@@ -62,7 +59,9 @@ namespace ModuleWifi
             }
             ModuleDebug::stockMessage("Wifi Begin : " + String(ssid));
             WiFi.begin(ssid, password);
-            while (WiFi.status() != WL_CONNECTED && (millis() - startMillis < 15000)) {  // Attente connexion au Wifi
+            unsigned long startMillis = millis();
+            while (WiFi.status() != WL_CONNECTED && (millis() - startMillis < 15000)) {
+                // Attente connexion au Wifi
                 Serial.write('.');
                 ModuleHardware::Gestion_LEDs();
                 Serial.print(WiFi.status());
@@ -87,63 +86,12 @@ namespace ModuleWifi
     }
 
     void loopTimer(unsigned long mtsNow) {
-        // we will trigger the first check in 5s
-        previousWifiMillis = mtsNow - 25000;
+        // noop
     }
 
     void loop(unsigned long msLoop) {
-        unsigned long msNow = millis();
-        //Vérification du WIFI
-        //********************
-        if (TICKTOCK(msNow, previousWifiMillis, 30000)) {  //Test présence WIFI toutes les 30s et autres
-            if (!canConnectWifi(10000)) {
-                if (WIFIbug > 2) {
-                    ESP.restart();
-                    return;
-                }
-            }
-
-            if (WiFi.getMode() != WIFI_STA) {
-                Serial.print("Access Point Mode. IP address: ");
-                Serial.println(WiFi.softAPIP());
-            } else {
-                Serial.print("Niveau Signal WIFI:");
-                Serial.println(WiFi.RSSI());
-                Serial.print("IP address: ");
-                Serial.println(WiFi.localIP());
-                Serial.print("WIFIbug:");
-                Serial.println(WIFIbug);
-                ModuleDebug::getDebug().print("Niveau Signal WIFI:");
-                ModuleDebug::getDebug().println(WiFi.RSSI());
-                ModuleDebug::getDebug().print("WIFIbug:");
-                ModuleDebug::getDebug().println(WIFIbug);
-                Serial.println("Charge Lecture RMS (coeur 0) en ms - Min : " + String(int(previousTimeRMSMin)) + " Moy : " + String(int(previousTimeRMSMoy)) + "  Max : " + String(int(previousTimeRMSMax)));
-                ModuleDebug::getDebug().println("Charge Lecture RMS (coeur 0) en ms - Min : " + String(int(previousTimeRMSMin)) + " Moy : " + String(int(previousTimeRMSMoy)) + "  Max : " + String(int(previousTimeRMSMax)));
-                Serial.println("Charge Boucle générale (coeur 1) en ms - Min : " + String(int(previousLoopMin)) + " Moy : " + String(int(previousLoopMoy)) + "  Max : " + String(int(previousLoopMax)));
-                ModuleDebug::getDebug().println("Charge Boucle générale (coeur 1) en ms - Min : " + String(int(previousLoopMin)) + " Moy : " + String(int(previousLoopMoy)) + "  Max : " + String(int(previousLoopMax)));
-            }
-            int T = int(millis() / 1000);
-            float DureeOn = float(T) / 3600;
-            Serial.println("ESP32 ON depuis : " + String(DureeOn) + " heures");
-            ModuleDebug::getDebug().println("ESP32 ON depuis : " + String(DureeOn) + " heures");
-
-            // call to EDF data put in dedicated module
-        }
-
-        // Connecté en  Access Point depuis 3mn. Pas normal
-        if (getStartupSince() > 180000 && !ModuleWifi::isStationMode()) {
-            Serial.println("Pas connecté en WiFi mode Station. Redémarrage");
-            delay(5000);
-            ESP.restart();
-            return;
-        }
-    }
-
-    unsigned long getStartupSince(unsigned long mtsNow = 0) {
-        if (mtsNow == 0) {
-            mtsNow = millis();
-        }
-        return mtsNow - startMillis;
+        // noop
+        // WIFI check in ModuleCore
     }
 
     bool isWifiConnected() {

@@ -8,16 +8,16 @@ namespace ModuleHardware
 {
     unsigned long mtsLastLEDTock;
 
-    int WifiLedCounter = 0; // Wifi Led Counter aka Yellow Led
+    int ConnectivityLedCounter = 0; // Wifi Led Counter aka Yellow Led
     int ActivityLedCounter = 0; // Activity Led Counter aka Green Led
 
     void setup() {
         // Pin initialisation
-        pinMode(RMS_PIN_LED_WIFI, OUTPUT);
+        pinMode(RMS_PIN_LED_CONNECTIVITY, OUTPUT);
         pinMode(RMS_PIN_LED_ACTIVITY, OUTPUT);
         pinMode(RMS_PIN_ZERO_CROSS, INPUT_PULLDOWN);
         pinMode(RMS_PIN_PULSE_TRIAC, OUTPUT);
-        digitalWrite(RMS_PIN_LED_WIFI, LOW);
+        digitalWrite(RMS_PIN_LED_CONNECTIVITY, LOW);
         digitalWrite(RMS_PIN_LED_ACTIVITY, LOW);
         digitalWrite(RMS_PIN_PULSE_TRIAC, LOW);  //Stop Triac
     }
@@ -38,18 +38,18 @@ namespace ModuleHardware
     void Gestion_LEDs() {
         int retard_min = 100;
         int retardI;
-        WifiLedCounter++;
+        ConnectivityLedCounter++;
 
         if (!ModuleWifi::isWifiConnected()) {
             // Attente connexion au Wifi
             if (ModuleWifi::isStationMode()) {
                 // en  Station mode
-                WifiLedCounter = (WifiLedCounter + 6) % 10;
-                ActivityLedCounter = WifiLedCounter;
+                ConnectivityLedCounter = (ConnectivityLedCounter + 6) % 10;
+                ActivityLedCounter = ConnectivityLedCounter;
             } else {
                 // AP Mode
-                WifiLedCounter = WifiLedCounter % 10;
-                ActivityLedCounter = (WifiLedCounter + 5) % 10;
+                ConnectivityLedCounter = ConnectivityLedCounter % 10;
+                ActivityLedCounter = (ConnectivityLedCounter + 5) % 10;
             }
         } else {
             byte count = ModuleTriggers::getTriggersCount();
@@ -63,15 +63,37 @@ namespace ModuleHardware
                 ActivityLedCounter = 10;
             }
         }
-        if (WifiLedCounter > 5) {
-            digitalWrite(RMS_PIN_LED_WIFI, LOW);
+        if (ConnectivityLedCounter > 5) {
+            digitalWrite(RMS_PIN_LED_CONNECTIVITY, LOW);
         } else {
-            digitalWrite(RMS_PIN_LED_WIFI, HIGH);
+            digitalWrite(RMS_PIN_LED_CONNECTIVITY, HIGH);
         }
         if (ActivityLedCounter > 5) {
             digitalWrite(RMS_PIN_LED_ACTIVITY, LOW);
         } else {
             digitalWrite(RMS_PIN_LED_ACTIVITY, HIGH);
+        }
+    }
+
+    // setters / getters
+    void setConnectivityLedCounter(int counter) {
+        ConnectivityLedCounter = counter;
+    }
+    int getConnectivityLedCounter() {
+        return ConnectivityLedCounter;
+    }
+
+    void setActivityLedCounter(int counter) {
+        ActivityLedCounter = counter;
+    }
+    int getActivityLedCounter() {
+        return ActivityLedCounter;
+    }
+
+    // helpers
+    void resetConnectivityLed() {
+        if (ConnectivityLedCounter > 30) {
+            ConnectivityLedCounter = 4;
         }
     }
 } // namespace ModuleHardware

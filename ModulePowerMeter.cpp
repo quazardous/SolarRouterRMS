@@ -30,9 +30,6 @@ namespace ModulePowerMeter
     source_t activeSourceSource = SOURCE_UXI;
 
     cpu_load_t cpuLoad0;
-    float previousTimeRMSMin = 1000;
-    float previousTimeRMSMax = 0;
-    float previousTimeRMSMoy = 0;
     unsigned long variableThrottle = 1000;
     unsigned long lastTock;
 
@@ -52,26 +49,7 @@ namespace ModulePowerMeter
     float kV = RMS_POWER_METER_KV;  //Calibration coefficient for the voltage. Corrected value
     float kI = RMS_POWER_METER_KI;  //Calibration coefficient for the current. Corrected value
 
-    // Paramètres électriques
-    // Triac
-    long Energie_T_Soutiree = 0;
-    long Energie_T_Injectee = 0;
-    // Maison
-    long Energie_M_Soutiree = 0;
-    long Energie_M_Injectee = 0;
-
-    float tension[2];
-    float intensity[2];
-    float powerFactor[2];
-    float avgPower[2];
-    float avgVaPower[2];
-    float frequency;
-
-    long energy[2][2];  
-    int power[2][2];  // Puissance en Watt 
-    int vaPower[2][2];  // Puissance en VA
-    float instPower[2][2];  // Puissance instantanée en Watt
-    float instVaPower[2][2];  // Puissance instantanée en VA 
+    electric_data_t elecData[2];
 
     void setup() {
 
@@ -158,7 +136,7 @@ namespace ModulePowerMeter
         //Recupération des données RMS
         //******************************
         if (TICKTOCK(msNow, lastTock, variableThrottle)) {  //Attention delicat pour eviter pb overflow
-            unsigned long ralenti = long(power[DOMAIN_HOUSE][SENS_IN] / 10);  // On peut ralentir échange sur Wifi si grosse puissance en cours
+            unsigned long ralenti = long(elecData[DOMAIN_HOUSE].powerIn / 10);  // On peut ralentir échange sur Wifi si grosse puissance en cours
             switch (activeSource) {
             case SOURCE_UXI:
                 ModulePowerMeterUxI::gauge(msNow);
@@ -222,6 +200,13 @@ namespace ModulePowerMeter
         P = min(M, P);
         return P;
     }
+
+    long PMax(long Pin) {
+        long M = long(PmaxReseau);
+        long P = max(-M, Pin);
+        P = min(M, P);
+        return P;
+    }
     
     void powerFilter()
     {
@@ -231,8 +216,8 @@ namespace ModulePowerMeter
         float S = slowSmoothing ? 0.3 : 1.0;
 
         for (int i = DOMAIN_TRIAC; i <= DOMAIN_HOUSE; i++) {
-            powerSmoothing(S, instPower[i][SENS_IN], instPower[i][SENS_OUT], avgPower[i], power[i][SENS_IN], power[i][SENS_OUT]);
-            powerSmoothing(S, instVaPower[i][SENS_IN], instVaPower[i][SENS_OUT], avgVaPower[i], vaPower[i][SENS_IN], vaPower[i][SENS_OUT]);
+            powerSmoothing(S, elecData[i].instPowerIn, elecData[i].instPowerOut, elecData[i].avgPower, elecData[i].powerIn, elecData[i].powerOut);
+            powerSmoothing(S, elecData[i].instVaPowerIn, elecData[i].instVaPowerOut, elecData[i].avgVaPower, elecData[i].vaPowerIn, elecData[i].vaPowerOut);
         }
     }
 
@@ -249,14 +234,16 @@ namespace ModulePowerMeter
 
     void init_puissance() {
         for (int i = DOMAIN_TRIAC; i <= DOMAIN_HOUSE; i++) {
-            avgPower[i] = 0.0;
-            avgVaPower[i] = 0.0;
-            for (int j = SENS_IN; j <= SENS_OUT; j++) {
-                power[i][j] = 0; // Puissance Watt affichée en entiers Maison et Triac
-                vaPower[i][j] = 0; // Puissance VA affichée en entiers Maison et Triac
-                instPower[i][j] = 0.0;
-                instVaPower[i][j] = 0.0;
-            }
+            elecData[i].avgPower = 0.0;
+            elecData[i].avgVaPower = 0.0;
+            elecData[i].powerIn = 0;
+            elecData[i].powerOut = 0; // Puissance Watt affichée en entiers Maison et Triac
+            elecData[i].vaPowerIn = 0;
+            elecData[i].vaPowerOut = 0; // Puissance VA affichée en entiers Maison et Triac
+            elecData[i].instPowerIn = 0.0;
+            elecData[i].instPowerOut = 0.0;
+            elecData[i].instVaPowerIn = 0.0;
+            elecData[i].instVaPowerOut = 0.0;
         }
     }
 
@@ -315,28 +302,31 @@ namespace ModulePowerMeter
     bool getSlowSmoothing() {
         return slowSmoothing;
     }
+    electric_data_t *getElectricData(domain_t domain = DOMAIN_HOUSE) {
+        return &elecData[domain];
+    }
 
     // states
     bool sourceIsValid() {
         return EnergieActiveValide;
     }
     float getPower(domain_t domain = DOMAIN_HOUSE) {
-        return float(power[domain][SENS_IN] - power[domain][SENS_OUT]);
+        return float(elecData[domain].powerIn - elecData[domain].powerOut);
     }
     float getVAPower(domain_t domain = DOMAIN_HOUSE) {
-        return float(vaPower[domain][SENS_IN] - vaPower[domain][SENS_OUT]);
+        return float(elecData[domain].vaPowerIn - elecData[domain].vaPowerOut);
     }
     float inPower(domain_t domain = DOMAIN_HOUSE) {
-        return float(power[domain][SENS_IN]);
+        return float(elecData[domain].powerIn);
     }
     float outPower(domain_t domain = DOMAIN_HOUSE) {
-        return float(power[domain][SENS_OUT]);
+        return float(elecData[domain].powerOut);
     }
     float inVAPower(domain_t domain = DOMAIN_HOUSE) {
-        return float(vaPower[domain][SENS_IN]);
+        return float(elecData[domain].vaPowerIn);
     }
     float outVAPower(domain_t domain = DOMAIN_HOUSE) {
-        return float(vaPower[domain][SENS_OUT]);
+        return float(elecData[domain].vaPowerOut);
     }
 
     // helpers
@@ -347,5 +337,35 @@ namespace ModulePowerMeter
             }
         }
         return SOURCE_ERROR;
+    }
+
+    float electric_data_t::setInstPower(float power) {
+        power = PMax(power);
+        if (power < 0)
+        {
+            instPowerIn = 0;
+            instPowerOut = int(-power);
+        }
+        else
+        {
+            instPowerIn = int(power);
+            instPowerOut = 0;
+        }
+        return power;
+    }
+
+    float electric_data_t::setInstVaPower(float power) {
+        power = PMax(power);
+        if (power < 0)
+        {
+            instVaPowerIn = 0;
+            instVaPowerOut = int(-power);
+        }
+        else
+        {
+            instVaPowerIn = int(power);
+            instVaPowerOut = 0;
+        }
+        return power;
     }
 } // namespace ModulePowerMeter

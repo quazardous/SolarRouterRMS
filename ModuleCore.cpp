@@ -1,13 +1,12 @@
 #include "ModuleCore.h"
+#include "ModuleWifi.h"
+#include "ModuleDebug.h"
+#include "ModulePowerMeter.h"
 #include "config.h"
 
 #define RMS_MAX_NAME_LENGTH 128
 
 namespace ModuleCore {
-
-    float previousLoopMin = 1000;
-    float previousLoopMax = 0;
-    float previousLoopMoy = 0;
 
     cpu_load_t cpuLoad1;
 
@@ -16,6 +15,10 @@ namespace ModuleCore {
     char mobileProbeName[RMS_MAX_NAME_LENGTH] = RMS_MOBILE_PROBE_NAME;
     char fixProbeName[RMS_MAX_NAME_LENGTH] = RMS_FIX_PROBE_NAME;
     char temperatureName[RMS_MAX_NAME_LENGTH] = RMS_TEMPERATURE_NAME;
+
+    unsigned long previousCheckTock;
+
+    unsigned long startMillis; // Start time
 
     void setup() {
         // Generate hostname
@@ -37,12 +40,91 @@ namespace ModuleCore {
 
     void loopTimer(unsigned long mtsNow) {
         cpuLoad1.lastTock = mtsNow;
+        // we will trigger the first check in 5s
+        previousCheckTock = mtsNow - 25000;
+
+        startMillis = mtsNow;
     }
 
     void loop(unsigned long msLoop) {
         unsigned long msNow = millis();
         // Estimation charge coeur
         estimate_cpu_load(msNow, &cpuLoad1);
+
+        // Check health
+        if (TICKTOCK(msNow, previousCheckTock, 30000))
+        {
+            // Check WIFI
+            int wifiBug = ModuleWifi::getWifiBug();
+            //Test présence WIFI toutes les 30s et autres
+            if (!ModuleWifi::canConnectWifi(10000)) {
+                if (wifiBug > 2) {
+                    reboot("No WIFI !!!", 1000);
+                    return;
+                }
+            }
+
+            String m;
+            if (!ModuleWifi::isStationMode()) {
+                Serial.println("Access Point Mode. IP address: " + String(WiFi.softAPIP()));
+            } else {
+
+                // Wifi status
+                m = "IP address: " + String(WiFi.localIP());
+                Serial.println(m);
+                ModuleDebug::getDebug().println(m);
+                m = "Niveau Signal WIFI:" + String(WiFi.RSSI());
+                Serial.println(m);
+                ModuleDebug::getDebug().println(m);
+                m = "WIFIbug:" + String(wifiBug);
+                Serial.println(m);
+                ModuleDebug::getDebug().println(m);
+
+                // Display CPU load
+                const cpu_load_t *cpuLoad0 = ModulePowerMeter::getCpuLoad0();
+                m = "RMS loop (Core 0) in ms - Min : " + String(int(cpuLoad0->min)) 
+                    + " Avg : " + String(int(cpuLoad0->avg)) 
+                    + "  Max : " + String(int(cpuLoad0->max));
+                Serial.println(m);
+                ModuleDebug::getDebug().println(m);
+
+                m = "Main Loop (Core 1) in ms - Min : " + String(int(cpuLoad1.min)) 
+                    + " Avg : " + String(int(cpuLoad1.avg)) 
+                    + "  Max : " + String(int(cpuLoad1.max));
+                Serial.println(m);
+                ModuleDebug::getDebug().println(m);
+            }
+            int T = int(millis() / 1000);
+            float DureeOn = float(T) / 3600;
+            m = "ESP32 ON: " + String(DureeOn) + " hours";
+            Serial.println(m);
+            ModuleDebug::getDebug().println(m);
+            // call to EDF data put in dedicated module
+        }
+
+        // Connecté en  Access Point depuis 3mn. Pas normal
+        if (getStartupSince() > 180000 && !ModuleWifi::isStationMode()) {
+            reboot("Not in WiFi Station since 3 minutes...", 5000);
+            return;
+        }
+    }
+
+    void reboot(String $m = "", int $delay = 0) {
+        if ($m.length() > 0) {
+            Serial.println($m);
+        }
+        Serial.println("REBOOT !!!");
+        if ($delay > 0) {
+            delay($delay);
+        }
+        ESP.restart();
+    }
+
+    unsigned long getStartupSince(unsigned long mtsNow = 0) {
+        if (mtsNow == 0) {
+            mtsNow = millis();
+        }
+        return mtsNow - startMillis;
     }
 
     const char *getHostname() {

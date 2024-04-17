@@ -5,6 +5,8 @@
 #include "ModulePowerMeterShellyEm.h"
 #include "ModuleDebug.h"
 #include "ModuleWifi.h"
+#include "ModuleHardware.h"
+#include "HelperJson.h"
 
 namespace ModulePowerMeterShellyEm
 {
@@ -13,7 +15,7 @@ namespace ModulePowerMeterShellyEm
     int ShEm_comptage_appels = 0;
     float PwMoy2 = 0;  //Moyenne voie secondsaire
     float pfMoy2 = 1;  //pf Voie secondaire
-    unsigned short channelNumber = 0;
+    unsigned short phasesNumber = 0;
 
     void setup()
     {
@@ -41,7 +43,7 @@ namespace ModulePowerMeterShellyEm
             ModuleWifi::incrWifiBug();
             return;
         }
-        int voie = channelNumber;
+        int voie = phasesNumber;
         int Voie = voie % 2;
 
         if (ShEm_comptage_appels == 1)
@@ -71,13 +73,15 @@ namespace ModulePowerMeterShellyEm
         }
         int p = Shelly_Data.indexOf("{");
         Shelly_Data = Shelly_Data.substring(p);
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
         if (voie == 3)
-        { // Triphasé
+        {
+            // Triphasé
             ShEm_dataBrute = "<strong>Triphasé</strong><br>" + Shelly_Data;
             p = Shelly_Data.indexOf("emeters");
             Shelly_Data = Shelly_Data.substring(p + 10);
-            Pw = PfloatMax(ValJson("power", Shelly_Data)); // Phase 1
-            pf = ValJson("pf", Shelly_Data);
+            Pw = ModulePowerMeter::PMax(HelperJson::ValJson("power", Shelly_Data)); // Phase 1
+            pf = HelperJson::ValJson("pf", Shelly_Data);
             pf = abs(pf);
             float total_Pw = Pw;
             float total_Pva = 0;
@@ -85,163 +89,165 @@ namespace ModulePowerMeterShellyEm
             {
                 total_Pva = abs(Pw) / pf;
             }
-            float total_E_soutire = ValJson("total\"", Shelly_Data);
-            float total_E_injecte = ValJson("total_returned", Shelly_Data);
+            float total_E_soutire = HelperJson::ValJson("total\"", Shelly_Data);
+            float total_E_injecte = HelperJson::ValJson("total_returned", Shelly_Data);
             p = Shelly_Data.indexOf("}");
             Shelly_Data = Shelly_Data.substring(p + 1);
-            Pw = PfloatMax(ValJson("power", Shelly_Data)); // Phase 2
-            pf = ValJson("pf", Shelly_Data);
+            float total_E_injecte = HelperJson::ValJson("total_returned", Shelly_Data);
+            Pw = ModulePowerMeter::PMax(HelperJson::ValJson("power", Shelly_Data)); // Phase 2
+            pf = HelperJson::ValJson("pf", Shelly_Data);
             pf = abs(pf);
             total_Pw += Pw;
             if (pf > 0)
             {
                 total_Pva += abs(Pw) / pf;
             }
-            total_E_soutire += ValJson("total\"", Shelly_Data);
-            total_E_injecte += ValJson("total_returned", Shelly_Data);
+            total_E_soutire += HelperJson::ValJson("total\"", Shelly_Data);
+            total_E_injecte += HelperJson::ValJson("total_returned", Shelly_Data);
             p = Shelly_Data.indexOf("}");
             Shelly_Data = Shelly_Data.substring(p + 1);
-            Pw = PfloatMax(ValJson("power", Shelly_Data)); // Phase 3
-            pf = ValJson("pf", Shelly_Data);
+            Pw = ModulePowerMeter::PMax(HelperJson::ValJson("power", Shelly_Data)); // Phase 3
+            pf = HelperJson::ValJson("pf", Shelly_Data);
             pf = abs(pf);
             total_Pw += Pw;
             if (pf > 0)
             {
                 total_Pva += abs(Pw) / pf;
             }
-            total_E_soutire += ValJson("total\"", Shelly_Data);
-            total_E_injecte += ValJson("total_returned", Shelly_Data);
-            Energie_M_Soutiree = int(total_E_soutire);
-            Energie_M_Injectee = int(total_E_injecte);
+            total_E_soutire += HelperJson::ValJson("total\"", Shelly_Data);
+            total_E_injecte += HelperJson::ValJson("total_returned", Shelly_Data);
+            elecDataHouse->energyIn = int(total_E_soutire);
+            elecDataHouse->energyOut = int(total_E_injecte);
             if (total_Pw == 0)
             {
                 total_Pva = 0;
             }
             if (total_Pw > 0)
             {
-                PuissanceS_M_inst = total_Pw;
-                PuissanceI_M_inst = 0;
-                PVAS_M_inst = total_Pva;
-                PVAI_M_inst = 0;
+                elecDataHouse->instPowerIn = total_Pw;
+                elecDataHouse->instPowerOut = 0;
+                elecDataHouse->instVaPowerIn = total_Pva;
+                elecDataHouse->instVaPowerOut = 0;
             }
             else
             {
-                PuissanceS_M_inst = 0;
-                PuissanceI_M_inst = -total_Pw;
-                PVAI_M_inst = total_Pva;
-                PVAS_M_inst = 0;
+                elecDataHouse->instPowerIn = 0;
+                elecDataHouse->instPowerOut = -total_Pw;
+                elecDataHouse->instVaPowerIn = 0;
+                elecDataHouse->instVaPowerOut = total_Pva; // NB no negative sign
             }
         }
         else
-        { // Monophasé
+        {
+            // Monophasé
             ShEm_dataBrute = "<strong>Voie: " + String(voie) + "</strong><br>" + Shelly_Data;
             Shelly_Data = Shelly_Data + ",";
             if (Shelly_Data.indexOf("true") > 0)
-            { // Donnée valide
-                Pw = PfloatMax(ValJson("power", Shelly_Data));
-                voltage = ValJson("voltage", Shelly_Data);
-                pf = ValJson("pf", Shelly_Data);
+            {
+                // Donnée valide
+                Pw = ModulePowerMeter::PMax(HelperJson::ValJson("power", Shelly_Data));
+                voltage = HelperJson::ValJson("voltage", Shelly_Data);
+                pf = HelperJson::ValJson("pf", Shelly_Data);
                 pf = abs(pf);
                 if (pf > 1)
                     pf = 1;
                 if (Voie == voie)
-                { // voie du routeur
+                {
+                    // voie du routeur
                     if (Pw >= 0)
                     {
-                        PuissanceS_M_inst = Pw;
-                        PuissanceI_M_inst = 0;
+                        elecDataHouse->instPowerIn = Pw;
+                        elecDataHouse->instPowerOut = 0;
                         if (pf > 0.01)
                         {
-                            PVAS_M_inst = PfloatMax(Pw / pf);
+                            elecDataHouse->instVaPowerIn = ModulePowerMeter::PMax(Pw / pf);
                         }
                         else
                         {
-                            PVAS_M_inst = 0;
+                            elecDataHouse->instVaPowerIn = 0;
                         }
-                        PVAI_M_inst = 0;
+                        elecDataHouse->instVaPowerOut = 0;
                     }
                     else
                     {
-                        PuissanceS_M_inst = 0;
-                        PuissanceI_M_inst = -Pw;
+                        elecDataHouse->instPowerIn = 0;
+                        elecDataHouse->instPowerOut = -Pw;
+                        elecDataHouse->instVaPowerIn = 0;
                         if (pf > 0.01)
                         {
-                            PVAI_M_inst = PfloatMax(-Pw / pf);
+                            elecDataHouse->instVaPowerOut = ModulePowerMeter::PMax(-Pw / pf);
                         }
                         else
                         {
-                            PVAI_M_inst = 0;
+                            elecDataHouse->instVaPowerOut = 0;
                         }
-                        PVAS_M_inst = 0;
                     }
-                    Energie_M_Soutiree = int(ValJson("total\"", Shelly_Data));
-                    Energie_M_Injectee = int(ValJson("total_returned", Shelly_Data));
-                    PowerFactor_M = pf;
-                    Tension_M = voltage;
+                    elecDataHouse->energyIn = int(HelperJson::ValJson("total\"", Shelly_Data));
+                    elecDataHouse->energyOut = int(HelperJson::ValJson("total_returned", Shelly_Data));
+                    elecDataHouse->powerFactor = pf;
+                    elecDataHouse->voltage = voltage;
                 }
                 else
                 {
                     // voie secondaire
                     if (ModulePowerMeter::getSlowSmoothing())
                     {
-                        PwMoy2 = 0.2 * Pw + 0.8 * PwMoy2; // Lissage car moins de mesure sur voie secondaire
+                        // Lissage car moins de mesure sur voie secondaire
+                        PwMoy2 = 0.2 * Pw + 0.8 * PwMoy2;
                         pfMoy2 = 0.2 * pf + 0.8 * pfMoy2;
                         Pw = PwMoy2;
                         pf = pfMoy2;
                     }
                     if (Pw >= 0)
                     {
-                        PuissanceS_T_inst = Pw;
-                        PuissanceI_T_inst = 0;
+                        elecDataHouse->instPowerIn = Pw;
+                        elecDataHouse->instPowerOut = 0;
                         if (pf > 0.01)
                         {
-                            PVAS_T_inst = PfloatMax(Pw / pf);
+                            elecDataHouse->instVaPowerIn = ModulePowerMeter::PMax(Pw / pf);
                         }
                         else
                         {
-                            PVAS_T_inst = 0;
+                            elecDataHouse->instVaPowerIn = 0;
                         }
-                        PVAI_T_inst = 0;
+                        elecDataHouse->instVaPowerOut = 0;
                     }
                     else
                     {
-                        PuissanceS_T_inst = 0;
-                        PuissanceI_T_inst = Pw;
+                        elecDataHouse->instPowerIn = 0;
+                        elecDataHouse->instPowerOut = -Pw;
+                        elecDataHouse->instVaPowerIn = 0;
                         if (pf > 0.01)
                         {
-                            PVAI_T_inst = PfloatMax(-Pw / pf);
+                            elecDataHouse->instVaPowerOut = ModulePowerMeter::PMax(-Pw / pf);
                         }
                         else
                         {
-                            PVAI_T_inst = 0;
+                            elecDataHouse->instVaPowerOut = 0;
                         }
-                        PVAS_T_inst = 0;
                     }
-                    Energie_T_Soutiree = int(ValJson("total\"", Shelly_Data));
-                    Energie_T_Injectee = int(ValJson("total_returned", Shelly_Data));
-                    PowerFactor_T = pf;
-                    Tension_T = voltage;
+                    elecDataHouse->energyIn = int(HelperJson::ValJson("total\"", Shelly_Data));
+                    elecDataHouse->energyOut = int(HelperJson::ValJson("total_returned", Shelly_Data));
+                    elecDataHouse->powerFactor = pf;
+                    elecDataHouse->voltage = voltage;
                 }
             }
         }
-        powerFilter();
+        ModulePowerMeter::powerFilter();
         // Reset du Watchdog à chaque trame du Shelly reçue
         ModulePowerMeter::ping();
         if (ShEm_comptage_appels > 1)
             ModulePowerMeter::signalSourceValid();
-        if (WifiLedCounter > 30)
-        {
-            WifiLedCounter = 4;
-        }
+        ModuleHardware::resetConnectivityLed();
     }
 
     // getters / setters
-    void setChannel(unsigned short channel)
+    void setPhasesNumber(unsigned short number)
     {
-        channelNumber = channel;
+        phasesNumber = number;
     }
-    unsigned short getChannel()
+    unsigned short getPhasesNumber()
     {
-        return channelNumber;
+        return phasesNumber;
     }
 } // namespace ModulePowerMeterShellyEm

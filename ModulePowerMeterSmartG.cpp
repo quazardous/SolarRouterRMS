@@ -4,6 +4,9 @@
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterSmartG.h"
 #include "ModuleDebug.h"
+#include "ModuleWifi.h"
+#include "ModuleHardware.h"
+#include "helpers.h"
 #include <WiFi.h>
 
 namespace ModulePowerMeterSmartG
@@ -26,18 +29,16 @@ namespace ModulePowerMeterSmartG
         // Use WiFiClient class to create TCP connections
         WiFiClient clientESP_RMS;
         byte arr[4];
-        arr[0] = RMSextIP & 0xFF;         // 0x78
-        arr[1] = (RMSextIP >> 8) & 0xFF;  // 0x56
-        arr[2] = (RMSextIP >> 16) & 0xFF; // 0x34
-        arr[3] = (RMSextIP >> 24) & 0xFF; // 0x12
+        ip_explode(ModulePowerMeter::getExtIp(), arr);
 
         String host = String(arr[3]) + "." + String(arr[2]) + "." + String(arr[1]) + "." + String(arr[0]);
         if (!clientESP_RMS.connect(host.c_str(), 82))
-        { // PORT 82 pour Smlart Gateways
-    ModuleDebug::stockMessage(stockMessage("connection to client SmartGateways failed : " + host);
-    delay(200);
-    WIFIbug++;
-    return;
+        {
+            // PORT 82 pour Smlart Gateways
+            ModuleDebug::stockMessage("connection to client SmartGateways failed : " + host);
+            delay(200);
+            ModuleWifi::incrWifiBug();
+            return;
         }
         String url = "/smartmeter/api/read";
         clientESP_RMS.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n");
@@ -50,6 +51,7 @@ namespace ModulePowerMeterSmartG
                 clientESP_RMS.stop();
                 return;
             }
+            // TODO: add delay
         }
         timeout = millis();
         // Lecture des données brutes distantes
@@ -61,8 +63,8 @@ namespace ModulePowerMeterSmartG
         SmartG_Data = SmartG_Data.substring(p + 1);
         p = SmartG_Data.indexOf("}");
         SmartG_Data = SmartG_Data.substring(0, p);
-        PuissanceS_M_inst = PfloatMax(ValJsonSG("PowerDelivered_total", SmartG_Data));
-        PuissanceI_M_inst = PfloatMax(ValJsonSG("PowerReturned_total", SmartG_Data));
+        PuissanceS_M_inst = ModulePowerMeter::PMax(ValJsonSG("PowerDelivered_total", SmartG_Data));
+        PuissanceI_M_inst = ModulePowerMeter::PMax(ValJsonSG("PowerReturned_total", SmartG_Data));
         long EnergyDeliveredTariff1 = int(1000 * ValJsonSG("EnergyDeliveredTariff1", SmartG_Data));
         long EnergyDeliveredTariff2 = int(1000 * ValJsonSG("EnergyDeliveredTariff2", SmartG_Data));
         Energie_M_Soutiree = EnergyDeliveredTariff1 + EnergyDeliveredTariff2;
@@ -70,14 +72,11 @@ namespace ModulePowerMeterSmartG
         long EnergyReturnedTariff2 = int(1000 * ValJsonSG("EnergyReturnedTariff2", SmartG_Data));
         Energie_M_Injectee = EnergyReturnedTariff1 + EnergyReturnedTariff2;
         SG_dataBrute = SmartG_Data;
-        powerFilter();
+        ModulePowerMeter::powerFilter();
         ModulePowerMeter::signalSourceValid();
         // Reset du Watchdog à chaque trame du SmartGateways reçue
         ModulePowerMeter::ping();
-        if (WifiLedCounter > 30)
-        {
-            WifiLedCounter = 4;
-        }
+        ModuleHardware::resetConnectivityLed();
     }
 
     float ValJsonSG(String nom, String Json)

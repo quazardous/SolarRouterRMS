@@ -3,8 +3,8 @@
 // PINS - GPIO
 #define RMS_PIN_RXD2 26            //Pour Routeur Linky ou UxIx2 (sur carte ESP32 simple): Couple RXD2=26 et RMS_PIN_TXD2=27 . Pour carte ESP32 4 relais : Couple RXD2=17 et TXD2=27
 #define RMS_PIN_TXD2 27
-// WIFI aka YELLOW
-#define RMS_PIN_LED_WIFI 18
+// WIFI/CONNECTIVITY aka YELLOW
+#define RMS_PIN_LED_CONNECTIVITY 18
 // ACTIVITY aka GREEN
 #define RMS_PIN_LED_ACTIVITY 19
 #define RMS_PIN_PULSE_TRIAC 22

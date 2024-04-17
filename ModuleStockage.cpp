@@ -31,8 +31,6 @@ namespace ModuleStockage
     String nomSondeFixe = "Données seconde sonde";
     String nomTemperature = "Température";
 
-    String GS = String((char)29);  //Group Separator
-    String RS = String((char)30);  //Record Separator
     int P_cent_EEPROM;
 
     int idxPromDuJour = 0;

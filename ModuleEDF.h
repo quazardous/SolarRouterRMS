@@ -18,4 +18,6 @@ namespace ModuleEDF
     void setLTARF(const char *ltarf);
     const char *getLTARF();
     unsigned int getBinaryLTARF();
+    void setSTGE(const char *stge);
+    const char *getSTGE();
 } // namespace ModuleEDF
