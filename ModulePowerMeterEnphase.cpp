@@ -31,7 +31,7 @@ namespace ModulePowerMeterEnphase
     long LastwhDlvdCum = 0;  //Dernière valeur cumul Wh Soutire-injecté.
     int PactConso_M, PactProd;
 
-    void setup()
+    void boot()
     {
         String JsonToken = String("", RMS_POWER_METER_ENPHASE_MAX_TOKEN_SIZE);
         // Obtention Session ID

@@ -3,6 +3,6 @@
 #include <Arduino.h>
 
 namespace ModuleServer {
-    void setup();
+    void boot();
     void loop(unsigned long msLoop);
 } // namespace ModuleServer

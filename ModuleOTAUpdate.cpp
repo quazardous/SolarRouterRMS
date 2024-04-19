@@ -4,7 +4,7 @@
 
 namespace ModuleOTAUpdate
 {
-    void setup() {
+    void boot() {
         // Modification du programme par le Wifi  - OTA(On The Air)
         //***************************************************
         ArduinoOTA.setHostname(ModuleCore::getHostname());

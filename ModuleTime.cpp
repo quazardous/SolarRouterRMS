@@ -2,21 +2,24 @@
 #include <esp_sntp.h>
 #include "helpers.h"
 #include "ModuleStockage.h"
+#include "ModuleCore.h"
 #include "ModuleDebug.h"
 
-// Heure et Date
-#define MAX_SIZE_T 80
-
-#define NTP_SERVER1 "fr.pool.ntp.org"
-#define NTP_SERVER2 "time.nist.gov"
+#define RMS_NTP_SERVER1 "fr.pool.ntp.org"
+#define RMS_NTP_SERVER2 "time.nist.gov"
+// cf Time-Zone: https://sites.google.com/a/usapiens.com/opnode/time-zones
+#define RMS_NTP_TIMEZONE "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00"
+#define RMS_NTP_SYNC_INTERVAL 3600
 
 namespace ModuleTime
 {
     void time_sync_notification(struct timeval *tv);
 
     bool DATEvalid = false;
-    const char *ntpServer1 = NTP_SERVER1;
-    const char *ntpServer2 = NTP_SERVER2;
+    const char *ntpServers[] = {
+        RMS_NTP_SERVER1,
+        RMS_NTP_SERVER2
+    };
     unsigned long lastTock;
     // reference date computed from time()
     String JourCourant = "";
@@ -25,12 +28,16 @@ namespace ModuleTime
     time_t now = 0;
     float decimalHour = 0;
 
-    void setup() {
+    void boot() {
+        ModuleCore::log("ModuleTime::boot()");
         //Heure / Hour . A Mettre en priorité avant WIFI (exemple ESP32 Simple Time)
         //External timer to obtain the Hour and reset Watt Hour every day at 0h
         sntp_set_time_sync_notification_cb(time_sync_notification);
-        sntp_servermode_dhcp(1);                                                               // Option
-        configTzTime("CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00", ntpServer1, ntpServer2);  // Voir Time-Zone: https://sites.google.com/a/usapiens.com/opnode/time-zones
+        // Option
+        sntp_servermode_dhcp(1);
+        sntp_set_sync_interval(RMS_NTP_SYNC_INTERVAL * 1 * 1000); // 1h
+        ModuleCore::log("NTP client running every " + String(RMS_NTP_SYNC_INTERVAL) + "s");
+        configTzTime(RMS_NTP_TIMEZONE, ntpServers[0], ntpServers[1]);
     }
 
     void loopTimer(unsigned long mtsNow) {
@@ -79,12 +86,13 @@ namespace ModuleTime
     // * Heure DATE * -
     // **************
     void time_sync_notification(struct timeval *tv) {
-        Serial.println("Notification de l'heure ( time synchronization event ) ");
+        ModuleCore::log("NTP Time Sync");
         DATEvalid = true;
-        Serial.print("Sync time in ms : ");
-        Serial.println(sntp_get_sync_interval());
+        String message = String("Sync time in ms:");
+        message += sntp_get_sync_interval();
+        ModuleCore::log(message);
         JourHeureChange();
-        ModuleDebug::stockMessage("Réception de l'heure");
+        ModuleDebug::stockMessage("Time events done");
     }
 
     float getDecimalHour() {

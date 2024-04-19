@@ -25,7 +25,7 @@ namespace ModulePowerMeterUxI
     void MeasurePower();
     void ComputePower();
 
-    void setup()
+    void boot()
     {
         for (int i = 0; i < 100; i++)
         { // Reset table measurements

@@ -54,7 +54,7 @@ namespace ModulePowerMeter
     };
 
     // events
-    void setup();
+    void boot();
     void startPowerMeterLoop();
     void resetCpuLoad0();
     void loop(unsigned long msLoop);

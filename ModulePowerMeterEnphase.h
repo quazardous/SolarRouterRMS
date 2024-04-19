@@ -6,7 +6,7 @@
 namespace ModulePowerMeterEnphase
 {
     // events
-    void setup();
+    void boot();
     void loop(unsigned long msLoop); // other stuff to do in the loop
     void gauge(unsigned long msLoop);
 

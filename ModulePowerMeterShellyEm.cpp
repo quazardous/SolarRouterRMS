@@ -18,7 +18,7 @@ namespace ModulePowerMeterShellyEm
     float pfMoy2 = 1;  //pf Voie secondaire
     unsigned short phasesNumber = 0;
 
-    void setup()
+    void boot()
     {
         // noop
     }

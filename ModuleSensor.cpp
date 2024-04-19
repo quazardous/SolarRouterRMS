@@ -3,12 +3,13 @@
 #include <DallasTemperature.h>
 #include "hardware.h"
 #include "ModuleDebug.h"
+#include "ModuleCore.h"
 #include "helpers.h"
 
 namespace ModuleSensor
 {
     void gaugeTemperature();
-    
+
     unsigned long mtsLastTempTock;
 
     // Température Capteur DS18B20
@@ -16,7 +17,7 @@ namespace ModuleSensor
     DallasTemperature ds18b20(&oneWire);
     float temperature = -127;  // La valeur vaut -127 quand la sonde DS18B20 n'est pas présente
 
-    void setup() {
+    void boot() {
         //Temperature
         ds18b20.begin();
         gaugeTemperature();
@@ -42,16 +43,14 @@ namespace ModuleSensor
         ds18b20.requestTemperatures();
         temperature_brute = ds18b20.getTempCByIndex(0);
         if (temperature_brute < -20 || temperature_brute > 130) {  //Invalide. Pas de capteur ou parfois mauvaise réponse
-            Serial.print("Mesure Température invalide ");
+            String message = "Invalid Temperature";
+            ModuleCore::log(message);
 
         } else {
             temperature = temperature_brute;
-            Serial.print("Température : ");
-            Serial.print(temperature);
-            Serial.println("°C");
-            ModuleDebug::getDebug().print("Température : ");
-            ModuleDebug::getDebug().print(temperature);
-            ModuleDebug::getDebug().println("°C");
+            String message = "Temperature : " + String(temperature) + "°C";;
+            ModuleCore::log(message);
+            ModuleDebug::getDebug().println(message);
         }
     }
 

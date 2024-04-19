@@ -16,7 +16,7 @@ namespace ModulePowerMeterSmartG
     //Paramètres for SmartGateways
     String SG_dataBrute = "";
 
-    void setup()
+    void boot()
     {
         // noop
     }

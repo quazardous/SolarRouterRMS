@@ -54,7 +54,7 @@ namespace ModuleTriggers
     int tabPulseSinusOn[101];
     int tabPulseSinusTotal[101];
 
-    void setup()
+    void boot()
     {
         //Tableau Longueur Pulse et Longueur Trame pour Multi-Sinus de 0 à 100%
         float erreur;

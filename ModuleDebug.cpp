@@ -7,7 +7,7 @@ namespace ModuleDebug
     String Message[RMS_DEBUG_STOCK_MESSAGES];
     int idxMessage = 0;
     
-    void setup()
+    void boot()
     {
         Debug.begin("ESP32");
         Debug.println("Ready");
@@ -21,6 +21,18 @@ namespace ModuleDebug
         Debug.handle();
     }
 
+    // getters / setters
+    String* getMessages()
+    {
+        return Message;
+    }
+
+    RemoteDebug &getDebug()
+    {
+        return Debug;
+    }
+
+    // helpers
     void stockMessage(const String &m)
     {
         String DATE = String(ts2str(time(NULL), "%Y-%m-%d %H:%M:%S"));
@@ -37,16 +49,6 @@ namespace ModuleDebug
         Serial.println(message);
         Message[idxMessage] = message;
         idxMessage = (idxMessage + 1) % RMS_DEBUG_STOCK_MESSAGES;
-    }
-
-    String* getMessages()
-    {
-        return Message;
-    }
-
-    RemoteDebug &getDebug()
-    {
-        return Debug;
     }
 
     void comboLog(const String &m)

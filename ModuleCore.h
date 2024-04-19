@@ -6,7 +6,7 @@
 
 namespace ModuleCore
 {
-    void setup();
+    void boot();
     void loopTimer(unsigned long mtsNow);
     void loop(unsigned long msLoop);
 
@@ -24,9 +24,14 @@ namespace ModuleCore
 
     // states
     const cpu_load_t *getCpuLoad1();
+    bool isUp();
+    // declare RMS UP and ready
+    void upAndReady(bool up = true);
 
     // helpers
     void reboot(String $m = "", int $delay = 0);
+    void log(const char *m);
+    void log(const String &m);
 
     // web handlers
     void httpAjaxESP32(WebServer& server, String& S);

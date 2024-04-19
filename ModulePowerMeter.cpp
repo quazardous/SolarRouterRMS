@@ -71,7 +71,7 @@ namespace ModulePowerMeter
         RMS_POWER_METER_SOURCE_ERROR
     };
 
-    void setup() {
+    void boot() {
 
         init_puissance();
         //Adaptation à la Source
@@ -81,25 +81,25 @@ namespace ModulePowerMeter
         switch (activeSource)
         {
         case SOURCE_UXI:
-            ModulePowerMeterUxI::setup();
+            ModulePowerMeterUxI::boot();
             break;
         case SOURCE_UXIX2:
-            ModulePowerMeterUxIx2::setup();
+            ModulePowerMeterUxIx2::boot();
             break;
         case SOURCE_LINKY:
-            ModulePowerMeterLinky::setup();
+            ModulePowerMeterLinky::boot();
             break;
         case SOURCE_ENPHASE:
-            ModulePowerMeterEnphase::setup();
+            ModulePowerMeterEnphase::boot();
             break;
         case SOURCE_SMARTG:
-            ModulePowerMeterSmartG::setup();
+            ModulePowerMeterSmartG::boot();
             break;
         case SOURCE_SHELLYEM:
-            ModulePowerMeterShellyEm::setup();
+            ModulePowerMeterShellyEm::boot();
             break;
         case SOURCE_PROXY:
-            ModulePowerMeterProxy::setup();
+            ModulePowerMeterProxy::boot();
             activeDataSource = ModulePowerMeterProxy::getProxySource();
             break;
         }

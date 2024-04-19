@@ -53,15 +53,9 @@
   - David Berlioz<berliozdavid@gmail.com>
 
 
-  GNU General Public License v3.0
+  AGPL v3.0
 
 */
-
-// Librairies
-// #include <ESPmDNS.h>
-// #include <ArduinoJson.h>
-// #include <UrlEncode.h>
-// #include <HardwareSerial.h>
 
 // Modules
 #include "ModuleCore.h"
@@ -82,20 +76,20 @@
 //*******
 void setup()
 {
-    // "slow" setup
-    ModuleCore::setup();
-    ModuleHardware::setup();
-    ModuleSensor::setup();
-    ModuleStockage::setup();
-    ModuleMQTT::setup();
-    ModuleTime::setup();
-    ModuleWifi::setup();
-    ModuleEDF::setup();
-    ModuleDebug::setup(); // init remote debug
-    ModuleServer::setup();
-    ModuleOTAUpdate::setup();
-    ModulePowerMeter::setup();
-    ModuleTriggers::setup();
+    // boot
+    ModuleCore::boot();
+    ModuleHardware::boot();
+    ModuleSensor::boot();
+    ModuleStockage::boot();
+    ModuleMQTT::boot();
+    ModuleTime::boot();
+    ModuleWifi::boot();
+    ModuleEDF::boot();
+    ModuleDebug::boot(); // init remote debug
+    ModuleServer::boot();
+    ModuleOTAUpdate::boot();
+    ModulePowerMeter::boot();
+    ModuleTriggers::boot();
 
     // Core 0 Task Loop
     // The Power Meter Loop is near real time
@@ -133,4 +127,14 @@ void loop()
     ModuleWifi::loop(msLoop);
     ModuleEDF::loop(msLoop);
     ModuleTriggers::loop(msLoop);
+}
+
+void up()
+{
+  // Called once when RMS is (re)up and ready (WIFI ok)
+}
+
+void down()
+{
+  // Called once when RMS goes down..
 }

@@ -4,7 +4,7 @@
 
 namespace ModuleMQTT
 {
-    void setup();
+    void boot();
     void loopTimer(unsigned long mtsNow);
     void loop(unsigned long msLoop);
 

@@ -19,7 +19,7 @@ namespace ModuleWifi
 
     unsigned int WIFIbug = 0;
 
-    void setup() {
+    void boot() {
         const char *hostname = ModuleCore::getHostname();
         // Configure WIFI
         // **************
@@ -82,8 +82,8 @@ namespace ModuleWifi
             WiFi.mode(WIFI_AP_STA);
             delay(10);
             WiFi.softAP(ap_default_ssid, ap_default_psk);
-            Serial.print("Access Point Mode. IP address: ");
-            Serial.println(WiFi.softAPIP());
+            Serial.println("Access Point Mode. IP address: " + WiFi.softAPIP().toString());
+            Serial.println("SSID: " + String(ap_default_ssid));
         }
     }
 

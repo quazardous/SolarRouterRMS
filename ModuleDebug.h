@@ -9,7 +9,7 @@
 namespace ModuleDebug
 {
     // events
-    void setup();
+    void boot();
     void loop(unsigned long msLoop);
 
     // getters / setters

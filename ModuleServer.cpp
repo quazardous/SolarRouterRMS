@@ -44,7 +44,7 @@ namespace ModuleServer
     void handleRestart();
     void handleAP_SetWifi();
 
-    void setup()
+    void boot()
     {
         // Init Web Server on port 80
         server.on("/", handleRoot);

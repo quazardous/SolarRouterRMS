@@ -18,7 +18,7 @@ namespace ModuleTriggers
         bool synchronized = 0; // ESP synchronized with current
     };
 
-    void setup();
+    void boot();
     void loopTimer(unsigned long mtsNow);
     void loop(unsigned long msLoop);
     void startIntTimers();

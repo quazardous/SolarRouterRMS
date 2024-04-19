@@ -11,7 +11,7 @@ namespace ModuleHardware
     int ConnectivityLedCounter = 0; // Wifi Led Counter aka Yellow Led
     int ActivityLedCounter = 0; // Activity Led Counter aka Green Led
 
-    void setup() {
+    void boot() {
         // Pin initialisation
         pinMode(RMS_PIN_LED_CONNECTIVITY, OUTPUT);
         pinMode(RMS_PIN_LED_ACTIVITY, OUTPUT);

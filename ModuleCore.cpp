@@ -15,7 +15,17 @@
 
 #define RMS_MAX_NAME_LENGTH 128
 
+void up();
+void down();
+
 namespace ModuleCore {
+    // Not ready if EEPROM is not initialized aka first boot
+    // RMS will be in setup mode (WIFI in AP)
+    bool up = false;
+    // RMS will trigger the UP event
+    bool triggerUp = false;
+    // RMS will trigger the DOWN event
+    bool triggerDown = false;
 
     unsigned long getStartupSince(unsigned long mtsNow = 0);
 
@@ -31,7 +41,7 @@ namespace ModuleCore {
 
     unsigned long startMillis; // Start time
 
-    void setup() {
+    void boot() {
         // Generate hostname
         uint32_t chipId = 0;
         for (int i = 0; i < 17; i = i + 8) {
@@ -41,12 +51,23 @@ namespace ModuleCore {
 
         // Ports Série ESP
         Serial.begin(115200);
-        Serial.println("Booting");
+        log("Booting");
+    }
 
-        // esp_task_wdt_reset();
+    void upAndReady(bool ready) {
+        if (ready == up) {
+            // noop
+            return;
+        }
+        up = ready;
+        if (ready) {
+            triggerUp = true;
+            triggerDown = false;
+        } else {
+            triggerDown = true;
+            triggerUp = false;
+        }
 
-        //Timers
-        // previousETX = millis();
     }
 
     void loopTimer(unsigned long mtsNow) {
@@ -61,6 +82,18 @@ namespace ModuleCore {
         unsigned long msNow = millis();
         // Estimation charge coeur
         estimate_cpu_load(msNow, &cpuLoad1);
+
+        if (triggerUp) {
+            log("RMS going UP...");
+            triggerUp = false;
+            ::up();
+        }
+
+        if (triggerDown) {
+            triggerDown = false;
+            log("RMS going DOWN...");
+            ::down();
+        }
 
         // Check health
         if (TICKTOCK(msNow, previousCheckTock, 30000))
@@ -114,6 +147,8 @@ namespace ModuleCore {
 
             // Check IT / triggers
             ModuleTriggers::checkItStatus();
+
+            log("RMS is " + String(up ? "UP" : "DOWN"));
         }
 
         // Connecté en  Access Point depuis 3mn. Pas normal
@@ -134,18 +169,36 @@ namespace ModuleCore {
         ESP.restart();
     }
 
+    // helpers
+    void log(const String &m)
+    {
+        char d[32];
+        sprintf(d, "[%010.3fs] ", millis() / 1000.0);
+        String l = String(d);
+            l += m;
+        Serial.println(l);
+    }
+    void log(const char *m)
+    {
+        log(String(m));
+    }
+
+    // states
     unsigned long getStartupSince(unsigned long mtsNow) {
         if (mtsNow == 0) {
             mtsNow = millis();
         }
         return mtsNow - startMillis;
     }
+    bool isUp() {
+        return up;
+    }
 
+    // setters / getters
     const char *getHostname() {
         return hostname;
     }
 
-    // setters / getters
     const char *getVersion() {
         return RMS_VERSION;
     }

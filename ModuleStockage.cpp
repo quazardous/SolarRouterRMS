@@ -22,7 +22,7 @@ namespace ModuleStockage
     void readHisto();
     void LectureConsoMatinJour();
     void EnergieQuotidienne();
-    void RAZ_Histo_Conso();
+    void destroyHistory();
 
     String GS = RMS_GS;  //Group Separator
     String RS = RMS_RS;  //Record Separator
@@ -52,7 +52,7 @@ namespace ModuleStockage
     int tabPva_Maison_2s[RMS_POWER_HISTORY_SIZE_2SEC];  //Puissance Active: toutes les 2s
     int tabPva_Triac_2s[RMS_POWER_HISTORY_SIZE_2SEC];
 
-    void setup()
+    void boot()
     {
         INIT_EEPROM();
         // Lecture Clé pour identifier si la ROM a déjà été initialisée
@@ -62,6 +62,7 @@ namespace ModuleStockage
         if (Rcle == Cle_ROM)
         {
             // Programme déjà executé
+            ModuleCore::upAndReady();
             readHisto();
             LectureEnROM();
             LectureConsoMatinJour();
@@ -69,7 +70,7 @@ namespace ModuleStockage
         }
         else
         {
-            RAZ_Histo_Conso();
+            destroyHistory();
         }
     }
 
@@ -148,7 +149,7 @@ namespace ModuleStockage
         LectureConsoMatinJour();
     }
 
-    void RAZ_Histo_Conso()
+    void destroyHistory()
     {
         // Mise a zero Zone stockage
         int address = RMS_EEPROM_OFFSET_HISTO;

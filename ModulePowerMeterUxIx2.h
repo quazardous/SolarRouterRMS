@@ -8,7 +8,7 @@
 
 namespace ModulePowerMeterUxIx2
 {
-    void setup();
+    void boot();
     void gauge(unsigned long msLoop);
 
     // web handlers

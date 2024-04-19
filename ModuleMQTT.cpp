@@ -18,6 +18,8 @@
 
 namespace ModuleMQTT
 {
+    bool isActive();
+
     bool Discovered = false;
     unsigned long previousMqttMillis;
 
@@ -34,7 +36,7 @@ namespace ModuleMQTT
 
     // Période d'envoie des données au serveur MQTT (en secondes)
     // 0 is disabled
-    unsigned int MQTTRepet = 0;
+    unsigned int MQTTRepeat = 0;
     unsigned long MQTTIP = 0;
     unsigned int MQTTPort = 1883;
 
@@ -43,7 +45,7 @@ namespace ModuleMQTT
     char MQTTPrefix[RMS_MQTT_MAX_STRING_SIZE] = "homeassistant";  // prefix obligatoire pour l'auto-discovery entre HA et Core-Mosquitto (par défaut c'est homeassistant)
     char MQTTdeviceName[RMS_MQTT_MAX_STRING_SIZE] = "routeur_rms";
 
-    void setup()
+    void boot()
     {
         // noop
     }
@@ -53,11 +55,12 @@ namespace ModuleMQTT
     }
 
     void loop(unsigned long msLoop) {
-        if (MQTTRepet == 0)
+        if (MQTTRepeat == 0)
             return;
         unsigned long msNow = millis();
-        if (TICKTOCK(msNow, previousMqttMillis, MQTTRepet * 1000))
+        if (TICKTOCK(msNow, previousMqttMillis, MQTTRepeat * 1000)) {
             envoiAuMQTT();
+        }
     }
 
     // Callback  pour souscrire a un topic et  prévoir une action
@@ -67,11 +70,12 @@ namespace ModuleMQTT
         Serial.println(m);
         ModuleDebug::getDebug().println(m);
     }
-    
+
     void assertConnected()
     {
         if (!clientMQTT.connected())
-        { // si le mqtt n'est pas connecté (utile aussi lors de la 1ere connexion)
+        {
+            // si le mqtt n'est pas connecté (utile aussi lors de la 1ere connexion)
             Serial.println("Connection au serveur MQTT ...");
             byte arr[4];
             ip_explode(MQTTIP, arr);
@@ -341,7 +345,12 @@ namespace ModuleMQTT
     } // END SendDataToHomeAssistant
 
     void envoiAuMQTT()
-    { // Cette Fonction d'origine a été modifiée
+    {
+        // Cette Fonction d'origine a été modifiée
+        if (!isActive()) {
+            ModuleCore::log("MQTT not setup");
+            return;
+        }
         unsigned long tps = millis();
         int etat = 0; // utilisé pour l'envoie de l'état On/Off des actions.
         
@@ -357,14 +366,20 @@ namespace ModuleMQTT
         clientMQTT.loop();
     }
 
+    // states
+    bool isActive()
+    {
+        return MQTTIP > 0;
+    }
+
     // setters / getters
     void setRepeat(unsigned short repeat)
     {
-        MQTTRepet = repeat;
+        MQTTRepeat = repeat;
     }
     unsigned short getRepeat()
     {
-        return MQTTRepet;
+        return MQTTRepeat;
     }
 
     void setIp(unsigned long ip)

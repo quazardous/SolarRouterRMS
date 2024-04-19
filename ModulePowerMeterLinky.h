@@ -5,7 +5,7 @@
 
 namespace ModulePowerMeterLinky
 {
-    void setup();
+    void boot();
     void gauge(unsigned long msLoop);
 
     // web handlers

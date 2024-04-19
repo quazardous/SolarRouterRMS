@@ -53,11 +53,11 @@ setup: env
 # Default target
 all: compile
 
-compile-pages: ## Compile the web pages into C++ code
+compile-pages: ## Build the web pages into C++ code
 compile-pages:
 	python3 tools/gen-pages.py ./pages/ ./src/pages/
 
-compile: ## Compile the sketch
+compile: ## Build the sketch
 	$(COMPILE_CMD)
 
 upload: ## Upload the sketch to the board
@@ -65,6 +65,9 @@ upload: ## Upload the sketch to the board
 
 clean: ## Clean the build directory
 	rm -rf $(BUILD_DIR)
+
+monitor: ## Monitor the serial port
+	$(ARDUINO_CLI) monitor -p $(PORT) -c baudrate=115200
 
 env: .env.local
 

@@ -36,7 +36,7 @@ namespace ModulePowerMeterLinky
     //Port Serie 2 - Remplace Serial2 qui bug
     HardwareSerial MySerial(2);
 
-    void setup()
+    void boot()
     {
         delay(20);
         MySerial.setRxBufferSize(RMS_SER_BUF_SIZE);

@@ -26,7 +26,7 @@ namespace ModuleEDF
 
     unsigned long previousEdfTock = 0;
 
-    void setup() {
+    void boot() {
         // noop
     }
 

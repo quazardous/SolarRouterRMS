@@ -8,7 +8,7 @@
 namespace ModuleEDF
 {
     // events
-    void setup();
+    void boot();
     void setupTimer(unsigned long msNow);
     void loop(unsigned long msLoop);
 

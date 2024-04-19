@@ -6,7 +6,7 @@
 namespace ModulePowerMeterShellyEm
 {
     // events
-    void setup();
+    void boot();
     void gauge(unsigned long msLoop);
 
     // getters / setters

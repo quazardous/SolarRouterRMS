@@ -13,7 +13,7 @@ namespace ModulePowerMeterProxy
 {
     ModulePowerMeter::source_t proxySource;
 
-    void setup()
+    void boot()
     {
     }
 

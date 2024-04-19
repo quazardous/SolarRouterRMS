@@ -19,7 +19,7 @@ namespace ModulePowerMeterUxIx2
     //Port Serie 2 - Remplace Serial2 qui bug
     HardwareSerial MySerial(2);
 
-    void setup()
+    void boot()
     {
         MySerial.setRxBufferSize(RMS_SER_BUF_SIZE);
         MySerial.begin(4800, SERIAL_8N1, RMS_PIN_RXD2, RMS_PIN_TXD2); // PORT DE CONNEXION AVEC LE CAPTEUR JSY-MK-194
