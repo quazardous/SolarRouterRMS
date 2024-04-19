@@ -54,6 +54,7 @@ namespace ModulePowerMeterLinky
         float Pmin = 0;
         unsigned long Tm = 0;
         float deltaT = 0;
+
         boucle_appel_Linky++;
         if (boucle_appel_Linky > 4000)
         {
@@ -87,8 +88,9 @@ namespace ModulePowerMeterLinky
                 IdxBufDecodLinky = IdxDataRawLinky;
                 break;
             case 13:
-                ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
                 // Line Feed. Debut Groupe
+            {
+                ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
                 if (LFon)
                 {
                     // Debut groupe OK
@@ -267,7 +269,9 @@ namespace ModulePowerMeterLinky
                     }
                 }
                 break;
+            }
             default:
+                // noop
                 break;
             }
         }

@@ -15,6 +15,9 @@ namespace ModuleRomMap
     using ModuleElemMap::elem_map_t;
     using ModuleElemMap::elem_type_t;
 
+    int readRomMap(elem_map_t *romMap, int romMapSize, int address, void *context = NULL);
+    int writeRomMap(elem_map_t *romMap, int romMapSize, int address, void *context = NULL);
+
     #define RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(ELEM, TYPE, Elem, Type) \
         {ModuleElemMap::ELEM_ ## ELEM, ModuleElemMap::TYPE_ ## TYPE, {.set ## Type = ModuleElemMap::elemSet ## Elem}, {.get ## Type = ModuleElemMap::elemGet  ## Elem}}
 
@@ -114,7 +117,7 @@ namespace ModuleRomMap
         return address;
     }
 
-    int writeParameters(int address, bool commit = true)
+    int writeParameters(int address, bool commit)
     {
         byte triggersCount = ModuleTriggers::getTriggersCount();
         address = writeRomMap(mainRomMap, mainRomMapSize, address);
@@ -137,65 +140,69 @@ namespace ModuleRomMap
         return address;
     }
 
-    int readRomMap(elem_map_t *romMap, int romMapSize, int address, void *context = NULL)
-    {
-        int i = 0;
-        for (i = 0; i < romMapSize; i++)
-        {
-            address = readRomElem(&romMap[i], address, context);
-        }
-        return address;
-    }
-
     int readRomElem(const elem_map_t *romElem, int address, void *context = NULL)
     {
         switch (romElem->type)
         {
         case ModuleElemMap::TYPE_BYTE:
+        {
             uint8_t vByte = EEPROM.readByte(address);
             romElem->setter.setByte(vByte, context);
             address += sizeof(uint8_t);
             break;
+        }
         case ModuleElemMap::TYPE_USHORT:
+        {
             uint16_t vUShort = EEPROM.readUShort(address);
             romElem->setter.setUShort(vUShort, context);
             address += sizeof(uint16_t);
             break;
+        }
         case ModuleElemMap::TYPE_SHORT:
+        {
             int16_t vShort = EEPROM.readShort(address);
             romElem->setter.setShort(vShort, context);
             address += sizeof(int16_t);
             break;
+        }
         case ModuleElemMap::TYPE_ULONG:
+        {
             uint32_t vULong = EEPROM.readULong(address);
             romElem->setter.setULong(vULong, context);
             address += sizeof(uint32_t);
             break;
+        }
         case ModuleElemMap::TYPE_LONG:
+        {
             int32_t vLong = EEPROM.readLong(address);
             romElem->setter.setLong(vLong, context);
             address += sizeof(int32_t);
             break;
+        }
         case ModuleElemMap::TYPE_BOOL:
+        {
             int8_t vByte = EEPROM.readBool(address);
             romElem->setter.setByte(vByte, context);
             address += sizeof(int8_t);
             break;
+        }
         case ModuleElemMap::TYPE_CSTRING:
+        {
             const String vCString = EEPROM.readString(address);
             romElem->setter.setCString(vCString.c_str(), context);
             address += vCString.length() + 1;
             break;
         }
+        }
         return address;
     }
 
-    int writeRomMap(elem_map_t *romMap, int romMapSize, int address, void *context = NULL)
+    int readRomMap(elem_map_t *romMap, int romMapSize, int address, void *context)
     {
         int i = 0;
         for (i = 0; i < romMapSize; i++)
         {
-            address = writeRomElem(&romMap[i], address, context);
+            address = readRomElem(&romMap[i], address, context);
         }
         return address;
     }
@@ -233,6 +240,16 @@ namespace ModuleRomMap
             EEPROM.writeString(address, vCString);
             address += strlen(vCString) + 1;
             break;
+        }
+        return address;
+    }
+
+    int writeRomMap(elem_map_t *romMap, int romMapSize, int address, void *context)
+    {
+        int i = 0;
+        for (i = 0; i < romMapSize; i++)
+        {
+            address = writeRomElem(&romMap[i], address, context);
         }
         return address;
     }

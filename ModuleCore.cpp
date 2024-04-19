@@ -17,6 +17,8 @@
 
 namespace ModuleCore {
 
+    unsigned long getStartupSince(unsigned long mtsNow = 0);
+
     cpu_load_t cpuLoad1;
 
     char hostname[255] = RMS_HOSTNAME_PREFIX;
@@ -121,7 +123,7 @@ namespace ModuleCore {
         }
     }
 
-    void reboot(String $m = "", int $delay = 0) {
+    void reboot(String $m, int $delay) {
         if ($m.length() > 0) {
             Serial.println($m);
         }
@@ -132,7 +134,7 @@ namespace ModuleCore {
         ESP.restart();
     }
 
-    unsigned long getStartupSince(unsigned long mtsNow = 0) {
+    unsigned long getStartupSince(unsigned long mtsNow) {
         if (mtsNow == 0) {
             mtsNow = millis();
         }
@@ -188,7 +190,7 @@ namespace ModuleCore {
     void httpAjaxESP32(WebServer& server, String& S) {
         String GS = RMS_GS;
         String RS = RMS_RS;
-        String S = "";
+        S = "";
         ModuleTriggers::it_counters_infos_s* it_infos = ModuleTriggers::getItCountersInfos(true);
         unsigned long msNow = millis();
 

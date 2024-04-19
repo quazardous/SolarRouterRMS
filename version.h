@@ -1,3 +1,3 @@
 #pragma once
 
-#define RMS_VERSION "8.06ng"
+#define RMS_VERSION "v0.1"

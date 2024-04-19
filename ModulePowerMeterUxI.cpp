@@ -22,6 +22,9 @@ namespace ModulePowerMeterUxI
     int volt[100];
     int amp[100];
 
+    void MeasurePower();
+    void ComputePower();
+
     void setup()
     {
         for (int i = 0; i < 100; i++)

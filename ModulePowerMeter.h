@@ -32,18 +32,6 @@ namespace ModulePowerMeter
         DOMAIN_HOUSE,
     };
 
-    const char *sourceNames[] = {
-        RMS_POWER_METER_SOURCE_NONE,
-        RMS_POWER_METER_SOURCE_ENPHASE,
-        RMS_POWER_METER_SOURCE_LINKY,
-        RMS_POWER_METER_SOURCE_PROXY,
-        RMS_POWER_METER_SOURCE_SHELLYEM,
-        RMS_POWER_METER_SOURCE_SMARTG,
-        RMS_POWER_METER_SOURCE_UXI,
-        RMS_POWER_METER_SOURCE_UXIX2,
-        RMS_POWER_METER_SOURCE_ERROR
-    };
-
     struct electric_data_t {
         float voltage; // Volt
         float current; // Amp

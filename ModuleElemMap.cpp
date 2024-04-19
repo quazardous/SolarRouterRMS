@@ -14,14 +14,14 @@ namespace ModuleElemMap {
     #define RMS_ELEM_MAP_MAIN_GETTER_ONLY(elem, type, get) \
         type elemGet ## elem(void* context) \
         { \
-            return get ## (); \
+            return get(); \
         } \
         void elemSet ## elem(type value, void* context) {} // dummy setter
     
     #define RMS_ELEM_MAP_MAIN_SETTER_ONLY(elem, type, set) \
         void elemSet ## elem(type value, void* context) \
         { \
-            set ## (value); \
+            set(value); \
         } \
         type elemGet ## elem(void* context) {} // dummy getter
 
@@ -29,11 +29,11 @@ namespace ModuleElemMap {
     #define RMS_ELEM_MAP_MAIN_ACCESSORS(elem, type, set, get) \
         type elemGet ## elem(void* context) \
         { \
-            return get (); \
+            return get(); \
         } \
         void elemSet ## elem(type value, void* context) \
         { \
-            set ## (value); \
+            set(value); \
         }
 
     #define RMS_ELEM_MAP_CONTEXT_TRIGGER_ATTR(context, attr) \
@@ -43,11 +43,11 @@ namespace ModuleElemMap {
     #define RMS_ELEM_MAP_TRIGGER_ACCESSORS(attr, type, set, get) \
         type elemGetTrigger##attr(void* context) \
         { \
-            return RMS_ELEM_MAP_CONTEXT_TRIGGER_ATTR(context, attr) ## get; \
+            return RMS_ELEM_MAP_CONTEXT_TRIGGER_ATTR(context, attr)get; \
         } \
         void elemSetTrigger##attr(type value, void* context) \
         { \
-            RMS_ELEM_MAP_CONTEXT_TRIGGER_ATTR(context, attr) = set ## (value); \
+            RMS_ELEM_MAP_CONTEXT_TRIGGER_ATTR(context, attr) = set(value); \
         }
 
     #define RMS_ELEM_MAP_CONTEXT_TRIGGER_PERIOD_ARRAY_ATTR_ELEM_TUPLE(context, attr) \
@@ -97,7 +97,6 @@ namespace ModuleElemMap {
     RMS_ELEM_MAP_MAIN_ACCESSORS(MqttPwd, const char *, ModuleMQTT::setPwd, ModuleMQTT::getPwd)
     RMS_ELEM_MAP_MAIN_ACCESSORS(MqttPrefix, const char *, ModuleMQTT::setPrefix, ModuleMQTT::getPrefix)
     RMS_ELEM_MAP_MAIN_ACCESSORS(MqttDeviceName, const char *, ModuleMQTT::setDeviceName, ModuleMQTT::getDeviceName)
-    RMS_ELEM_MAP_MAIN_ACCESSORS(TemperatureName, const char *, ModuleCore::setTemperatureName, ModuleCore::getTemperatureName)
     RMS_ELEM_MAP_MAIN_GETTER_ONLY(Temperature, float, ModuleSensor::getTemperature)
     RMS_ELEM_MAP_MAIN_ACCESSORS(TempoEdfOn, bool, ModuleEDF::setTempo, ModuleEDF::getTempo)
 
@@ -149,7 +148,7 @@ namespace ModuleElemMap {
     }
 
     // helpers
-    String e2s(elem_map_t* elem, void* context = NULL) {
+    String e2s(elem_map_t* elem, void* context) {
         switch (elem->type) {
         case TYPE_BOOL:
             return String(elem->getter.getBool(context));
@@ -170,7 +169,7 @@ namespace ModuleElemMap {
         }
         return String("*error*");
     }
-    void s2e(elem_map_t* elem, const String& str, void* context = NULL) {
+    void s2e(elem_map_t* elem, const String& str, void* context) {
         switch (elem->type) {
         case TYPE_BOOL:
             elem->setter.setBool(str.toInt(), context);

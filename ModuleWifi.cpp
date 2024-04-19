@@ -172,6 +172,9 @@ namespace ModuleWifi
     void setDns(unsigned long d) {
         dns = d;
     }
+    unsigned long getDns() {
+        return dns;
+    }
 
     // web handlers
     void httpAjaxScanWifi(WebServer& server, String& S) {

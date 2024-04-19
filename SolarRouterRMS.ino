@@ -58,10 +58,10 @@
 */
 
 // Librairies
-#include <ESPmDNS.h>
-#include <ArduinoJson.h>
-#include <UrlEncode.h>
-#include <HardwareSerial.h>
+// #include <ESPmDNS.h>
+// #include <ArduinoJson.h>
+// #include <UrlEncode.h>
+// #include <HardwareSerial.h>
 
 // Modules
 #include "ModuleCore.h"

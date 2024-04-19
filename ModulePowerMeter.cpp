@@ -22,6 +22,11 @@
 
 namespace ModulePowerMeter
 {
+    void init_puissance();
+    void powerMeterLoopCallback(void *pvParameters);
+    void powerMeterLoop(unsigned long msNow);
+    const source_t getSourceFromName(const char *name);
+
     // external IP for some sources
     unsigned long RMSextIP = 0;
 
@@ -53,6 +58,18 @@ namespace ModulePowerMeter
     float kI = RMS_POWER_METER_KI;  //Calibration coefficient for the current. Corrected value
 
     electric_data_t elecData[2];
+
+    const char *sourceNames[] = {
+        RMS_POWER_METER_SOURCE_NONE,
+        RMS_POWER_METER_SOURCE_ENPHASE,
+        RMS_POWER_METER_SOURCE_LINKY,
+        RMS_POWER_METER_SOURCE_PROXY,
+        RMS_POWER_METER_SOURCE_SHELLYEM,
+        RMS_POWER_METER_SOURCE_SMARTG,
+        RMS_POWER_METER_SOURCE_UXI,
+        RMS_POWER_METER_SOURCE_UXIX2,
+        RMS_POWER_METER_SOURCE_ERROR
+    };
 
     void setup() {
 
@@ -211,6 +228,17 @@ namespace ModulePowerMeter
         return P;
     }
     
+    void powerSmoothing(float S, float instPowerIn, float instPowerOut, float &avgPower, int &powerIn, int &powerOut) {
+        avgPower = S * (instPowerIn - instPowerOut) + (1.0 - S) * avgPower;
+        if (avgPower < 0) {
+            powerOut = -int(avgPower); // Puissance Watt affichée en entier
+            powerIn = 0;
+        } else {
+            powerOut = 0;
+            powerIn = int(avgPower);
+        }
+    }
+
     void powerFilter()
     {
         // Filtre RC
@@ -221,17 +249,6 @@ namespace ModulePowerMeter
         for (int i = DOMAIN_TRIAC; i <= DOMAIN_HOUSE; i++) {
             powerSmoothing(S, elecData[i].instPowerIn, elecData[i].instPowerOut, elecData[i].avgPower, elecData[i].powerIn, elecData[i].powerOut);
             powerSmoothing(S, elecData[i].instVaPowerIn, elecData[i].instVaPowerOut, elecData[i].avgVaPower, elecData[i].vaPowerIn, elecData[i].vaPowerOut);
-        }
-    }
-
-    void powerSmoothing(float S, float instPowerIn, float instPowerOut, float &avgPower, int &powerIn, int &powerOut) {
-        avgPower = S * (instPowerIn - instPowerOut) + (1.0 - S) * avgPower;
-        if (avgPower < 0) {
-            powerOut = -int(avgPower); // Puissance Watt affichée en entier
-            powerIn = 0;
-        } else {
-            powerOut = 0;
-            powerIn = int(avgPower);
         }
     }
 
@@ -262,7 +279,7 @@ namespace ModulePowerMeter
         cpuLoad0.avg = 1;
     }
 
-    void throttle(unsigned long throttle, bool yield = false) {
+    void throttle(unsigned long throttle, bool yield) {
         if (yield) {
             lastTock = millis();
         }
@@ -272,10 +289,6 @@ namespace ModulePowerMeter
     // getters / setters
     const source_t getSource() {
         return activeSource;
-    }
-    void setSourceByName(const char *name) {
-        source_t source = getSourceFromName(name);
-        setSource(source);
     }
     void setSource(const source_t source) {
         if (source == activeSource) {
@@ -287,6 +300,10 @@ namespace ModulePowerMeter
         } else {
             activeDataSource = source;
         }
+    }
+    void setSourceByName(const char *name) {
+        source_t source = getSourceFromName(name);
+        setSource(source);
     }
     const char *getSourceName() {
         return sourceNames[(int) activeSource];
@@ -323,7 +340,7 @@ namespace ModulePowerMeter
     bool getSlowSmoothing() {
         return slowSmoothing;
     }
-    electric_data_t *getElectricData(domain_t domain = DOMAIN_HOUSE) {
+    electric_data_t *getElectricData(domain_t domain) {
         return &elecData[domain];
     }
     float get_kV() {
@@ -337,25 +354,25 @@ namespace ModulePowerMeter
     bool sourceIsValid() {
         return EnergieActiveValide;
     }
-    float getPower(domain_t domain = DOMAIN_HOUSE) {
+    float getPower(domain_t domain) {
         return float(elecData[domain].powerIn - elecData[domain].powerOut);
     }
-    float getVAPower(domain_t domain = DOMAIN_HOUSE) {
+    float getVAPower(domain_t domain) {
         return float(elecData[domain].vaPowerIn - elecData[domain].vaPowerOut);
     }
-    float getEnergy(domain_t domain = DOMAIN_HOUSE) {
+    float getEnergy(domain_t domain) {
         return float(elecData[domain].energyIn - elecData[domain].energyOut);
     }
-    float inPower(domain_t domain = DOMAIN_HOUSE) {
+    float inPower(domain_t domain) {
         return float(elecData[domain].powerIn);
     }
-    float outPower(domain_t domain = DOMAIN_HOUSE) {
+    float outPower(domain_t domain) {
         return float(elecData[domain].powerOut);
     }
-    float inVAPower(domain_t domain = DOMAIN_HOUSE) {
+    float inVAPower(domain_t domain) {
         return float(elecData[domain].vaPowerIn);
     }
-    float outVAPower(domain_t domain = DOMAIN_HOUSE) {
+    float outVAPower(domain_t domain) {
         return float(elecData[domain].vaPowerOut);
     }
 

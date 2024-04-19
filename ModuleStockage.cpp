@@ -17,6 +17,13 @@
 
 namespace ModuleStockage
 {
+    void INIT_EEPROM();
+    unsigned long LectureCle();
+    void readHisto();
+    void LectureConsoMatinJour();
+    void EnergieQuotidienne();
+    void RAZ_Histo_Conso();
+
     String GS = RMS_GS;  //Group Separator
     String RS = RMS_RS;  //Record Separator
 
@@ -106,7 +113,7 @@ namespace ModuleStockage
         }
     }
 
-    void INIT_EEPROM(void)
+    void INIT_EEPROM()
     {
         if (!EEPROM.begin(RMS_EEPROM_MAX_SIZE))
         {
@@ -160,7 +167,7 @@ namespace ModuleStockage
         EEPROM.commit();
     }
 
-    void LectureConsoMatinJour(void)
+    void LectureConsoMatinJour()
     {
         EAS_T_J0 = EEPROM.readULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_IN); // Triac
         EAI_T_J0 = EEPROM.readULong(RMS_EEPROM_OFFSET_TRIAC_ENERGY_OUT);
@@ -208,6 +215,18 @@ namespace ModuleStockage
         return EEPROM.readULong(RMS_EEPROM_OFFSET_PARAMS);
     }
 
+    void eepromUsage(int address)
+    {
+        // done in ModulePowerMeter setters
+        // kV = KV * CalibU / 1000; // Calibration coefficient to be applied
+        // kI = KI * CalibI / 1000;
+        int size = address - RMS_EEPROM_OFFSET_HISTO;
+        currentEepromUsage = int(100.0 * size / RMS_EEPROM_MAX_SIZE);
+        String m = "EEPROM usage : " + String(currentEepromUsage) + "%" + " (" + String(size) + "/" + String(RMS_EEPROM_MAX_SIZE) + " bytes)";
+        Serial.println(m);
+        ModuleDebug::getDebug().println(m);
+    }
+
     int LectureEnROM()
     {
         int address = RMS_EEPROM_OFFSET_PARAMS;
@@ -222,17 +241,6 @@ namespace ModuleStockage
         eepromUsage(address);
         EEPROM.commit();
         return address;
-    }
-    void eepromUsage(int address)
-    {
-        // done in ModulePowerMeter setters
-        // kV = KV * CalibU / 1000; // Calibration coefficient to be applied
-        // kI = KI * CalibI / 1000;
-        int size = address - RMS_EEPROM_OFFSET_HISTO;
-        currentEepromUsage = int(100.0 * size / RMS_EEPROM_MAX_SIZE);
-        String m = "EEPROM usage : " + String(currentEepromUsage) + "%" + " (" + String(size) + "/" + String(RMS_EEPROM_MAX_SIZE) + " bytes)";
-        Serial.println(m);
-        ModuleDebug::getDebug().println(m);
     }
 
     // ***********************************
@@ -355,7 +363,7 @@ namespace ModuleStockage
 
     void httpAjaxHistoriqueEnergie1An(WebServer& server, String& S)
     {
-        String S = "";
+        S = "";
         int Adr_SoutInjec = 0;
         long EnergieJour = 0;
         long DeltaEnergieJour = 0;
@@ -380,9 +388,9 @@ namespace ModuleStockage
     using ModuleElemMap::elem_map_t;
     using ModuleElemMap::elem_type_t;
     #define RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM, ModuleElemMap:: ## TYPE, {.set ## Type = ModuleElemMap::elemSet ## Elem}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 0}
+        {ModuleElemMap::ELEM, ModuleElemMap:: TYPE, {.set ## Type = ModuleElemMap::elemSet ## Elem}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 0}
     #define RMS_STOCKAGE_AJAX_PARAM_READ(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM, ModuleElemMap:: ## TYPE, {.set ## Type = NULL}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 1}
+        {ModuleElemMap::ELEM, ModuleElemMap:: TYPE, {.set ## Type = NULL}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 1}
 
     elem_map_t ajax_params_map[] = {
         RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_DHCP_ON, TYPE_BOOL, DhcpOn, Bool),

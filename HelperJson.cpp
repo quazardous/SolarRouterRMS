@@ -60,7 +60,7 @@ namespace HelperJson
         return val;
     }
 
-    long shiftedLongJson(String nom, String Json, char sep = ',', int shift = 999)
+    long shiftedLongJson(String nom, String Json, char sep, int shift)
     { 
         // Alternative a LongJson au dessus pour extraire chez EDF nb jour Tempo  https://particulier.edf.fr/services/rest/referentiel/getNbTempoDays?TypeAlerte=TEMPO
         int p = Json.indexOf(nom);

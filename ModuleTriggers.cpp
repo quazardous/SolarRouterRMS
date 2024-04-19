@@ -14,6 +14,8 @@
  */
 namespace ModuleTriggers
 {
+    void handleOverProduction() ;
+
     struct it_counters_s {
         volatile int it_10ms = 0; // Interruption avant deglitch
         volatile int it_10ms_in = 0; // Interruption apres deglitch
@@ -108,62 +110,9 @@ namespace ModuleTriggers
 
     // Interruptions, Current Zero Crossing from Triac device and Internal Timer
     // *************************************************************************
-    void startIntTimers() {
-        // Interruptions du Triac
-        attachInterrupt(RMS_PIN_ZERO_CROSS, onZeroCrossPowerRising, RISING);
 
-        // Hardware timer 100uS
-        timer = timerBegin(0, 80, true);  //Clock Divider, 1 micro second Tick
-        timerAttachInterrupt(timer, &onTimer, true);
-        timerAlarmWrite(timer, 100, true);  //Interrupt every 100 Ticks or microsecond
-        timerAlarmEnable(timer);
-
-        // Hardware timer 10ms
-        timer10ms = timerBegin(1, 80, true);  //Clock Divider, 1 micro second Tick
-        timerAttachInterrupt(timer10ms, &onTimer10ms, true);
-        timerAlarmWrite(timer10ms, 10000, true);  //Interrupt every 10000 Ticks or microsecond
-        timerAlarmEnable(timer10ms);
-    }
-
-    // Interruption du Triac Signal Zc, toutes les 10ms (2 times in 50Hz = 100Hz)
-    void IRAM_ATTR onZeroCrossPowerRising() {
-        it_counters.it_10ms++;
-
-        // to avoid glitch detection during 2ms
-        if ((millis() - ms_last_IT) < 2) return;
-        it_counters.it_mode += 2; // now we are 2 beats after
-
-        if (it_counters.it_mode > 5) it_counters.it_mode = 5;
-        it_counters.it_10ms_in++;
-        ms_last_IT = millis();
-        if (it_counters.it_mode > 0) GestionIT_10ms();  // IT synchrone avec le secteur signal Zc
-    }
-
-    // Interruption interne toutes 10ms
-    void IRAM_ATTR onTimer10ms() {
-        it_counters.it_mode--;
-        if (it_counters.it_mode < -5) it_counters.it_mode = -5;
-        if (it_counters.it_mode < 0) GestionIT_10ms();  // IT non synchrone avec le secteur. Horloge interne
-    }
-
-    // Interruption Timer interne toutes les 100 micro secondes
-    // Interruption every 100 micro second
-    void IRAM_ATTR onTimer() {
-        // Découpe Sinus
-        if (Actif[0] == Action::CUTTING_MODE_SINUS_OR_RELAY) {
-            PulseComptage[0] += 1;
-            // 100 steps in 10 ms
-            if (PulseComptage[0] > Retard[0] && Retard[0] < 98 && it_counters.it_mode > 0) {
-                // Activate Triac
-                digitalWrite(RMS_PIN_PULSE_TRIAC, HIGH);                                    
-            } else {
-                //Stop Triac
-                digitalWrite(RMS_PIN_PULSE_TRIAC, LOW);
-            }
-        }
-    }
-
-    void GestionIT_10ms() {
+    // main IT handler
+    void handleIT10ms() {
         for (int i = 0; i < NbActions; i++) {
             switch (Actif[i]) {  //valeur en RAM
             case Action::CUTTING_MODE_NONE:
@@ -194,6 +143,62 @@ namespace ModuleTriggers
                 break;
             }
         }
+    }
+
+    // Interruption du Triac Signal Zc, toutes les 10ms (2 times in 50Hz = 100Hz)
+    void IRAM_ATTR onZeroCrossPowerRising() {
+        it_counters.it_10ms++;
+
+        // to avoid glitch detection during 2ms
+        if ((millis() - ms_last_IT) < 2) return;
+        it_counters.it_mode += 2; // now we are 2 beats after
+
+        if (it_counters.it_mode > 5) it_counters.it_mode = 5;
+        it_counters.it_10ms_in++;
+        ms_last_IT = millis();
+        if (it_counters.it_mode > 0) handleIT10ms();  // IT synchrone avec le secteur signal Zc
+    }
+
+    // Interruption Timer interne toutes les 100 micro secondes
+    // Interruption every 100 micro second
+    void IRAM_ATTR onTimer100us() {
+        // Découpe Sinus
+        if (Actif[0] == Action::CUTTING_MODE_SINUS_OR_RELAY) {
+            PulseComptage[0] += 1;
+            // 100 steps in 10 ms
+            if (PulseComptage[0] > Retard[0] && Retard[0] < 98 && it_counters.it_mode > 0) {
+                // Activate Triac
+                digitalWrite(RMS_PIN_PULSE_TRIAC, HIGH);                                    
+            } else {
+                //Stop Triac
+                digitalWrite(RMS_PIN_PULSE_TRIAC, LOW);
+            }
+        }
+    }
+
+    // Interruption interne toutes 10ms
+    void IRAM_ATTR onTimer10ms() {
+        it_counters.it_mode--;
+        if (it_counters.it_mode < -5) it_counters.it_mode = -5;
+        if (it_counters.it_mode < 0) handleIT10ms();  // IT non synchrone avec le secteur. Horloge interne
+    }
+
+    // Entry point for the timers
+    void startIntTimers() {
+        // Interruptions du Triac
+        attachInterrupt(RMS_PIN_ZERO_CROSS, onZeroCrossPowerRising, RISING);
+
+        // Hardware timer 100uS
+        timer = timerBegin(0, 80, true);  //Clock Divider, 1 micro second Tick
+        timerAttachInterrupt(timer, &onTimer100us, true);
+        timerAlarmWrite(timer, 100, true);  //Interrupt every 100 Ticks or microsecond
+        timerAlarmEnable(timer);
+
+        // Hardware timer 10ms
+        timer10ms = timerBegin(1, 80, true);  //Clock Divider, 1 micro second Tick
+        timerAttachInterrupt(timer10ms, &onTimer10ms, true);
+        timerAlarmWrite(timer10ms, 10000, true);  //Interrupt every 10000 Ticks or microsecond
+        timerAlarmEnable(timer10ms);
     }
 
 
@@ -306,7 +311,7 @@ namespace ModuleTriggers
     Action *getTrigger(byte i) {
         return &LesActions[i];
     }
-    it_counters_infos_s *getItCountersInfos(bool $check = false) {
+    it_counters_infos_s *getItCountersInfos(bool $check) {
         if ($check)
             checkItStatus();
         return &it_counters_infos;

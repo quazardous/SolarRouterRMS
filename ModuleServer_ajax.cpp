@@ -15,8 +15,6 @@
 namespace ModuleServer
 {
     extern WebServer server;
-    String RS = RMS_RS;
-    String GS = RMS_GS;
 
     void handleAjaxRMS()
     {

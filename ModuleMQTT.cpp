@@ -60,23 +60,14 @@ namespace ModuleMQTT
             envoiAuMQTT();
     }
 
-    void envoiAuMQTT()
-    { // Cette Fonction d'origine a été modifiée
-        unsigned long tps = millis();
-        int etat = 0; // utilisé pour l'envoie de l'état On/Off des actions.
-        
-        // vérifie si le client est connecté au serveur mqtt
-        assertConnected();
-        clientMQTT.loop();
-
-        if (!Discovered)
-        { //(uniquement au démarrage discovery = 0)
-            sendMQTTDiscoveryMsg_global();
-        }
-        SendDataToHomeAssistant(); // envoie du Payload au State topic
-        clientMQTT.loop();
+    // Callback  pour souscrire a un topic et  prévoir une action
+    void messageCallback(char *topic, byte *payload, unsigned int length)
+    {
+        String m = String("-------Nouveau message du broker mqtt. Non utilisé-----");
+        Serial.println(m);
+        ModuleDebug::getDebug().println(m);
     }
-
+    
     void assertConnected()
     {
         if (!clientMQTT.connected())
@@ -86,7 +77,7 @@ namespace ModuleMQTT
             ip_explode(MQTTIP, arr);
             String host = String(arr[3]) + "." + String(arr[2]) + "." + String(arr[1]) + "." + String(arr[0]);
             clientMQTT.setServer(host.c_str(), MQTTPort);
-            clientMQTT.setCallback(callback); // Déclaration de la fonction de souscription
+            clientMQTT.setCallback(messageCallback); // Déclaration de la fonction de souscription
             if (clientMQTT.connect(MQTTdeviceName, MQTTUser, MQTTPwd))
             { // si l'utilisateur est connecté au mqtt
                 String m = String(MQTTdeviceName) + " connecté";
@@ -102,16 +93,106 @@ namespace ModuleMQTT
         } // ici l'utilisateur est normalement connecté au mqtt
     }
 
-    // Callback  pour souscrire a un topic et  prévoir une action
-    void callback(char *topic, byte *payload, unsigned int length)
-    {
-        String m = String("-------Nouveau message du broker mqtt. Non utilisé-----");
-        Serial.println(m);
-        ModuleDebug::getDebug().println(m);
-    }
     //*************************************************************************
     //*          CONFIG OF DISCOVERY MESSAGE FOR HOME ASSISTANT  / DOMOTICZ             *
     //*************************************************************************
+
+    void DeviceToDiscover(String Name, String Unit, String Class, String Round)
+    {
+
+        String StateTopic = String(MQTTPrefix) + "/" + MQTTdeviceName + "_state";
+        DynamicJsonDocument doc(512); // this is the Payload json format
+        JsonObject device;            // for device object  "device": {}
+        JsonArray option;             // options (array) of this device
+        char buffer[512];
+        size_t n;
+        bool published;
+
+        String ESP_ID = WiFi.macAddress(); // The chip ID is essentially its MAC address.                                        // ID de l'entité pour HA
+        String DiscoveryTopic;             // nom du topic pour ce capteur
+
+        // DiscoveryTopic = ConfigTopic(Name, SSR, "config");
+        DiscoveryTopic = String(MQTTPrefix) + "/" + String(SSR) + "/" + String(MQTTdeviceName) + "_" + String(Name) + "/" + String("config");
+        doc["name"] = String(MQTTdeviceName) + " " + String(Name);    // concatenation des ID uniques des entités (capteurs ou commandes)
+        doc["uniq_id"] = String(MQTTdeviceName) + "_" + String(Name); // concatenation des Noms uniques des entités
+        doc["stat_t"] = StateTopic;
+        doc["unit_of_meas"] = Unit;
+        if (Unit == "Wh")
+        {
+            doc["state_class"] = "total_increasing";
+        }
+        doc["device_class"] = Class;
+        doc["val_tpl"] = "{{ value_json." + Name + "|default(0)| round(" + Round + ") }}";
+        device = doc.createNestedObject("device");
+        device["ids"][0] = ESP_ID; // identification unique sur Home Assistant (obligatoire).
+        device["cu"] = "http://" + WiFi.localIP().toString();
+        device["hw"] = String(ESP.getChipModel()) + " rev." + String(ESP.getChipRevision());
+        device["mf"] = "F1ATB - https://f1atb.fr";
+        device["mdl"] = "ESP32 - " + ESP_ID;
+        device["name"] = String(ModuleCore::getRouterName());
+        device["sw"] = RMS_VERSION;
+
+        n = serializeJson(doc, buffer);
+        published = clientMQTT.publish(DiscoveryTopic.c_str(), buffer, n);
+        doc.clear();
+        buffer[0] = '\0';
+    }
+
+    void DeviceBinToDiscover(String Name, String Titre)
+    {
+
+        String StateTopic = String(MQTTPrefix) + "/" + MQTTdeviceName + "_state";
+        DynamicJsonDocument doc(512); // this is the Payload json format
+        JsonObject device;            // for device object  "device": {}
+        JsonArray option;             // options (array) of this device
+        char buffer[512];
+        size_t n;
+        bool published;
+
+        String ESP_ID = WiFi.macAddress(); // The chip ID is essentially its MAC address.                                        // ID de l'entité pour HA
+        String DiscoveryTopic;             // nom du topic pour ce capteur
+
+        DiscoveryTopic = String(MQTTPrefix) + "/" + String(BINS) + "/" + String(MQTTdeviceName) + "_" + String(Name) + "/" + String("config");
+        doc["name"] = String(MQTTdeviceName) + " " + String(Titre);   // concatenation des ID uniques des entités (capteurs ou commandes)
+        doc["uniq_id"] = String(MQTTdeviceName) + "_" + String(Name); // concatenation des Noms uniques des entités
+        doc["stat_t"] = StateTopic;
+        doc["init"] = "OFF"; // default value
+        doc["ic"] = "mdi:electric-switch";
+        doc["val_tpl"] = "{{ value_json." + Name + " }}";
+        device = doc.createNestedObject("device");
+        device["ids"][0] = ESP_ID;
+        device["name"] = String(ModuleCore::getRouterName());
+        n = serializeJson(doc, buffer);
+        published = clientMQTT.publish(DiscoveryTopic.c_str(), buffer, n);
+        doc.clear();
+        buffer[0] = '\0';
+    }
+
+    void DeviceTextToDiscover(String Name, String Titre)
+    {
+        String StateTopic = String(MQTTPrefix) + "/" + MQTTdeviceName + "_state";
+        DynamicJsonDocument doc(512); // this is the Payload json format
+        JsonObject device;            // for device object  "device": {}
+        JsonArray option;             // options (array) of this device
+        char buffer[512];
+        size_t n;
+        bool published;
+        String ESP_ID = WiFi.macAddress(); // The chip ID is essentially its MAC address.                                        // ID de l'entité pour HA
+        String DiscoveryTopic;             // nom du topic pour ce capteur
+        DiscoveryTopic = String(MQTTPrefix) + "/" + String(SSR) + "/" + String(MQTTdeviceName) + "_" + String(Name) + "/" + String("config");
+        doc["name"] = String(MQTTdeviceName) + " " + String(Titre);   // concatenation des ID uniques des entités (capteurs ou commandes)
+        doc["uniq_id"] = String(MQTTdeviceName) + "_" + String(Name); // concatenation des Noms uniques des entités
+        doc["stat_t"] = StateTopic;
+        doc["device_class"] = "enum";
+        doc["val_tpl"] = "{{ value_json." + Name + " }}";
+        device = doc.createNestedObject("device");
+        device["ids"][0] = ESP_ID;
+        device["name"] = String(ModuleCore::getRouterName());
+        n = serializeJson(doc, buffer);
+        published = clientMQTT.publish(DiscoveryTopic.c_str(), buffer, n);
+        doc.clear();
+        buffer[0] = '\0';
+    }
 
     void sendMQTTDiscoveryMsg_global()
     {
@@ -171,105 +252,9 @@ namespace ModuleMQTT
 
     } // END OF sendMQTTDiscoveryMsg_global
 
-    void DeviceToDiscover(String Name, String Unit, String Class, String Round)
-    {
-
-        String StateTopic = String(MQTTPrefix) + "/" + MQTTdeviceName + "_state";
-        DynamicJsonDocument doc(512); // this is the Payload json format
-        JsonObject device;            // for device object  "device": {}
-        JsonArray option;             // options (array) of this device
-        char buffer[512];
-        size_t n;
-        bool published;
-
-        String ESP_ID = WiFi.macAddress(); // The chip ID is essentially its MAC address.                                        // ID de l'entité pour HA
-        String DiscoveryTopic;             // nom du topic pour ce capteur
-
-        // DiscoveryTopic = ConfigTopic(Name, SSR, "config");
-        DiscoveryTopic = String(MQTTPrefix) + "/" + String(SSR) + "/" + String(MQTTdeviceName) + "_" + String(Name) + "/" + String("config");
-        doc["name"] = String(MQTTdeviceName) + " " + String(Name);    // concatenation des ID uniques des entités (capteurs ou commandes)
-        doc["uniq_id"] = String(MQTTdeviceName) + "_" + String(Name); // concatenation des Noms uniques des entités
-        doc["stat_t"] = StateTopic;
-        doc["unit_of_meas"] = Unit;
-        if (Unit == "Wh")
-        {
-            doc["state_class"] = "total_increasing";
-        }
-        doc["device_class"] = Class;
-        doc["val_tpl"] = "{{ value_json." + Name + "|default(0)| round(" + Round + ") }}";
-        device = doc.createNestedObject("device");
-        device["ids"][0] = ESP_ID; // identification unique sur Home Assistant (obligatoire).
-        device["cu"] = "http://" + WiFi.localIP().toString();
-        device["hw"] = String(ESP.getChipModel()) + " rev." + String(ESP.getChipRevision());
-        device["mf"] = "F1ATB - https://f1atb.fr";
-        device["mdl"] = "ESP32 - " + ESP_ID;
-        device["name"] = String(ModuleCore::getRouterName());
-        device["sw"] = RMS_VERSION;
-
-        n = serializeJson(doc, buffer);
-        published = clientMQTT.publish(DiscoveryTopic.c_str(), buffer, n);
-        doc.clear();
-        buffer[0] = '\0';
-    }
-    void DeviceBinToDiscover(String Name, String Titre)
-    {
-
-        String StateTopic = String(MQTTPrefix) + "/" + MQTTdeviceName + "_state";
-        DynamicJsonDocument doc(512); // this is the Payload json format
-        JsonObject device;            // for device object  "device": {}
-        JsonArray option;             // options (array) of this device
-        char buffer[512];
-        size_t n;
-        bool published;
-
-        String ESP_ID = WiFi.macAddress(); // The chip ID is essentially its MAC address.                                        // ID de l'entité pour HA
-        String DiscoveryTopic;             // nom du topic pour ce capteur
-
-        DiscoveryTopic = String(MQTTPrefix) + "/" + String(BINS) + "/" + String(MQTTdeviceName) + "_" + String(Name) + "/" + String("config");
-        doc["name"] = String(MQTTdeviceName) + " " + String(Titre);   // concatenation des ID uniques des entités (capteurs ou commandes)
-        doc["uniq_id"] = String(MQTTdeviceName) + "_" + String(Name); // concatenation des Noms uniques des entités
-        doc["stat_t"] = StateTopic;
-        doc["init"] = "OFF"; // default value
-        doc["ic"] = "mdi:electric-switch";
-        doc["val_tpl"] = "{{ value_json." + Name + " }}";
-        device = doc.createNestedObject("device");
-        device["ids"][0] = ESP_ID;
-        device["name"] = String(ModuleCore::getRouterName());
-        n = serializeJson(doc, buffer);
-        published = clientMQTT.publish(DiscoveryTopic.c_str(), buffer, n);
-        doc.clear();
-        buffer[0] = '\0';
-    }
-
-    void DeviceTextToDiscover(String Name, String Titre)
-    {
-        String StateTopic = String(MQTTPrefix) + "/" + MQTTdeviceName + "_state";
-        DynamicJsonDocument doc(512); // this is the Payload json format
-        JsonObject device;            // for device object  "device": {}
-        JsonArray option;             // options (array) of this device
-        char buffer[512];
-        size_t n;
-        bool published;
-        String ESP_ID = WiFi.macAddress(); // The chip ID is essentially its MAC address.                                        // ID de l'entité pour HA
-        String DiscoveryTopic;             // nom du topic pour ce capteur
-        DiscoveryTopic = String(MQTTPrefix) + "/" + String(SSR) + "/" + String(MQTTdeviceName) + "_" + String(Name) + "/" + String("config");
-        doc["name"] = String(MQTTdeviceName) + " " + String(Titre);   // concatenation des ID uniques des entités (capteurs ou commandes)
-        doc["uniq_id"] = String(MQTTdeviceName) + "_" + String(Name); // concatenation des Noms uniques des entités
-        doc["stat_t"] = StateTopic;
-        doc["device_class"] = "enum";
-        doc["val_tpl"] = "{{ value_json." + Name + " }}";
-        device = doc.createNestedObject("device");
-        device["ids"][0] = ESP_ID;
-        device["name"] = String(ModuleCore::getRouterName());
-        n = serializeJson(doc, buffer);
-        published = clientMQTT.publish(DiscoveryTopic.c_str(), buffer, n);
-        doc.clear();
-        buffer[0] = '\0';
-    }
     //****************************************
     //* ENVOIE DES DATAS VERS HOME ASSISTANT *
     //****************************************
-
     void SendDataToHomeAssistant()
     {
         ModulePowerMeter::source_t source = ModulePowerMeter::getSource();
@@ -354,6 +339,23 @@ namespace ModuleMQTT
         buffer[0] = '\0';
 
     } // END SendDataToHomeAssistant
+
+    void envoiAuMQTT()
+    { // Cette Fonction d'origine a été modifiée
+        unsigned long tps = millis();
+        int etat = 0; // utilisé pour l'envoie de l'état On/Off des actions.
+        
+        // vérifie si le client est connecté au serveur mqtt
+        assertConnected();
+        clientMQTT.loop();
+
+        if (!Discovered)
+        { //(uniquement au démarrage discovery = 0)
+            sendMQTTDiscoveryMsg_global();
+        }
+        SendDataToHomeAssistant(); // envoie du Payload au State topic
+        clientMQTT.loop();
+    }
 
     // setters / getters
     void setRepeat(unsigned short repeat)

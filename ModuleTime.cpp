@@ -12,6 +12,8 @@
 
 namespace ModuleTime
 {
+    void time_sync_notification(struct timeval *tv);
+
     bool DATEvalid = false;
     const char *ntpServer1 = NTP_SERVER1;
     const char *ntpServer2 = NTP_SERVER2;
@@ -42,6 +44,12 @@ namespace ModuleTime
         }
     }
 
+    // Event once a day at the end of the day
+    void onNewDay()
+    {
+        ModuleStockage::onNewDay();
+    }
+
     time_t JourHeureChange()
     {
         if (!DATEvalid) return 0;
@@ -65,12 +73,6 @@ namespace ModuleTime
             DateCeJour = JourCourant;
         }
         return now;
-    }
-
-    // Event once a day at the end of the day
-    void onNewDay()
-    {
-        ModuleStockage::onNewDay();
     }
 
     // **************

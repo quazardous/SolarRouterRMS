@@ -94,7 +94,6 @@ namespace ModulePowerMeterShellyEm
             float total_E_injecte = HelperJson::ValJson("total_returned", Shelly_Data);
             p = Shelly_Data.indexOf("}");
             Shelly_Data = Shelly_Data.substring(p + 1);
-            float total_E_injecte = HelperJson::ValJson("total_returned", Shelly_Data);
             Pw = ModulePowerMeter::PMax(HelperJson::ValJson("power", Shelly_Data)); // Phase 2
             pf = HelperJson::ValJson("pf", Shelly_Data);
             pf = abs(pf);

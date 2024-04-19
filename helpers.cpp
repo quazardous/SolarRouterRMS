@@ -15,7 +15,7 @@ const char *ts2str(time_t timestamp, const char *format) {
     return buffer;
 }
 
-void ts2YmdHis(time_t timestamp, int *year = NULL, int *month = NULL, int *day = NULL, int *hour = NULL, int *minute = NULL, int *second = NULL) {
+void ts2YmdHis(time_t timestamp, int *year, int *month, int *day, int *hour, int *minute, int *second) {
     struct tm *pTime = localtime(&timestamp);
     if (year != NULL) {
         *year = pTime->tm_year + 1900;
@@ -52,7 +52,7 @@ void estimate_cpu_load(unsigned long msNow, cpu_load_t *load) {
         load->avg = deltaT * 0.001 + load->avg * 0.999;
 }
 
-float decimal_hour(time_t timestamp = 0)
+float decimal_hour(time_t timestamp)
 {
     if (timestamp == 0)
         timestamp = time(NULL);

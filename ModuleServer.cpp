@@ -12,6 +12,38 @@ namespace ModuleServer
     // Simple Web Server on port 80
     WebServer server(RMS_WEB_SERVER_PORT);
 
+    // in file ModuleServer_pages.cpp
+    void handleRoot();
+    void handleMainJS();
+    void handleBrute();
+    void handleBruteJS();
+    void handleActions();
+    void handleActionsJS();
+    void handlePara();
+    void handleParaJS();
+    void handleParaRouteurJS();
+    void handleNotFound();
+
+    // in file ModuleServer_ajax.cpp
+    void handleParaAjax();
+    void handleParaRouteurAjax();
+    void handleActionsAjax();
+    void handleAjaxHisto48h();
+    void handleAjaxHisto1an();
+    void handleAjaxRMS();
+    void handleAjaxESP32();
+    void handleAjaxData();
+    void handleAjaxData10mn();
+    void handleAjax_etatActions();
+    void handleAP_ScanWifi();
+
+    // in file ModuleServer_updates.cpp
+    void handleParaUpdate();
+    void handleActionsUpdate();
+    void handleSetGpio();
+    void handleRestart();
+    void handleAP_SetWifi();
+
     void setup()
     {
         // Init Web Server on port 80
@@ -49,37 +81,5 @@ namespace ModuleServer
     {
         server.handleClient();
     }
-
-    // in file ModuleServer_pages.cpp
-    void handleRoot();
-    void handleMainJS();
-    void handleBrute();
-    void handleBruteJS();
-    void handleActions();
-    void handleActionsJS();
-    void handlePara();
-    void handleParaJS();
-    void handleParaRouteurJS();
-    void handleNotFound();
-
-    // in file ModuleServer_ajax.cpp
-    void handleParaAjax();
-    void handleParaRouteurAjax();
-    void handleActionsAjax();
-    void handleAjaxHisto48h();
-    void handleAjaxHisto1an();
-    void handleAjaxRMS();
-    void handleAjaxESP32();
-    void handleAjaxData();
-    void handleAjaxData10mn();
-    void handleAjax_etatActions();
-    void handleAP_ScanWifi();
-
-    // in file ModuleServer_updates.cpp
-    void handleParaUpdate();
-    void handleActionsUpdate();
-    void handleSetGpio();
-    void handleRestart();
-    void handleAP_SetWifi();
 
 } // namespace ModuleServer

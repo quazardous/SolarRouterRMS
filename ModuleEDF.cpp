@@ -11,7 +11,9 @@
 #include "HelperJson.h"
 #include "helpers.h"
 
-namespace ModuleEDF {
+namespace ModuleEDF
+{
+    void Call_EDF_data();
 
     WiFiClientSecure clientSecuEDF;
     int LastHeureEDF = -1;

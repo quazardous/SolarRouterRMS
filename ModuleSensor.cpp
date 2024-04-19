@@ -7,6 +7,8 @@
 
 namespace ModuleSensor
 {
+    void gaugeTemperature();
+    
     unsigned long mtsLastTempTock;
 
     // Température Capteur DS18B20
