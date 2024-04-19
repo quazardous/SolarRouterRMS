@@ -7,6 +7,8 @@
 #include "ModuleDebug.h"
 #include "ModuleEDF.h"
 #include "hardware.h"
+#include "rms.h"
+#include <WebServer.h>
 
 namespace ModulePowerMeterLinky
 {
@@ -269,6 +271,19 @@ namespace ModulePowerMeterLinky
                 break;
             }
         }
+    }
+
+    // web handlers
+    void httpAjaxRMS(WebServer& server, String& S) {
+        int LastIdx = server.arg(0).toInt();
+        String GS = RMS_GS;
+        S += GS;
+        while (LastIdx != IdxDataRawLinky)
+        {
+            S += String(DataRawLinky[LastIdx]);
+            LastIdx = (1 + LastIdx) % 10000;
+        }
+        S += GS + String(IdxDataRawLinky); 
     }
 
 } // namespace ModulePowerMeterLinky

@@ -150,7 +150,11 @@ namespace ModuleEDF {
     // setters / getters
     void setTempo(bool tempo)
     {
-        TempoEDFon = tempo;
+        if (TempoEDFon != tempo) {
+            TempoEDFon = tempo;
+            // force a refresh if changed
+            LastHeureEDF = -1;
+        }
     }
     bool getTempo()
     {

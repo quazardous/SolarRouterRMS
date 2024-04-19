@@ -7,8 +7,11 @@
 #include "ModulePowerMeterSmartG.h"
 #include "ModulePowerMeterShellyEm.h"
 #include "ModulePowerMeterProxy.h"
+#include "ModuleTime.h"
 #include "helpers.h"
-#include <stdarg.h>
+#include "rms.h"
+// for variable params ?
+// #include <stdarg.h>
 
 // Watchdog de 180 secondes. Le systeme se Reset si pas de dialoque avec le LINKY ou JSY-MK-194T ou Enphase-Envoye pendant 180s
 // Watchdog for 180 seconds. The system resets if no dialogue with the Linky or JSY-MK-194T or Enphase-Envoye for 180s
@@ -27,7 +30,7 @@ namespace ModulePowerMeter
     bool EnergieActiveValide = false;
     source_t activeSource = SOURCE_UXI;
     // Real source used after proxy
-    source_t activeSourceSource = SOURCE_UXI;
+    source_t activeDataSource = SOURCE_UXI;
 
     cpu_load_t cpuLoad0;
     unsigned long variableThrottle = 1000;
@@ -57,7 +60,7 @@ namespace ModulePowerMeter
         //Adaptation à la Source
         Serial.println("Source : " + String(getSourceName()));
 
-        activeSourceSource = activeSource;
+        activeDataSource = activeSource;
         switch (activeSource)
         {
         case SOURCE_UXI:
@@ -80,7 +83,7 @@ namespace ModulePowerMeter
             break;
         case SOURCE_PROXY:
             ModulePowerMeterProxy::setup();
-            activeSourceSource = ModulePowerMeterProxy::getProxySource();
+            activeDataSource = ModulePowerMeterProxy::getProxySource();
             break;
         }
 
@@ -271,10 +274,28 @@ namespace ModulePowerMeter
         return activeSource;
     }
     void setSourceByName(const char *name) {
-        activeSource = getSourceFromName(name);
+        source_t source = getSourceFromName(name);
+        setSource(source);
+    }
+    void setSource(const source_t source) {
+        if (source == activeSource) {
+            return;
+        }
+        activeSource = source;
+        if (activeSource == SOURCE_PROXY) {
+            activeDataSource = SOURCE_NONE;
+        } else {
+            activeDataSource = source;
+        }
     }
     const char *getSourceName() {
         return sourceNames[(int) activeSource];
+    }
+    const source_t getDataSource() {
+        return activeDataSource;
+    }
+    const char *getDataSourceName() {
+        return sourceNames[(int) activeDataSource];
     }
     void setExtIp(unsigned long ip) {
         RMSextIP = ip;
@@ -376,5 +397,51 @@ namespace ModulePowerMeter
             instVaPowerOut = 0;
         }
         return power;
+    }
+
+    // handlers
+    void httpAjaxRMS(WebServer& server, String& S)
+    {
+        // Envoi des dernières données  brutes reçues du RMS
+        S = "";
+        
+        const char *sourceName = getSourceName();
+
+        if (activeSource == ModulePowerMeter::SOURCE_PROXY)
+        {
+            ModulePowerMeterProxy::httpAjaxRMS(server, S);
+            return;
+        }
+
+        String RS = RMS_RS;
+        time_t now = time(NULL);
+        String DATE = String(ts2str(now, "%Y-%m-%d %H:%M:%S"));
+        S = DATE + RS + String(sourceName);
+        switch (activeSource)
+        {
+        case ModulePowerMeter::SOURCE_UXI:
+            ModulePowerMeterUxI::httpAjaxRMS(server, S);
+            break;
+
+        case ModulePowerMeter::SOURCE_UXIX2:
+            ModulePowerMeterUxIx2::httpAjaxRMS(server, S);
+            break;
+
+        case ModulePowerMeter::SOURCE_LINKY:
+            ModulePowerMeterLinky::httpAjaxRMS(server, S);
+            break;
+
+        case ModulePowerMeter::SOURCE_ENPHASE:
+            ModulePowerMeterEnphase::httpAjaxRMS(server, S);
+            break;
+
+        case ModulePowerMeter::SOURCE_SMARTG:
+            ModulePowerMeterSmartG::httpAjaxRMS(server, S);
+            break;
+
+        case ModulePowerMeter::SOURCE_SHELLYEM:
+            ModulePowerMeterShellyEm::httpAjaxRMS(server, S);
+            break;
+        }
     }
 } // namespace ModulePowerMeter

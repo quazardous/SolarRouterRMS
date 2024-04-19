@@ -23,3 +23,6 @@ void estimate_cpu_load(unsigned long mtsNow, cpu_load_t *load);
 float decimal_hour(time_t timestamp = 0);
 
 void ip_explode(unsigned long ip, byte *octets);
+
+int count_chars(const char* str, char target);
+

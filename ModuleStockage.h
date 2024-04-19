@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <WebServer.h>
 
 #define RMS_EEPROM_KEY 812567808 // Valeur pour tester si ROM vierge ou pas. Un changement de valeur remet à zéro toutes les données. / Value to test whether blank ROM or not.
 
@@ -19,16 +20,20 @@
 #define RMS_POWER_HISTORY_SIZE_5MIN 600
 #define RMS_POWER_HISTORY_SIZE_2SEC 300
 
+/**
+ * Stockage / EEPROM management
+ */
 namespace ModuleStockage
 {
-    String GS = String((char)29);  //Group Separator
-    String RS = String((char)30);  //Record Separator
-
     void setup();
     void loopTimer(unsigned long mtsNow);
     void loop(unsigned long msLoop);
     // events
     void onNewDay();
+
+    // helpers
+    int LectureEnROM();
+    int EcritureEnROM();
 
     // states
     byte getEepromUsage();
@@ -39,4 +44,10 @@ namespace ModuleStockage
     long *getHistoEnergy();
     int getHistoEnergyIdx();
 
+    // web handlers
+    void httpAjaxHisto48h(WebServer& server, String& S);
+    void httpAjaxHisto10mn(WebServer& server, String& S);
+    void httpAjaxHistoriqueEnergie1An(WebServer& server, String& S);
+    void httpAjaxPara(WebServer& server, String& S);
+    void httpUpdatePara(WebServer& server, String& S);
 } // namespace ModuleStockage

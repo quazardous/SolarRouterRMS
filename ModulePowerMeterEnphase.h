@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <WebServer.h>
 
 namespace ModulePowerMeterEnphase
 {
@@ -16,4 +17,7 @@ namespace ModulePowerMeterEnphase
     const char *getPwd();
     void setSerial(unsigned long serial);
     unsigned long getSerial();
+
+    // web handlers
+    void httpAjaxRMS(WebServer& server, String& S);
 }

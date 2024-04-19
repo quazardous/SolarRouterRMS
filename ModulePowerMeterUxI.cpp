@@ -5,7 +5,7 @@
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterUxI.h"
 #include "ModuleHardware.h"
-#include "ModulePowerMeter.h"
+#include "rms.h"
 
 namespace ModulePowerMeterUxI
 {
@@ -106,6 +106,38 @@ namespace ModulePowerMeterUxI
         ModulePowerMeter::signalSourceValid();
         ModulePowerMeter::ping();
         ModuleHardware::resetConnectivityLed();
+    }
+
+    // web handlers
+    void httpAjaxRMS(WebServer& server, String& S)
+    {
+        String GS = RMS_GS;
+        String RS = RMS_RS;
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
+        S += RS + String(elecDataHouse->voltage) + RS + String(elecDataHouse->current) + RS + String(elecDataHouse->powerFactor) + GS;
+        int i0 = 0;
+        int i1 = 0;
+        for (int i = 0; i < 100; i++)
+        {
+            i1 = (i + 1) % 100;
+            if (voltM[i] <= 0 && voltM[i1] > 0)
+            {
+                i0 = i1; // Point de départ tableau . Phase positive
+                i = 100;
+            }
+        }
+        for (int i = 0; i < 100; i++)
+        {
+            i1 = (i + i0) % 100;
+            S += String(int(10 * voltM[i1])) + RS; // Voltages*10. Increase dynamic
+        }
+        S += "0" + GS;
+        for (int i = 0; i < 100; i++)
+        {
+            i1 = (i + i0) % 100;
+            S += String(int(10 * ampM[i1])) + RS; // Currents*10
+        }
+        S += "0";
     }
 
 } // namespace ModulePowerMeterUxi

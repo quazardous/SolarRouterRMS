@@ -256,7 +256,7 @@ xhttp.onreadystatechange = function() {
       H=H.toFixed(2);
       H=H.replace(".", "h ")+"mn";
       var LaSource=Source;
-      if (LaSource=='Ext') LaSource="Externe ("+Source_data+")<br>" +int2ip(RMSextIP);
+      if (LaSource=='Proxy') LaSource="Externe ("+Source_data+")<br>" +int2ip(RMSextIP);
       S+='<tr><td>ESP On depuis :</td><td>'+H+'</td></tr>';
       S+='<tr><td>Source des mesures :</td><td>'+LaSource+'</td></tr>';
       S+='<tr><td>Niveau WiFi :</td><td>'+message[1]+' dBm</td></tr>';
@@ -293,7 +293,7 @@ function LaVal(d){
   return d.substr(-9,3)+' '+d.substr(-6,3)+' '+d.substr(-3,3);
 }
 function AdaptationSource(){
-if(Source=="Ext"){
+if(Source=="Proxy"){
   GID("donneeDistante").style.display="block";
 }
 LoadData();LoadDataESP32();

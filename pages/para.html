@@ -38,8 +38,8 @@
         <input type='radio' name='sources' id='SmartG' value="SmartG"  onclick="checkDisabled();">
         <label for='ShellyEm' style='text-align:right;'>Shelly Em</label>
         <input type='radio' name='sources' id='ShellyEm' value="ShellyEm"  onclick="checkDisabled();">
-        <label for='Ext' style='text-align:right;'>ESP Externe</label>
-        <input type='radio' name='sources' id='Ext' value="Ext"  onclick="checkDisabled();">
+        <label for='Proxy' style='text-align:right;'>ESP Externe</label>
+        <input type='radio' name='sources' id='Proxy' value="Proxy"  onclick="checkDisabled();">
       </div>
       <div><span class='fsize10'>N&eacute;cessite un Reset de l'ESP32</span></div>
     </div>
@@ -57,8 +57,12 @@
         <input type='password' name='EnphasePwd' id='EnphasePwd' >
       </div>
       <div class='ligne' id="ligneEnphaseSerial">
-        <label for='EnphaseSerial' id="label_enphase_shelly"></label>
+        <label for='EnphaseSerial'>Numéro série passerelle IQ Enphase : <span class='fsize10'><br>Pour firmvare Envoy-S V7 seulement</span></label>
         <input type='text' name='EnphaseSerial' id='EnphaseSerial' onchange='checkDisabled();'>
+      </div>
+      <div class='ligne' id="ligneShellyEmPhases">
+        <label for='ShellyEmPhases'>Monophasé : Numéro de voie (0 ou 1) mesurant l'entrée du courant maison<br>Triphasé : mettre 3</label>
+        <input type='text' name='ShellyEmPhases' id='ShellyEmPhases' onchange='checkDisabled();'>
       </div>
       <br>
       <div class='ligne boldT'>

@@ -4,7 +4,7 @@
 namespace ModuleDebug
 {
     RemoteDebug Debug;
-    String Message[4];
+    String Message[RMS_DEBUG_STOCK_MESSAGES];
     int idxMessage = 0;
     
     void setup()
@@ -27,7 +27,7 @@ namespace ModuleDebug
         String message = DATE + " : " + m;
         Serial.println(message);
         Message[idxMessage] = message;
-        idxMessage = (idxMessage + 1) % 4;
+        idxMessage = (idxMessage + 1) % RMS_DEBUG_STOCK_MESSAGES;
     }
 
     void stockMessage(const char *m)
@@ -36,7 +36,7 @@ namespace ModuleDebug
         String message = DATE + " : " + String(m);
         Serial.println(message);
         Message[idxMessage] = message;
-        idxMessage = (idxMessage + 1) % 4;
+        idxMessage = (idxMessage + 1) % RMS_DEBUG_STOCK_MESSAGES;
     }
 
     String* getMessages()
@@ -59,5 +59,10 @@ namespace ModuleDebug
     {
         stockMessage(m);
         Debug.println(m);
+    }
+
+    int getMessageIdx()
+    {
+        return idxMessage;
     }
 } // namespace ModuleDebug

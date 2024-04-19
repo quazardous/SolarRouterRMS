@@ -2,7 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v8.07] - 2024-04-07
+## [v8.06ng] - 2024-04-07
 
 ### Refactor
 - Added a script to compile html/js into C++ code
+
+## [v8.06ng2] - 2024-04-18
+
+### Refactor
+- Split code in modules using namespaces
+- Create mapped setter/getter

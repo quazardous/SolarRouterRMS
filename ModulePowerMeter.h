@@ -1,8 +1,10 @@
 #pragma once
 
 #include <Arduino.h>
+#include <WebServer.h>
 #include "helpers.h"
 
+#define RMS_POWER_METER_SOURCE_NONE "*NONE*"
 #define RMS_POWER_METER_SOURCE_ENPHASE "Enphase"
 #define RMS_POWER_METER_SOURCE_LINKY "Linky"
 #define RMS_POWER_METER_SOURCE_PROXY "Proxy"
@@ -10,11 +12,12 @@
 #define RMS_POWER_METER_SOURCE_SMARTG "SmartG"
 #define RMS_POWER_METER_SOURCE_UXI "UxI"
 #define RMS_POWER_METER_SOURCE_UXIX2 "UxIx2"
-#define RMS_POWER_METER_SOURCE_ERROR "ERROR"
+#define RMS_POWER_METER_SOURCE_ERROR "*ERROR*"
 
 namespace ModulePowerMeter
 {
     enum source_t {
+        SOURCE_NONE = 0,
         SOURCE_ENPHASE,
         SOURCE_LINKY,
         SOURCE_PROXY,
@@ -30,6 +33,7 @@ namespace ModulePowerMeter
     };
 
     const char *sourceNames[] = {
+        RMS_POWER_METER_SOURCE_NONE,
         RMS_POWER_METER_SOURCE_ENPHASE,
         RMS_POWER_METER_SOURCE_LINKY,
         RMS_POWER_METER_SOURCE_PROXY,
@@ -74,6 +78,8 @@ namespace ModulePowerMeter
     // getters / setters
     const source_t getSource();
     const char *getSourceName();
+    const source_t getDataSource();
+    const char *getDataSourceName();
     void setSourceByName(const char *name);
     void setExtIp(unsigned long ip);
     unsigned long getExtIp();
@@ -91,16 +97,12 @@ namespace ModulePowerMeter
     const cpu_load_t *getCpuLoad0();
     bool sourceIsValid();
     
-    float getPower(bool house = true);
-    
-    float getVAPower(bool house = true);
-
     // power in Watt, < 0 if power is produced/injected, > 0 if power is consumed
     float getPower(domain_t domain = DOMAIN_HOUSE);
     // apparent power in VA
     float getVAPower(domain_t domain = DOMAIN_HOUSE);
     float getEnergy(domain_t domain = DOMAIN_HOUSE);
-    
+
     float inPower(domain_t domain = DOMAIN_HOUSE);
     float outPower(domain_t domain = DOMAIN_HOUSE);
     float inVAPower(domain_t domain = DOMAIN_HOUSE);
@@ -112,4 +114,7 @@ namespace ModulePowerMeter
     int PMax(int Pin);
     long PMax(long Pin);
     void powerFilter();
+
+    // handlers
+    void httpAjaxRMS(WebServer& server, String& S);
 } // namespace ModulePowerMeter

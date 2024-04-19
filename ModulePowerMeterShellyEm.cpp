@@ -7,6 +7,7 @@
 #include "ModuleWifi.h"
 #include "ModuleHardware.h"
 #include "HelperJson.h"
+#include "rms.h"
 
 namespace ModulePowerMeterShellyEm
 {
@@ -249,5 +250,11 @@ namespace ModulePowerMeterShellyEm
     unsigned short getPhasesNumber()
     {
         return phasesNumber;
+    }
+
+    // web handlers
+    void httpAjaxRMS(WebServer& server, String& S) {
+        String GS = RMS_GS;
+        S += GS + ShEm_dataBrute;
     }
 } // namespace ModulePowerMeterShellyEm

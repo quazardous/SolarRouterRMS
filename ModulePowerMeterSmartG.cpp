@@ -9,6 +9,7 @@
 #include "HelperJson.h"
 #include "helpers.h"
 #include <WiFi.h>
+#include "rms.h"
 
 namespace ModulePowerMeterSmartG
 {
@@ -81,4 +82,9 @@ namespace ModulePowerMeterSmartG
         ModuleHardware::resetConnectivityLed();
     }
 
+    // web handlers
+    void httpAjaxRMS(WebServer& server, String& S) {
+        String GS = RMS_GS;
+        S += GS + SG_dataBrute;
+    }
 } // namespace ModulePowerMeterSmartG

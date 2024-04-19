@@ -7,6 +7,7 @@
 #include <UrlEncode.h>
 #include <WiFiClientSecure.h>
 #include "HelperJson.h"
+#include "rms.h"
 
 #define RMS_POWER_METER_ENPHASE_SESSION_SERVER "enlighten.enphaseenergy.com"
 #define RMS_POWER_METER_ENPHASE_TOKEN_SERVER "entrez.enphaseenergy.com"
@@ -322,5 +323,37 @@ namespace ModulePowerMeterEnphase
     unsigned long getSerial()
     {
         return EnphaseSerial;
+    }
+
+    // web handlers
+    void httpAjaxRMS(WebServer& server, String& S) {
+        String GS = RMS_GS;
+        String RS = RMS_RS;
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
+        S += GS + String(elecDataHouse->voltage) 
+            + RS + String(elecDataHouse->current) 
+            + RS + String(elecDataHouse->powerIn - elecDataHouse->powerOut) 
+            + RS + String(elecDataHouse->powerFactor) 
+            + RS + String(elecDataHouse->energyIn) 
+            + RS + String(elecDataHouse->energyOut);
+        S += RS + String(PactProd) + RS + String(PactConso_M);
+        String msgSessionId = "Not Received from Enphase";
+        if (Session_id[0] != '\0')
+        {
+            msgSessionId = "Ok Received from Enphase";
+        }
+        String msgTokenEnphase = "Not Received from Enphase";
+        if (strlen(EnphaseToken) > 50)
+        {
+            msgTokenEnphase = "Ok Received from Enphase";
+        }
+        if (EnphaseUser[0] == '\0')
+        {
+            msgSessionId = "Not Requested";
+            msgTokenEnphase = "Not Requested";
+        }
+        S += RS + msgSessionId;
+
+        S += RS + msgTokenEnphase;
     }
 } // namespace ModulePowerMeterEnphase

@@ -70,3 +70,13 @@ void ip_explode(unsigned long ip, byte *octets)
     octets[2] = (ip >> 16) & 0xFF;
     octets[3] = (ip >> 24) & 0xFF;
 }
+
+int count_chars(const char* str, char target) {
+    int count = 0;
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] == target) {
+            count++;
+        }
+    }
+    return count;
+}

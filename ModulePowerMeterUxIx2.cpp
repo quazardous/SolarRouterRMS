@@ -6,6 +6,7 @@
 #include "ModulePowerMeterUxIx2.h"
 #include "ModuleHardware.h"
 #include "hardware.h"
+#include "rms.h"
 
 namespace ModulePowerMeterUxIx2
 {
@@ -126,5 +127,26 @@ namespace ModulePowerMeterUxIx2
             ModulePowerMeter::ping();
             ModuleHardware::resetConnectivityLed();
         }
+    }
+
+    // web handlers
+    void httpAjaxRMS(WebServer& server, String& S) {
+        String RS = RMS_RS;
+        String GS = RMS_GS;
+        ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();
+        ModulePowerMeter::electric_data_t *elecDataTriac = ModulePowerMeter::getElectricData(ModulePowerMeter::DOMAIN_TRIAC);
+        S += GS + String(elecDataHouse->voltage) 
+            + RS + String(elecDataHouse->current) 
+            + RS + String(elecDataHouse->powerIn - elecDataHouse->powerOut) 
+            + RS + String(elecDataHouse->powerFactor) 
+            + RS + String(elecDataHouse->energyIn) 
+            + RS + String(elecDataHouse->energyOut);
+        S += RS + String(elecDataTriac->voltage) 
+            + RS + String(elecDataTriac->current) 
+            + RS + String(elecDataTriac->powerIn - elecDataTriac->powerOut) 
+            + RS + String(elecDataTriac->powerFactor) 
+            + RS + String(elecDataTriac->energyIn) 
+            + RS + String(elecDataTriac->energyOut);
+        S += RS + String(elecDataTriac->frequency);     
     }
 } // namespace ModulePowerMeterUxIx2

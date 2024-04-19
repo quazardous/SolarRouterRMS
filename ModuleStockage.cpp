@@ -11,10 +11,15 @@
 #include "ModuleTime.h"
 #include "ModuleMQTT.h"
 #include "ModuleRomMap.h"
+#include "ModuleElemMap.h"
 #include "helpers.h"
+#include "rms.h"
 
 namespace ModuleStockage
 {
+    String GS = RMS_GS;  //Group Separator
+    String RS = RMS_RS;  //Record Separator
+
     long histoEnergy[RMS_EEPROM_HISTO_RANGE];
     unsigned long Cle_ROM;
     unsigned long previousHistoryTock;
@@ -203,11 +208,12 @@ namespace ModuleStockage
         return EEPROM.readULong(RMS_EEPROM_OFFSET_PARAMS);
     }
 
-    void LectureEnROM()
+    int LectureEnROM()
     {
         int address = RMS_EEPROM_OFFSET_PARAMS;
         address = ModuleRomMap::readParameters(address);
         eepromUsage(address);
+        return address;
     }
     int EcritureEnROM()
     {
@@ -291,5 +297,151 @@ namespace ModuleStockage
     unsigned long getEepromKey()
     {
         return Cle_ROM;
+    }
+
+    // web handlers
+    // Envoi Historique de 50h (600points) toutes les 5mn
+    void httpAjaxHisto48h(WebServer& server, String& S) {
+        String GS = RMS_GS;
+        String RS = RMS_RS;
+        String HouseH = "";
+        String TriacH = "";
+        String TempH = "";
+        int iS = IdxStockPW;
+        for (int i = 0; i < RMS_POWER_HISTORY_SIZE_5MIN; i++)
+        {
+            HouseH += String(tabPw_Maison_5mn[iS]) + ",";
+            TriacH += String(tabPw_Triac_5mn[iS]) + ",";
+            TempH += String(tabTemperature_5mn[iS]) + ",";
+            iS = (1 + iS) % RMS_POWER_HISTORY_SIZE_5MIN;
+        }
+        // String Ouverture = "";
+        //   for (int i = 0; i < NbActions; i++) {
+        //     if ((LesActions[i].Actif > 0) && (ITmode > 0 || i > 0)) {
+        //     iS = IdxStockPW;
+        //     if (LesActions[i].Actif > 0) {
+        //         Ouverture += GS;
+        //         for (int j = 0; j < 600; j++) {
+        //         Ouverture += String(tab_histo_ouverture[i][iS]) + RS;
+        //         iS = (1 + iS) % 600;
+        //         }
+        //         Ouverture += LesActions[i].Titre;
+        //     }
+        //     }
+        // }
+        S = String(ModulePowerMeter::getDataSourceName()) 
+            + GS + HouseH
+            + GS + TriacH
+            + GS + String(ModuleSensor::getTemperature())
+            + GS + TempH;
+    }
+
+    void httpAjaxHisto10mn(WebServer& server, String& S) {
+        // Envoi Historique de 10mn (300points)Energie Active Soutiré - Injecté
+        String H = "";
+        String T = "";
+        int iS = IdxStock2s;
+        for (int i = 0; i < RMS_POWER_HISTORY_SIZE_2SEC; i++)
+        {
+            H += String(tabPw_Maison_2s[iS]) + ",";
+            H += String(tabPva_Maison_2s[iS]) + ",";
+            T += String(tabPw_Triac_2s[iS]) + ",";
+            T += String(tabPva_Triac_2s[iS]) + ",";
+            iS = (1 + iS) % RMS_POWER_HISTORY_SIZE_2SEC;
+        }
+        const char *dataSource = ModulePowerMeter::getDataSourceName();
+        S = String(dataSource) + GS + H + GS + T;
+    }
+
+    void httpAjaxHistoriqueEnergie1An(WebServer& server, String& S)
+    {
+        String S = "";
+        int Adr_SoutInjec = 0;
+        long EnergieJour = 0;
+        long DeltaEnergieJour = 0;
+        int iS = 0;
+        long lastDay = 0;
+
+        for (int i = 0; i < RMS_EEPROM_HISTO_RANGE; i++)
+        {
+            // from today
+            iS = (idxPromDuJour + i + 1) % RMS_EEPROM_HISTO_RANGE;
+            EnergieJour = histoEnergy[iS];
+            if (lastDay == 0)
+            {
+                lastDay = EnergieJour;
+            }
+            DeltaEnergieJour = EnergieJour - lastDay;
+            lastDay = EnergieJour;
+            S += String(DeltaEnergieJour) + ",";
+        }
+    }
+
+    using ModuleElemMap::elem_map_t;
+    using ModuleElemMap::elem_type_t;
+    #define RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM, TYPE, Elem, Type) \
+        {ModuleElemMap::ELEM, ModuleElemMap:: ## TYPE, {.set ## Type = ModuleElemMap::elemSet ## Elem}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 0}
+    #define RMS_STOCKAGE_AJAX_PARAM_READ(ELEM, TYPE, Elem, Type) \
+        {ModuleElemMap::ELEM, ModuleElemMap:: ## TYPE, {.set ## Type = NULL}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 1}
+
+    elem_map_t ajax_params_map[] = {
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_DHCP_ON, TYPE_BOOL, DhcpOn, Bool),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_STATIC_IP, TYPE_ULONG, StaticIp, ULong),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_GATEWAY, TYPE_ULONG, Gateway, ULong),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_NETMASK, TYPE_ULONG, Netmask, ULong),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_DNS, TYPE_ULONG, Dns, ULong),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_SOURCE, TYPE_CSTRING, Source, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_EXT_IP, TYPE_ULONG, ExtIp, ULong),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_ENPHASE_USER, TYPE_CSTRING, EnphaseUser, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_ENPHASE_PWD, TYPE_CSTRING, EnphasePwd, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_ENPHASE_SERIAL, TYPE_ULONG, EnphaseSerial, ULong),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_SHELLYEM_PHASES, TYPE_USHORT, ShellyEmPhases, UShort),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MQTT_REPEAT, TYPE_USHORT, MqttRepeat, UShort),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MQTT_IP, TYPE_ULONG, MqttIp, ULong),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MQTT_PORT, TYPE_USHORT, MqttPort, UShort),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MQTT_USER, TYPE_CSTRING, MqttUser, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MQTT_PWD, TYPE_CSTRING, MqttPwd, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MQTT_PREFIX, TYPE_CSTRING, MqttPrefix, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MQTT_DEVICE_NAME, TYPE_CSTRING, MqttDeviceName, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_ROUTER_NAME, TYPE_CSTRING, RouterName, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_FIX_PROBE_NAME, TYPE_CSTRING, FixProbeName, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_MOBILE_PROBE_NAME, TYPE_CSTRING, MobileProbeName, CString),
+        RMS_STOCKAGE_AJAX_PARAM_READ(ELEM_TEMPERATURE, TYPE_FLOAT, Temperature, Float),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_TEMPERATURE_NAME, TYPE_CSTRING, TemperatureName, CString),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_CALIB_U, TYPE_USHORT, CalibU, UShort),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_CALIB_I, TYPE_USHORT, CalibI, UShort),
+        RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_TEMPO_EDF_ON, TYPE_BOOL, TempoEdfOn, Bool),
+    };
+    const int ajax_params_map_size = sizeof(ajax_params_map) / sizeof(elem_map_t);
+
+    void httpAjaxPara(WebServer& server, String& S) {
+        
+        S = "";
+        for (int i = 0; i < ajax_params_map_size; i++)
+        {
+            if (i > 0) S += RS;
+            S += ModuleElemMap::e2s(&ajax_params_map[i]);
+        }
+    }
+
+    void httpUpdatePara(WebServer& server, String& S) {
+        String lesparas = server.arg("lesparas") + RS;
+        if (count_chars(lesparas.c_str(), RS[0]) != (ajax_params_map_size - 1))
+        {
+            S = "ERR";
+            return;
+        }
+
+        for (int i = 0; i < ajax_params_map_size; i++)
+        {
+            elem_map_t* e = &ajax_params_map[i];
+            if (e->readonly)
+                continue;
+            String val = lesparas.substring(0, lesparas.indexOf(RS));
+            val.trim();
+            ModuleElemMap::s2e(e, val);
+        }
+        int adresse_max = EcritureEnROM();
+        S = "OK" + String(adresse_max);
     }
 } // namespace ModuleStockage

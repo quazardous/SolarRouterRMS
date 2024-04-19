@@ -2,7 +2,9 @@
 #include "ModuleDebug.h"
 #include "ModuleCore.h"
 #include "ModuleHardware.h"
+#include "ModuleStockage.h"
 #include "config.h"
+#include "rms.h"
 
 namespace ModuleWifi
 {
@@ -169,5 +171,82 @@ namespace ModuleWifi
     }
     void setDns(unsigned long d) {
         dns = d;
+    }
+
+    // web handlers
+    void httpAjaxScanWifi(WebServer& server, String& S) {
+        String RS = RMS_RS;
+        String GS = RMS_GS;
+        resetWifiBug();
+
+        Serial.println("Scan start");
+
+        // WiFi.scanNetworks will return the number of networks found.
+        int n = WiFi.scanNetworks();
+        Serial.println("Scan done");
+        S = "";
+        if (n == 0)
+        {
+            WiFi.scanDelete();
+            Serial.println("Pas de réseau Wifi trouvé");
+            return;
+        }
+        Serial.print(n);
+        Serial.println(" réseaux trouvés");
+        Serial.println("Nr | SSID                             | RSSI | CH | Encryption");
+        for (int i = 0; i < n; ++i)
+        {
+            // Print SSID and RSSI for each network found
+            Serial.printf("%2d", i + 1);
+            Serial.print(" | ");
+            Serial.printf("%-32.32s", WiFi.SSID(i).c_str());
+            Serial.print(" | ");
+            Serial.printf("%4d", WiFi.RSSI(i));
+            Serial.println();
+            S += WiFi.SSID(i).c_str() + RS + WiFi.RSSI(i) + GS;
+        }
+        WiFi.scanDelete();
+    }
+
+    void httpUpdateWifi(WebServer& server, String& S) {
+        String RS = RMS_RS;
+        String GS = RMS_GS;
+        ModuleWifi::resetWifiBug();
+        Serial.println("Set Wifi");
+        String NewSsid = server.arg("ssid");
+        NewSsid.trim();
+        String NewPassword = server.arg("passe");
+        NewPassword.trim();
+        Serial.println(NewSsid);
+        Serial.println(NewPassword);
+        setWifiSsid(NewSsid.c_str());
+        setWifiPassword(NewPassword.c_str());
+        ModuleDebug::stockMessage("Wifi Begin : " + NewSsid);
+        WiFi.begin(ssid, password);
+        unsigned long newstartMillis = millis();
+        while (WiFi.status() != WL_CONNECTED && (millis() - newstartMillis < 15000))
+        {
+            // Attente connexion au Wifi
+            Serial.write('.');
+            ModuleHardware::Gestion_LEDs();
+            Serial.print(WiFi.status());
+            delay(300);
+        }
+        S = "";
+        if (WiFi.status() == WL_CONNECTED)
+        {
+            Serial.print("IP address: ");
+            Serial.println(WiFi.localIP());
+            String IP = WiFi.localIP().toString();
+            S = "Ok" + RS;
+            S += "ESP 32 connecté avec succès au wifi : " + NewSsid + " avec l'adresse IP : " + IP;
+            S += "<br><br> Connectez vous au wifi : " + NewSsid;
+            S += "<br><br> Cliquez sur l'adresse : <a href='http://" + IP + "' >http://" + IP + "</a>";
+            ModuleStockage::EcritureEnROM();
+        }
+        else
+        {
+            S = "No" + RS + "ESP32 non connecté à :" + ssid + "<br>";
+        }
     }
 } // namespace ModuleWifi

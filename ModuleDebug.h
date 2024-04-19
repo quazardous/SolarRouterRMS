@@ -3,6 +3,8 @@
 #include <Arduino.h>
 #include <RemoteDebug.h>
 
+#define RMS_DEBUG_STOCK_MESSAGES 4
+
 // Debug via Wifi and logs
 namespace ModuleDebug
 {
@@ -12,6 +14,7 @@ namespace ModuleDebug
 
     // getters / setters
     String* getMessages();
+    int getMessageIdx();
     RemoteDebug &getDebug();
 
     // helpers

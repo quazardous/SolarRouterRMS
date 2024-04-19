@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <WebServer.h>
 
 namespace ModuleWifi
 {
@@ -35,4 +36,8 @@ namespace ModuleWifi
     bool isStationMode();
     bool hasInternet();
     unsigned int getWifiBug();
+
+    // web handlers
+    void httpAjaxScanWifi(WebServer& server, String& S);
+    void httpUpdateWifi(WebServer& server, String& S);
 } // namespace ModuleWifi

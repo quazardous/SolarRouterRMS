@@ -372,7 +372,7 @@ function EtatActions() {
         S="<div><div class='tableau'><table >" +S;
         S +="</table>";
         GH("etatActions",S);
-        if(Source=="Ext" ){
+        if(Source=="Proxy" ){
             GID("donneeLocale").style.display="block";   
         }
       }
@@ -401,7 +401,7 @@ function AdaptationSource(){
   } 
   
   var S='Source : ' 
-  if(Source=="Ext"){  
+  if(Source=="Proxy"){  
     S +='ESP distant '+int2ip(RMSextIP);
     GID("donneeDistante").style.display="block";
   }else {

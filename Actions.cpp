@@ -5,6 +5,7 @@
 #include <EEPROM.h>
 #include <WiFiClient.h>
 #include "ModuleDebug.h"
+#include "rms.h"
 
 // Class Action
 Action::Action()
@@ -76,7 +77,7 @@ void Action::RelaisOn()
 
 void Action::Definir(String ligne)
 {
-    String RS = String((char)30); // Record Separator
+    String RS = RMS_RS; // Record Separator
     int active = ligne.substring(0, ligne.indexOf(RS)).toInt();
     if (active < 0 || active >= CUTTING_MODE_ERROR)
         active = CUTTING_MODE_NONE;
@@ -135,8 +136,8 @@ void Action::Definir(String ligne)
 
 String Action::Lire()
 {
-    String GS = String((char)29); // Group Separator
-    String RS = String((char)30); // Record Separator
+    String GS = RMS_GS; // Group Separator
+    String RS = RMS_RS; // Record Separator
     String S;
     S += String(Active) + RS;
     S += Title + RS;

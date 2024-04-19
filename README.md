@@ -1,15 +1,19 @@
 # SolarRouterRMS
-
-## Author
-[F1ATB André](https://f1atb.fr/fr/)
-
-This repository is a refactor of the [F1ATB André](https://f1atb.fr/fr/) firmware.
-
-The original work can be found on [https://f1atb.fr](https://f1atb.fr/fr/routeur-photovoltaique-realisation-logicielle/).
+version: v0.1 (from v8.06)
 
 ## Description
 SolarRouterRMS is a project that aims to create a solar-powered router monitoring system.  
 It utilizes Arduino and other components to measure and monitor various parameters of the router, such as power consumption, temperature, and network status.
+
+## Author / Fork
+This repository is a fork-for-refactor of the [F1ATB André](https://f1atb.fr/fr/) firmware.  
+The original work can be found on [https://f1atb.fr](https://f1atb.fr/fr/routeur-photovoltaique-realisation-logicielle/). 
+
+This version (v0.1) is a 1:1 feature fork of v8.06.  
+New features will be merged.  
+
+## Licence
+[GNU Affero General Public License 3.0](https://www.gnu.org/licenses/agpl-3.0.en.html#license-text)
 
 ## Features
 - Real-time monitoring of router power consumption/injection
@@ -18,7 +22,7 @@ It utilizes Arduino and other components to measure and monitor various paramete
 
 ## Installation
 
-The following steps are for developpers and provide a full dev stack.
+The following steps are for developpers and provide a full dev stack compatible with Arduino IDE 2.0 and VSCode.
 
 If you intend to only compile the firmware use the code from [Zip](https://github.com/quazardous/SolarRouterRMS/archive/refs/heads/main.zip).  
 Don't forget to rename the folder in `SolarRouterRMS`.  

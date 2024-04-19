@@ -3,15 +3,23 @@
 #include "ModuleTime.h"
 #include "ModulePowerMeter.h"
 #include "ModuleSensor.h"
+#include "ModuleStockage.h"
 #include "ModuleEDF.h"
 #include "hardware.h"
 #include "helpers.h"
+#include "rms.h"
 
 /**
  * Handle the actions / triggers
  */
 namespace ModuleTriggers
 {
+    struct it_counters_s {
+        volatile int it_10ms = 0; // Interruption avant deglitch
+        volatile int it_10ms_in = 0; // Interruption apres deglitch
+        volatile int it_mode = 0; // IT externe Triac ou interne [-5,+5]
+    };
+
     //Actions
     unsigned long previousOverProdMillis;
 
@@ -31,11 +39,12 @@ namespace ModuleTriggers
      //Actions et Triac(action 0)
     float RetardF[RMS_TRIGGERS_MAX];  //Floating value of retard
 
-    //Variables in RAM for interruptions
-    volatile unsigned long mtsLastIT = 0;
-    volatile int IT10ms = 0;     //Interruption avant deglitch
-    volatile int IT10ms_in = 0;  //Interruption apres deglitch
-    volatile int ITmode = 0;     //IT externe Triac ou interne
+    // Variables in RAM for interruptions
+    volatile unsigned long ms_last_IT = 0; // millis()
+    // internal IT counters used for process coupling
+    it_counters_s it_counters;
+    // flags and freezed values
+    it_counters_infos_s it_counters_infos;
 
     hw_timer_t *timer = NULL;
     hw_timer_t *timer10ms = NULL;
@@ -97,6 +106,8 @@ namespace ModuleTriggers
         }
     }
 
+    // Interruptions, Current Zero Crossing from Triac device and Internal Timer
+    // *************************************************************************
     void startIntTimers() {
         // Interruptions du Triac
         attachInterrupt(RMS_PIN_ZERO_CROSS, onZeroCrossPowerRising, RISING);
@@ -114,35 +125,40 @@ namespace ModuleTriggers
         timerAlarmEnable(timer10ms);
     }
 
-    // Interruption du Triac Signal Zc, toutes les 10ms
+    // Interruption du Triac Signal Zc, toutes les 10ms (2 times in 50Hz = 100Hz)
     void IRAM_ATTR onZeroCrossPowerRising() {
-        IT10ms++;
+        it_counters.it_10ms++;
 
-        if ((millis() - mtsLastIT) < 2) return; // to avoid glitch detection during 2ms
-        ITmode += 2;
+        // to avoid glitch detection during 2ms
+        if ((millis() - ms_last_IT) < 2) return;
+        it_counters.it_mode += 2; // now we are 2 beats after
 
-        if (ITmode > 5) ITmode = 5;
-        IT10ms_in++;
-        mtsLastIT = millis();
-        if (ITmode > 0) GestionIT_10ms();  // IT synchrone avec le secteur signal Zc
+        if (it_counters.it_mode > 5) it_counters.it_mode = 5;
+        it_counters.it_10ms_in++;
+        ms_last_IT = millis();
+        if (it_counters.it_mode > 0) GestionIT_10ms();  // IT synchrone avec le secteur signal Zc
     }
 
-    //Interruptions, Current Zero Crossing from Triac device and Internal Timer
-    //*************************************************************************
-    void IRAM_ATTR onTimer10ms() {  //Interruption interne toutes 10ms
-        ITmode--;
-        if (ITmode < -5) ITmode = -5;
-        if (ITmode < 0) GestionIT_10ms();  // IT non synchrone avec le secteur . Horloge interne
+    // Interruption interne toutes 10ms
+    void IRAM_ATTR onTimer10ms() {
+        it_counters.it_mode--;
+        if (it_counters.it_mode < -5) it_counters.it_mode = -5;
+        if (it_counters.it_mode < 0) GestionIT_10ms();  // IT non synchrone avec le secteur. Horloge interne
     }
 
     // Interruption Timer interne toutes les 100 micro secondes
-    void IRAM_ATTR onTimer() {  //Interruption every 100 micro second
-        if (Actif[0] == 1) {      // Découpe Sinus
+    // Interruption every 100 micro second
+    void IRAM_ATTR onTimer() {
+        // Découpe Sinus
+        if (Actif[0] == Action::CUTTING_MODE_SINUS_OR_RELAY) {
             PulseComptage[0] += 1;
-            if (PulseComptage[0] > Retard[0] && Retard[0] < 98 && ITmode > 0) {  //100 steps in 10 ms
-                digitalWrite(RMS_PIN_PULSE_TRIAC, HIGH);                                    //Activate Triac
+            // 100 steps in 10 ms
+            if (PulseComptage[0] > Retard[0] && Retard[0] < 98 && it_counters.it_mode > 0) {
+                // Activate Triac
+                digitalWrite(RMS_PIN_PULSE_TRIAC, HIGH);                                    
             } else {
-                digitalWrite(RMS_PIN_PULSE_TRIAC, LOW);  //Stop Triac
+                //Stop Triac
+                digitalWrite(RMS_PIN_PULSE_TRIAC, LOW);
             }
         }
     }
@@ -150,26 +166,30 @@ namespace ModuleTriggers
     void GestionIT_10ms() {
         for (int i = 0; i < NbActions; i++) {
             switch (Actif[i]) {  //valeur en RAM
-            case 0:            //Inactif
-
+            case Action::CUTTING_MODE_NONE:
+                // Inactif
                 break;
-            case 1:  //Decoupe Sinus uniquement pour Triac
+
+            case Action::CUTTING_MODE_SINUS_OR_RELAY:
+                // Decoupe Sinus uniquement pour Triac
                 if (i == 0) {
                     PulseComptage[0] = 0;
-                    digitalWrite(RMS_PIN_PULSE_TRIAC, LOW);  //Stop Découpe Triac
+                    digitalWrite(RMS_PIN_PULSE_TRIAC, LOW);  // Stop Découpe Triac
                 }
                 break;
-            default:              // Multi Sinus ou Train de sinus
+
+            default:
+                // Multi Sinus ou Train de sinus
                 if (Gpio[i] > 0) {  //Gpio valide
-                if (PulseComptage[i] < PulseOn[i]) {
-                    digitalWrite(Gpio[i], OutOn[i]);
-                } else {
-                    digitalWrite(Gpio[i], OutOff[i]);  //Stop
-                }
-                PulseComptage[i]++;
-                if (PulseComptage[i] >= PulseTotal[i]) {
-                    PulseComptage[i] = 0;
-                }
+                    if (PulseComptage[i] < PulseOn[i]) {
+                        digitalWrite(Gpio[i], OutOn[i]);
+                    } else {
+                        digitalWrite(Gpio[i], OutOff[i]);  //Stop
+                    }
+                    PulseComptage[i]++;
+                    if (PulseComptage[i] >= PulseTotal[i]) {
+                        PulseComptage[i] = 0;
+                    }
                 }
                 break;
             }
@@ -232,7 +252,7 @@ namespace ModuleTriggers
                             RetardF[i] = 100 - MaxTriacPw;
                         }
                         // Triac pas possible sur synchro interne
-                        if (ITmode < 0 && i == 0 ) RetardF[i] = 100;
+                        if (it_counters.it_mode < 0 && i == 0 ) RetardF[i] = 100;
                     }
                     if (RetardF[i] < 0) { RetardF[i] = 0; }
                     if (RetardF[i] > 100) { RetardF[i] = 100; }
@@ -286,6 +306,11 @@ namespace ModuleTriggers
     Action *getTrigger(byte i) {
         return &LesActions[i];
     }
+    it_counters_infos_s *getItCountersInfos(bool $check = false) {
+        if ($check)
+            checkItStatus();
+        return &it_counters_infos;
+    }
 
     // helpers
     void resetGpioActions() {
@@ -306,4 +331,84 @@ namespace ModuleTriggers
         return Retard[i];
     }
 
+    void checkItStatus() {
+        // Check IT status
+        it_counters.it_10ms = 0;
+        it_counters.it_10ms_in = 0;
+        // skip some beats..
+        delay(15);
+
+        it_counters_infos.it_10ms = it_counters.it_10ms;
+        it_counters_infos.it_10ms_in = it_counters.it_10ms_in;
+        it_counters_infos.it_mode = it_counters.it_mode;
+        it_counters_infos.triac = (int) (it_counters.it_10ms_in > 0);
+        it_counters_infos.synchronized = (int) (it_counters_infos.it_mode > 0);
+    }
+
+    void httpAjaxTriggersStates(WebServer& server, String& S) {
+        String RS = RMS_RS;
+        String GS = RMS_GS;
+        int NbActifs = 0;
+        S = "";
+        for (int i = 0; i < NbActions; i++)
+        {
+            if (LesActions[i].Active > 0)
+            {
+                S += String(i) + RS + LesActions[i].Title + RS;
+                if (LesActions[i].Active == 1 && i > 0)
+                {
+                    if (LesActions[i].On)
+                    {
+                        S += "On" + RS;
+                    }
+                    else
+                    {
+                        S += "Off" + RS;
+                    }
+                }
+                else
+                {
+                    S += String(100 - Retard[i]) + RS;
+                }
+                S += GS;
+                NbActifs++;
+            }
+        }
+        S = String(ModuleSensor::getTemperature()) 
+            + GS + String(ModulePowerMeter::getDataSourceName())
+            + GS + String(ModulePowerMeter::getExtIp())
+            + GS + NbActifs + GS + S;
+    }
+
+    void httpAjaxTriggers(WebServer& server, String& S) {
+        String RS = RMS_RS;
+        String GS = RMS_GS;
+        S = String(ModuleSensor::getTemperature()) 
+            + RS + String(ModuleEDF::getBinaryLTARF()) 
+            + RS + String(it_counters.it_mode) + GS;
+        for (int i = 0; i < NbActions; i++)
+        {
+            S += LesActions[i].Lire();
+        }
+    }
+
+    void httpUpdateTriggers(WebServer& server, String& S) {
+        String RS = RMS_RS;
+        String GS = RMS_GS;
+        int adresse_max = 0;
+        String s = server.arg("actions");
+        String ligne = "";
+        resetGpioActions(); // RAZ anciennes actions
+        NbActions = 0;
+        while (s.indexOf(GS) > 3 && NbActions < RMS_TRIGGERS_MAX)
+        {
+            ligne = s.substring(0, s.indexOf(GS));
+            s = s.substring(s.indexOf(GS) + 1);
+            LesActions[NbActions].Definir(ligne);
+            NbActions++;
+        }
+        adresse_max = ModuleStockage::EcritureEnROM();
+        resetGpioActions();
+        S = "OK" + String(adresse_max);
+    }
 } // namespace ModuleTriggers

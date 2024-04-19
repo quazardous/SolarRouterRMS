@@ -204,7 +204,7 @@ namespace ModuleMQTT
         device["mf"] = "F1ATB - https://f1atb.fr";
         device["mdl"] = "ESP32 - " + ESP_ID;
         device["name"] = String(ModuleCore::getRouterName());
-        device["sw"] = VERSION;
+        device["sw"] = RMS_VERSION;
 
         n = serializeJson(doc, buffer);
         published = clientMQTT.publish(DiscoveryTopic.c_str(), buffer, n);
