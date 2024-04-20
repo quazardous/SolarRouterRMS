@@ -5,6 +5,21 @@
 
 namespace ModuleWifi
 {
+    enum wifi_step_t {
+        WIFI_STEP_BOOT = 0,
+        WIFI_STEP_STA,
+        WIFI_STEP_STA_WAITING_STA,
+        WIFI_STEP_STA_BEGIN, // begin wifi
+        WIFI_STEP_STA_WAITING_CONNECT,
+        WIFI_STEP_STA_CONNECT_TIMEOUT, // timeout -> AP
+        WIFI_STEP_STA_CONNECT,
+        WIFI_STEP_STA_FINAL, // connected in station mode
+        WIFI_STEP_AP,
+        WIFI_STEP_AP_WAITING_AP_STA,
+        WIFI_STEP_AP_BEGIN, // begin AP
+        WIFI_STEP_AP_FINAL, // connected in AP mode (setup)
+    };
+
     // events
     void boot();
     void loopTimer(unsigned long mtsNow);

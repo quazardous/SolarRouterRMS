@@ -65,12 +65,12 @@ namespace ModuleEeprom
 
     void loopTimer(unsigned long msNow)
     {
-
+        // nothing yet
     }
 
     void loop(unsigned long msLoop)
     {
-
+        // nothing yet
     }
 
     // ***********************************

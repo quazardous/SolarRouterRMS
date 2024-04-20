@@ -6,11 +6,16 @@
 #include "config.h"
 #include "rms.h"
 
+void wifiUp();
+
 namespace ModuleWifi
 {
-    unsigned long IP_Fixe = 0;
-    unsigned long Gateway = 0;
-    unsigned long masque = 4294967040;
+    void wifiSteps(); // wifi connect steps (in loop)
+    IPAddress ip2ip(unsigned long ip);
+
+    unsigned long staticIp = 0;
+    unsigned long gateway = 0;
+    unsigned long netmask = 4294967040;
     unsigned long dns = 0;
     byte dhcpOn = 1;
 
@@ -19,83 +24,87 @@ namespace ModuleWifi
 
     unsigned int WIFIbug = 0;
 
+    wifi_step_t wifiStep = WIFI_STEP_BOOT;
+
+    unsigned long lastWifiStepsTock = 0;
+    unsigned long lastCheckTock = 0;
+    unsigned long beginWifiConnect = 0;
+    unsigned long beginWifiAP = 0;
+
     void boot() {
         const char *hostname = ModuleCore::getHostname();
         // Configure WIFI
         // **************
         WiFi.setHostname(hostname);
-        Serial.println(hostname);
-
-        const char *ap_default_ssid = hostname;        // Mode Access point  IP: 192.168.4.1
-        const char *ap_default_psk = NULL;  // Pas de mot de passe en AP,
-
-        // Check WiFi connection
-        // ... check mode
-        if (WiFi.getMode() != WIFI_STA) {
-            WiFi.mode(WIFI_STA);
-            delay(10);
-        }
+        ModuleCore::log(String("Hostname: ") + String(hostname));
 
         // WIFI
-        ModuleCore::log(String("SSID:") + String(ssid));
-        ModuleCore::log(String("Pass:") + String(password));
         if (strlen(ssid) > 0) {
-            if (dhcpOn == 0) {  //Static IP
-                byte arr[4];
-                // Set your Static IP address
-                ip_explode(IP_Fixe, arr);
-                IPAddress local_IP(arr[3], arr[2], arr[1], arr[0]);
-                // Set your Gateway IP address
-                ip_explode(Gateway, arr);
-                IPAddress gateway(arr[3], arr[2], arr[1], arr[0]);
-                // Set your masque/subnet IP address
-                ip_explode(masque, arr);
-                IPAddress subnet(arr[3], arr[2], arr[1], arr[0]);
-                // Set your DNS IP address
-                ip_explode(dns, arr);
-                IPAddress primaryDNS(arr[3], arr[2], arr[1], arr[0]);  //optional
-                IPAddress secondaryDNS(8, 8, 4, 4);                    //optional
-                if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
-                    ModuleCore::log("WIFI STA Failed to configure");
-                }
-            }
-            ModuleDebug::stockMessage("Wifi Begin : " + String(ssid));
-            WiFi.begin(ssid, password);
-            unsigned long startMillis = millis();
-            while (WiFi.status() != WL_CONNECTED && (millis() - startMillis < 15000)) {
-                // Attente connexion au Wifi
-                Serial.write('.');
-                ModuleHardware::Gestion_LEDs();
-                Serial.print(WiFi.status());
-                delay(300);
-            }
-        }
-        if (WiFi.status() == WL_CONNECTED) {
-            // ... print IP Address
-            Serial.print("IP address: ");
-            Serial.println(WiFi.localIP());
-            Serial.println("Connected IP address: " + WiFi.localIP().toString() + " or <a href='http://" + hostname + ".local' >" + hostname + ".local</a>");
-            ModuleDebug::stockMessage("Connected IP address: " + WiFi.localIP().toString());
+            ModuleCore::log(String("SSID: ") + String(ssid));
+            ModuleCore::log(String("Pass: ") + String(password));
         } else {
-            ModuleDebug::stockMessage("Can not connect to WiFi station. Go into AP mode and STA mode.");
-            // Go into software AP and STA modes.
-            WiFi.mode(WIFI_AP_STA);
-            delay(10);
-            WiFi.softAP(ap_default_ssid, ap_default_psk);
-            Serial.println("Access Point Mode. IP address: " + WiFi.softAPIP().toString());
-            Serial.println("SSID: " + String(ap_default_ssid));
+            ModuleCore::log("No Wifi SSID");
         }
+
     }
 
     void loopTimer(unsigned long mtsNow) {
-        // noop
+        lastWifiStepsTock = mtsNow;
+        lastCheckTock = mtsNow;
     }
 
     void loop(unsigned long msLoop) {
-        // noop
-        // WIFI check in ModuleCore
+        unsigned long msNow = millis();
+
+        if (wifiStep != WIFI_STEP_STA_FINAL && wifiStep != WIFI_STEP_AP_FINAL) {
+            // try to init WiFi by steps
+            if (TICKTOCK(msNow, lastWifiStepsTock, 100)) {
+                wifiSteps();
+            }
+            return;
+        }
+
+        if (TICKTOCK(msNow, lastCheckTock, 30000))
+        {
+            // Check WIFI
+            // int wifiBug = ModuleWifi::getWifiBug();
+            // //Test présence WIFI toutes les 30s et autres
+            // if (!ModuleWifi::canConnectWifi(10000)) {
+            //     if (wifiBug > 2) {
+            //         reboot("No WIFI !!!", 1000);
+            //         return;
+            //     }
+            // }
+
+            if (WiFi.getMode() == WIFI_STA) {
+                // Wifi status
+                String m = "IP address: " + String(WiFi.localIP());
+                ModuleCore::log(m);
+                ModuleDebug::getDebug().println(m);
+                m = "WIFI signal:" + String(WiFi.RSSI());
+                ModuleCore::log(m);
+                ModuleDebug::getDebug().println(m);
+
+                if (!WiFi.isConnected()) {
+                    ModuleCore::log("WIFI: Not connected");
+                    ModuleDebug::getDebug().println("WIFI: Not connected");
+                }
+                // m = "WIFIbug:" + String(wifiBug);
+                // ModuleCore::log(m);
+                // ModuleDebug::getDebug().println(m);
+            } else {
+                ModuleCore::log("AP Mode. IP address: " + WiFi.softAPIP().toString());
+            }
+        }
+
+        if (wifiStep == WIFI_STEP_AP_FINAL && strlen(ssid) > 0 && (millis() - beginWifiAP > 300000)) {
+            // AP mode for 5 minutes but we have a SSID => trying STA mode again (maybe WIFI router was down or something)
+            ModuleCore::log("WIFI: AP mode for 5 minutes but we have a SSID => trying STA mode again");
+            wifiStep = WIFI_STEP_BOOT;
+        }
     }
 
+    // states
     bool isWifiConnected() {
         return WiFi.isConnected();
     }
@@ -130,6 +139,120 @@ namespace ModuleWifi
         return WIFIbug;
     }
 
+    // helpers
+    void wifiSteps() {
+        switch (wifiStep)
+        {
+            case WIFI_STEP_BOOT:
+                if (strlen(ssid) > 0) {
+                    ModuleCore::log("Wifi Step BOOT: SSID OK => STA mode");
+                    wifiStep = WIFI_STEP_STA;
+                } else {
+                    ModuleCore::log("Wifi Step BOOT: no SSDI => AP mode");
+                    wifiStep = WIFI_STEP_AP;
+                }
+                break;
+            case WIFI_STEP_STA:
+                ModuleCore::log("Wifi Step STA: waiting STA mode");
+                if (WiFi.getMode() != WIFI_STA) {
+                    ModuleCore::log("Switching to STA mode");
+                    WiFi.mode(WIFI_STA);
+                }
+                wifiStep = WIFI_STEP_STA_WAITING_STA;
+                break;
+            case WIFI_STEP_STA_WAITING_STA:
+                ModuleCore::log("Wifi Step STA WAITING STA: waiting STA mode");
+                if (WiFi.getMode() == WIFI_STA) {
+                    wifiStep = WIFI_STEP_STA_BEGIN;
+                }
+                break;
+            case WIFI_STEP_STA_BEGIN:
+                ModuleCore::log("Wifi Step STA BEGIN: begin WiFi");
+                if (dhcpOn == 0) {  //Static IP
+                    // Set your Static IP address
+                    IPAddress ip_staticIp = ip2ip(staticIp);
+                    ModuleCore::log("Static IP: " + ip_staticIp.toString());
+                    // Set your gateway IP address
+                    IPAddress ip_gateway = ip2ip(gateway);
+                    ModuleCore::log("Gateway: " + ip_gateway.toString());
+                    // Set your netmask/subnet IP address
+                    IPAddress ip_netmask = ip2ip(netmask);
+                    ModuleCore::log("Netmask: " + ip_netmask.toString());
+                    // Set your DNS IP address
+                    IPAddress ip_dns1 = ip2ip(dns); //optional
+                    ModuleCore::log("DNS1: " + ip_dns1.toString());
+                    IPAddress ip_dns2(8, 8, 4, 4); //optional
+                    ModuleCore::log("DNS2: " + ip_dns2.toString());
+
+                    if (!WiFi.config(ip_staticIp, ip_gateway, ip_netmask, ip_dns1, ip_dns2)) {
+                        ModuleCore::log("WIFI: Failed to configure Static IP");
+                    }
+                }
+                WiFi.begin(ssid, password);
+                wifiStep = WIFI_STEP_STA_WAITING_CONNECT;
+                beginWifiConnect = millis();
+                break;
+            case WIFI_STEP_STA_WAITING_CONNECT:
+                ModuleCore::log("Wifi Step STA WAITING CONNECT: waiting connect (status=" + String(WiFi.status()) + ")");
+                if (WiFi.status() == WL_CONNECTED) {
+                    wifiStep = WIFI_STEP_STA_CONNECT;
+                } else if (millis() - beginWifiConnect > 15000) {
+                    ModuleCore::log("Wifi Step STA WAITING CONNECT: timeout");
+                    wifiStep = WIFI_STEP_STA_CONNECT_TIMEOUT;
+                }
+                ModuleHardware::Gestion_LEDs();
+                break;
+            case WIFI_STEP_STA_CONNECT:
+                ModuleCore::log("Wifi Step STA CONNECT: connected");
+                ModuleDebug::stockMessage("WIFI: Connected IP address: " + WiFi.localIP().toString());
+                wifiStep = WIFI_STEP_STA_FINAL;
+                ::wifiUp();
+                break;
+            case WIFI_STEP_STA_CONNECT_TIMEOUT:
+                ModuleCore::log("Wifi Step STA CONNECT TIMEOUT: going into AP mode");
+                wifiStep = WIFI_STEP_AP;
+                break;
+            case WIFI_STEP_AP:
+                ModuleCore::log("Wifi Step AP: waiting AP STA mode");
+                if (WiFi.getMode() != WIFI_AP_STA) {
+                    ModuleCore::log("Switching to AP STA mode");
+                    // Go into software AP and STA modes.
+                    WiFi.mode(WIFI_AP_STA);
+                }
+                wifiStep = WIFI_STEP_AP_WAITING_AP_STA;
+                break;
+            case WIFI_STEP_AP_WAITING_AP_STA:
+                ModuleCore::log("Wifi Step AP WAITING AP STA: waiting AP STA mode");
+                if (WiFi.getMode() == WIFI_AP_STA) {
+                    wifiStep = WIFI_STEP_AP_BEGIN;
+                }
+                break;
+            case WIFI_STEP_AP_BEGIN:
+            {
+                ModuleCore::log("Wifi Step AP BEGIN: begin AP");
+                const char *ap_default_ssid = ModuleCore::getHostname(); // Mode Access point  IP: 192.168.4.1
+                const char *ap_default_psk = NULL; // Pas de mot de passe en AP,
+                ModuleCore::log("SSID: " + String(ap_default_ssid));
+                if (WiFi.softAP(ap_default_ssid, ap_default_psk)) {
+                    ModuleCore::log("Access Point Mode. IP address: " + WiFi.softAPIP().toString());
+                    wifiStep = WIFI_STEP_AP_FINAL;
+                    beginWifiAP = millis();
+                    ::wifiUp();
+                } else {
+                    ModuleCore::log("WIFI: Failed to configure AP");
+                    wifiStep = WIFI_STEP_BOOT;
+                }
+                break;
+            }
+        }
+    }
+
+    IPAddress ip2ip(unsigned long ip) {
+        byte arr[4];
+        ip_explode(ip, arr);
+        return IPAddress(arr[3], arr[2], arr[1], arr[0]);
+    }
+
     // getters / setters
     void setWifiSsid(const char *s) {
         strncpy(ssid, s, sizeof(ssid) - 1);
@@ -152,22 +275,22 @@ namespace ModuleWifi
         return dhcpOn;
     }
     void setStaticIp(unsigned long ip) {
-        IP_Fixe = ip;
+        staticIp = ip;
     }
     unsigned long getStaticIp() {
-        return IP_Fixe;
+        return staticIp;
     }
     void setGateway(unsigned long gw) {
-        Gateway = gw;
+        gateway = gw;
     }
     unsigned long getGateway() {
-        return Gateway;
+        return gateway;
     }
     void setNetmask(unsigned long nm) {
-        masque = nm;
+        netmask = nm;
     }
     unsigned long getNetmask() {
-        return masque;
+        return netmask;
     }
     void setDns(unsigned long d) {
         dns = d;

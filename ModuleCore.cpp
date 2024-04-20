@@ -98,32 +98,7 @@ namespace ModuleCore {
         // Check health
         if (TICKTOCK(msNow, previousCheckTock, 30000))
         {
-            // Check WIFI
-            int wifiBug = ModuleWifi::getWifiBug();
-            //Test présence WIFI toutes les 30s et autres
-            if (!ModuleWifi::canConnectWifi(10000)) {
-                if (wifiBug > 2) {
-                    reboot("No WIFI !!!", 1000);
-                    return;
-                }
-            }
-
             String m;
-            if (ModuleWifi::isStationMode()) {
-                // Wifi status
-                m = "IP address: " + String(WiFi.localIP());
-                log(m);
-                ModuleDebug::getDebug().println(m);
-                m = "Niveau Signal WIFI:" + String(WiFi.RSSI());
-                log(m);
-                ModuleDebug::getDebug().println(m);
-                m = "WIFIbug:" + String(wifiBug);
-                log(m);
-                ModuleDebug::getDebug().println(m);
-            } else {
-                log("Access Point Mode. IP address: " + WiFi.softAPIP().toString());
-            }
-
             // Display CPU load
             const cpu_load_t *cpuLoad0 = ModulePowerMeter::getCpuLoad0();
             m = "RMS loop (Core 0) in ms - Min : " + String(int(cpuLoad0->min)) 
@@ -144,6 +119,8 @@ namespace ModuleCore {
             m = "ESP32 running since " + String(s) + " hours";
             log(m);
             ModuleDebug::getDebug().println(m);
+
+            log("EEPROM Key: " + String(ModuleEeprom::getEepromKey()));
             // call to EDF data put in dedicated module
 
             // Check IT / triggers
@@ -152,11 +129,11 @@ namespace ModuleCore {
             // log("RMS is " + String(up ? "UP" : "DOWN"));
         }
 
-        // Connecté en  Access Point depuis 3mn. Pas normal
-        if (getStartupSince() > 180000 && !ModuleWifi::isStationMode()) {
-            reboot("Not in WiFi Station since 3 minutes...", 5000);
-            return;
-        }
+        // // Connecté en  Access Point depuis 3mn. Pas normal
+        // if (getStartupSince() > 180000 && !ModuleWifi::isStationMode()) {
+        //     reboot("Not in WiFi Station since 3 minutes...", 5000);
+        //     return;
+        // }
     }
 
     void reboot(String m, int msDelay) {

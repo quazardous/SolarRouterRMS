@@ -158,6 +158,11 @@ void dayIsGone()
 //   // Called once when RMS goes down..
 // }
 
+void wifiUp()
+{
+  // Called once when wifi is up
+}
+
 void reboot()
 {
   // Called before RMS reboots
