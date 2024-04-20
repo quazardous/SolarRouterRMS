@@ -15,6 +15,9 @@ namespace ModuleServer
     { 
         // Pages principales
         // en AP et STA mode ou Station Mode seul
+
+        // Reset du timeout pour rester en mode AP
+        ModuleWifi::resetApTimout();
         server.send(200, "text/html", pages[ModuleWifi::isStationMode() ? RMS_PAGE_MAIN_HTML : RMS_PAGE_CONNECT_HTML]);
     }
 

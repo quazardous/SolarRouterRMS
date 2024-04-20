@@ -246,6 +246,10 @@ namespace ModuleWifi
             }
         }
     }
+    
+    void resetApTimout() {
+        beginWifiAP = millis();
+    }
 
     IPAddress ip2ip(unsigned long ip) {
         byte arr[4];

@@ -29,6 +29,7 @@ namespace ModuleWifi
     void resetWifiBug();
     unsigned int incrWifiBug();
     bool canConnectWifi(unsigned long msTimeout);
+    void resetApTimout(); // prevent AP mode to go away if SSID is set
 
     // getters / setters
     void setWifiSsid(const char *ssid);
