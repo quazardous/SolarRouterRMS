@@ -17,5 +17,5 @@ namespace ModuleTime
     bool timeIsValid();
 
     // helpers
-    time_t JourHeureChange();
+    time_t checkDayHourChange();
 } // namespace ModuleTime

@@ -49,8 +49,8 @@ namespace ModulePowerMeter
         float setInstVaPower(float power);
 
         // historized data
-        long energyIn, energyOut;
-        long energyDayIn, energyDayOut;
+        unsigned long energyIn, energyOut;
+        unsigned long energyDayIn, energyDayOut;
     };
 
     // events
@@ -58,6 +58,7 @@ namespace ModulePowerMeter
     void startPowerMeterLoop();
     void resetCpuLoad0();
     void loop(unsigned long msLoop);
+    void dayIsGone();
     // Allow loop to breathe
     void ping();
     void throttle(unsigned long throttle, bool yield = false);

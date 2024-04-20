@@ -18,7 +18,7 @@
 
 namespace ModuleMQTT
 {
-    bool isActive();
+    bool isSetup();
 
     bool Discovered = false;
     unsigned long previousMqttMillis;
@@ -47,6 +47,9 @@ namespace ModuleMQTT
 
     void boot()
     {
+        if (!isSetup()) {
+            ModuleCore::log("MQTT is not setup");
+        }
         // noop
     }
 
@@ -66,7 +69,7 @@ namespace ModuleMQTT
     // Callback  pour souscrire a un topic et  prévoir une action
     void messageCallback(char *topic, byte *payload, unsigned int length)
     {
-        String m = String("-------Nouveau message du broker mqtt. Non utilisé-----");
+        String m = String("-------message broker - unused-----");
         Serial.println(m);
         ModuleDebug::getDebug().println(m);
     }
@@ -347,8 +350,7 @@ namespace ModuleMQTT
     void envoiAuMQTT()
     {
         // Cette Fonction d'origine a été modifiée
-        if (!isActive()) {
-            ModuleCore::log("MQTT not setup");
+        if (!isSetup()) {
             return;
         }
         unsigned long tps = millis();
@@ -367,7 +369,7 @@ namespace ModuleMQTT
     }
 
     // states
-    bool isActive()
+    bool isSetup()
     {
         return MQTTIP > 0;
     }

@@ -5,7 +5,8 @@
 #include <WebServer.h>
 #include "ModulePowerMeter.h"
 #include "ModuleHardware.h"
-#include "ModuleStockage.h"
+#include "ModuleHistory.h"
+#include "ModuleEeprom.h"
 #include "ModuleCore.h"
 #include "ModuleTriggers.h"
 #include "ModuleWifi.h"
@@ -26,14 +27,14 @@ namespace ModuleServer
     void handleAjaxHisto48h()
     {
         String S = "";
-        ModuleStockage::httpAjaxHisto48h(server, S);
+        ModuleHistory::httpAjaxHisto48h(server, S);
         server.send(200, "text/html", S);
     }
 
     void handleAjaxData10mn()
     {
         String S = "";
-        ModuleStockage::httpAjaxHisto10mn(server, S);
+        ModuleHistory::httpAjaxHisto10mn(server, S);
         server.send(200, "text/html", S);
     }
 
@@ -41,7 +42,7 @@ namespace ModuleServer
     {
         // Envoi Historique Energie quotiiienne sur 1 an 370 points
         String S = "";
-        ModuleStockage::httpAjaxHistoriqueEnergie1An(server, S);
+        ModuleHistory::httpAjaxHistoriqueEnergie1An(server, S);
         server.send(200, "text/html", S);
     }
 
@@ -77,7 +78,7 @@ namespace ModuleServer
     void handleParaAjax()
     {
         String S = "";
-        ModuleStockage::httpAjaxPara(server, S);
+        ModuleEeprom::httpAjaxPara(server, S);
         server.send(200, "text/html", S);
     }
 

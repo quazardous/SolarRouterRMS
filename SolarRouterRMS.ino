@@ -61,7 +61,8 @@
 #include "ModuleCore.h"
 #include "ModuleDebug.h"
 #include "ModuleServer.h"
-#include "ModuleStockage.h"
+#include "ModuleHistory.h"
+#include "ModuleEeprom.h"
 #include "ModuleSensor.h"
 #include "ModuleTime.h"
 #include "ModuleWifi.h"
@@ -80,9 +81,10 @@ void setup()
     ModuleCore::boot();
     ModuleHardware::boot();
     ModuleSensor::boot();
-    ModuleStockage::boot();
-    ModuleMQTT::boot();
+    ModuleEeprom::boot();
+    ModuleHistory::boot();
     ModuleTime::boot();
+    ModuleMQTT::boot();
     ModuleWifi::boot();
     ModuleEDF::boot();
     ModuleDebug::boot(); // init remote debug
@@ -102,9 +104,10 @@ void setup()
     ModuleCore::loopTimer(msNow);
     ModuleHardware::loopTimer(msNow);
     ModuleSensor::loopTimer(msNow);
-    ModuleStockage::loopTimer(msNow);
+    ModuleEeprom::loopTimer(msNow);
     ModuleMQTT::loopTimer(msNow);
     ModuleTime::loopTimer(msNow);
+    ModuleHistory::loopTimer(msNow);
     ModuleWifi::loopTimer(msNow);
     ModuleEDF::setupTimer(msNow);
     ModuleTriggers::loopTimer(msNow);
@@ -122,19 +125,40 @@ void loop()
     ModuleSensor::loop(msLoop);
     ModuleDebug::loop(msLoop);
     ModuleServer::loop(msLoop); // TODO: use async server
-    ModuleStockage::loop(msLoop);
+    ModuleEeprom::loop(msLoop);
+    ModuleHistory::loop(msLoop);
     ModuleMQTT::loop(msLoop);
     ModuleWifi::loop(msLoop);
     ModuleEDF::loop(msLoop);
     ModuleTriggers::loop(msLoop);
 }
 
-void up()
+void onTime()
 {
-  // Called once when RMS is (re)up and ready (WIFI ok)
+  // Called once when time is synced with ntp
 }
 
-void down()
+void dayIsGone()
 {
-  // Called once when RMS goes down..
+  // Called once a day at the end of the day
+  // store daily history
+  ModuleHistory::dayIsGone();
+  // store power states
+  ModulePowerMeter::dayIsGone();
+}
+
+// void up()
+// {
+//   // Called once when RMS is (re)up and ready
+//   // ModuleCore will check
+// }
+
+// void down()
+// {
+//   // Called once when RMS goes down..
+// }
+
+void reboot()
+{
+  // Called before RMS reboots
 }

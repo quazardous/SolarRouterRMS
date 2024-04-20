@@ -1,4 +1,6 @@
 #include "ModuleDebug.h"
+#include "ModuleCore.h"
+#include "ModuleTime.h"
 #include "helpers.h"
 
 namespace ModuleDebug
@@ -12,7 +14,7 @@ namespace ModuleDebug
         Debug.begin("ESP32");
         Debug.println("Ready");
         Debug.print("IP address: ");
-        Debug.println(WiFi.localIP());
+        Debug.println(WiFi.localIP().toString());
     }
 
     void loop(unsigned long msLoop)
@@ -35,20 +37,23 @@ namespace ModuleDebug
     // helpers
     void stockMessage(const String &m)
     {
-        String DATE = String(ts2str(time(NULL), "%Y-%m-%d %H:%M:%S"));
-        String message = DATE + " : " + m;
-        Serial.println(message);
+        ModuleCore::log(m);
+        String DATE;
+        if (ModuleTime::timeIsValid()) {
+            DATE = String(ts2str(time(NULL), "%Y-%m-%d %H:%M:%S"));
+        } else {
+            char d[32];
+            sprintf(d, "%010.3fs", millis() / 1000.0);
+            DATE = String(d);
+        }
+        String message = DATE + ": " + m;
         Message[idxMessage] = message;
         idxMessage = (idxMessage + 1) % RMS_DEBUG_STOCK_MESSAGES;
     }
 
     void stockMessage(const char *m)
     {
-        String DATE = String(ts2str(time(NULL), "%Y-%m-%d %H:%M:%S"));
-        String message = DATE + " : " + String(m);
-        Serial.println(message);
-        Message[idxMessage] = message;
-        idxMessage = (idxMessage + 1) % RMS_DEBUG_STOCK_MESSAGES;
+        stockMessage(String(m));
     }
 
     void comboLog(const String &m)

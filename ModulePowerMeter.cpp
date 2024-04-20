@@ -8,6 +8,8 @@
 #include "ModulePowerMeterShellyEm.h"
 #include "ModulePowerMeterProxy.h"
 #include "ModuleTime.h"
+#include "ModuleEeprom.h"
+#include "ModuleCore.h"
 #include "helpers.h"
 #include "rms.h"
 // for variable params ?
@@ -26,6 +28,7 @@ namespace ModulePowerMeter
     void powerMeterLoopCallback(void *pvParameters);
     void powerMeterLoop(unsigned long msNow);
     const source_t getSourceFromName(const char *name);
+    void readEnergyData();
 
     // external IP for some sources
     unsigned long RMSextIP = 0;
@@ -73,9 +76,18 @@ namespace ModulePowerMeter
 
     void boot() {
 
-        init_puissance();
         //Adaptation à la Source
-        Serial.println("Source : " + String(getSourceName()));
+        // source was read in ModuleEeprom with the other params
+        ModuleCore::log("Source: " + String(getSourceName()));
+
+        init_puissance();
+
+        // read/check power states from EEPROM
+        if (ModuleEeprom::hasData())
+        {
+            ModuleCore::log("Reading energy data from EEPROM");
+            readEnergyData();
+        }
 
         activeDataSource = activeSource;
         switch (activeSource)
@@ -203,6 +215,15 @@ namespace ModulePowerMeter
             ModulePowerMeterEnphase::loop(msLoop);
             break;
         }
+    }
+
+    void dayIsGone()
+    {
+        if (!sourceIsValid())
+            return;
+
+        // keep track of the energy states for the day
+        ModuleEeprom::writeEnergyData(elecData[DOMAIN_TRIAC].energyIn, elecData[DOMAIN_TRIAC].energyOut, elecData[DOMAIN_HOUSE].energyIn, elecData[DOMAIN_HOUSE].energyOut);
     }
 
     //*************
@@ -414,6 +435,37 @@ namespace ModulePowerMeter
             instVaPowerOut = 0;
         }
         return power;
+    }
+
+
+    // ***********************************
+    // * Calage Zéro Energie quotidienne * -
+    // ***********************************
+    void readEnergyData()
+    {
+        unsigned long inTriac = 0;
+        unsigned long outTriac = 0;
+        unsigned long inHouse = 0;  //Debut du jour energie active
+        unsigned long outHouse = 0;
+        ModuleEeprom::readEnergyData(inTriac, outTriac, inHouse, outHouse);
+
+        // Check if data are OK (after rebooting ESP, etc)
+        if (elecData[DOMAIN_TRIAC].energyIn < inTriac)
+        {
+            elecData[DOMAIN_TRIAC].energyIn = inTriac;
+        }
+        if (elecData[DOMAIN_TRIAC].energyOut < outTriac)
+        {
+            elecData[DOMAIN_TRIAC].energyOut = outTriac;
+        }
+        if (elecData[DOMAIN_HOUSE].energyIn < inHouse)
+        {
+            elecData[DOMAIN_HOUSE].energyIn = inHouse;
+        }
+        if (elecData[DOMAIN_HOUSE].energyOut < outHouse)
+        {
+            elecData[DOMAIN_HOUSE].energyOut = outHouse;
+        }
     }
 
     // handlers

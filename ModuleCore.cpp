@@ -4,7 +4,7 @@
 #include "ModuleTime.h"
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterShellyEm.h"
-#include "ModuleStockage.h"
+#include "ModuleEeprom.h"
 #include "ModuleTriggers.h"
 #include "ModuleEDF.h"
 #include "ModuleSensor.h"
@@ -15,17 +15,18 @@
 
 #define RMS_MAX_NAME_LENGTH 128
 
-void up();
-void down();
+// void up();
+// void down();
+void reboot();
 
 namespace ModuleCore {
-    // Not ready if EEPROM is not initialized aka first boot
-    // RMS will be in setup mode (WIFI in AP)
-    bool up = false;
-    // RMS will trigger the UP event
-    bool triggerUp = false;
-    // RMS will trigger the DOWN event
-    bool triggerDown = false;
+    // // Not ready if EEPROM is not initialized aka first boot
+    // // RMS will be in setup mode (WIFI in AP)
+    // bool up = false;
+    // // RMS will trigger the UP event
+    // bool triggerUp = false;
+    // // RMS will trigger the DOWN event
+    // bool triggerDown = false;
 
     unsigned long getStartupSince(unsigned long mtsNow = 0);
 
@@ -54,21 +55,20 @@ namespace ModuleCore {
         log("Booting");
     }
 
-    void upAndReady(bool ready) {
-        if (ready == up) {
-            // noop
-            return;
-        }
-        up = ready;
-        if (ready) {
-            triggerUp = true;
-            triggerDown = false;
-        } else {
-            triggerDown = true;
-            triggerUp = false;
-        }
-
-    }
+    // void upAndReady(bool ready) {
+    //     if (ready == up) {
+    //         // noop
+    //         return;
+    //     }
+    //     up = ready;
+    //     if (ready) {
+    //         triggerUp = true;
+    //         triggerDown = false;
+    //     } else {
+    //         triggerDown = true;
+    //         triggerUp = false;
+    //     }
+    // }
 
     void loopTimer(unsigned long mtsNow) {
         cpuLoad1.lastTock = mtsNow;
@@ -83,17 +83,17 @@ namespace ModuleCore {
         // Estimation charge coeur
         estimate_cpu_load(msNow, &cpuLoad1);
 
-        if (triggerUp) {
-            log("RMS going UP...");
-            triggerUp = false;
-            ::up();
-        }
+        // if (triggerUp) {
+        //     log("RMS going UP...");
+        //     triggerUp = false;
+        //     ::up();
+        // }
 
-        if (triggerDown) {
-            triggerDown = false;
-            log("RMS going DOWN...");
-            ::down();
-        }
+        // if (triggerDown) {
+        //     triggerDown = false;
+        //     log("RMS going DOWN...");
+        //     ::down();
+        // }
 
         // Check health
         if (TICKTOCK(msNow, previousCheckTock, 30000))
@@ -109,46 +109,47 @@ namespace ModuleCore {
             }
 
             String m;
-            if (!ModuleWifi::isStationMode()) {
-                Serial.println("Access Point Mode. IP address: " + String(WiFi.softAPIP()));
-            } else {
-
+            if (ModuleWifi::isStationMode()) {
                 // Wifi status
                 m = "IP address: " + String(WiFi.localIP());
-                Serial.println(m);
+                log(m);
                 ModuleDebug::getDebug().println(m);
                 m = "Niveau Signal WIFI:" + String(WiFi.RSSI());
-                Serial.println(m);
+                log(m);
                 ModuleDebug::getDebug().println(m);
                 m = "WIFIbug:" + String(wifiBug);
-                Serial.println(m);
+                log(m);
                 ModuleDebug::getDebug().println(m);
-
-                // Display CPU load
-                const cpu_load_t *cpuLoad0 = ModulePowerMeter::getCpuLoad0();
-                m = "RMS loop (Core 0) in ms - Min : " + String(int(cpuLoad0->min)) 
-                    + " Avg : " + String(int(cpuLoad0->avg)) 
-                    + "  Max : " + String(int(cpuLoad0->max));
-                Serial.println(m);
-                ModuleDebug::getDebug().println(m);
-
-                m = "Main Loop (Core 1) in ms - Min : " + String(int(cpuLoad1.min)) 
-                    + " Avg : " + String(int(cpuLoad1.avg)) 
-                    + "  Max : " + String(int(cpuLoad1.max));
-                Serial.println(m);
-                ModuleDebug::getDebug().println(m);
+            } else {
+                log("Access Point Mode. IP address: " + WiFi.softAPIP().toString());
             }
-            int T = int(millis() / 1000);
-            float DureeOn = float(T) / 3600;
-            m = "ESP32 ON: " + String(DureeOn) + " hours";
-            Serial.println(m);
+
+            // Display CPU load
+            const cpu_load_t *cpuLoad0 = ModulePowerMeter::getCpuLoad0();
+            m = "RMS loop (Core 0) in ms - Min : " + String(int(cpuLoad0->min)) 
+                + " Avg : " + String(int(cpuLoad0->avg)) 
+                + "  Max : " + String(int(cpuLoad0->max));
+            log(m);
+            ModuleDebug::getDebug().println(m);
+
+            m = "Main Loop (Core 1) in ms - Min : " + String(int(cpuLoad1.min)) 
+                + " Avg : " + String(int(cpuLoad1.avg)) 
+                + "  Max : " + String(int(cpuLoad1.max));
+            log(m);
+            ModuleDebug::getDebug().println(m);
+
+            float since = millis() / 1000.0;
+            char s[32];
+            sprintf(s, "%02d:%02d", int(since / 3600), int((int(since) % 3600) / 60));
+            m = "ESP32 running since " + String(s) + " hours";
+            log(m);
             ModuleDebug::getDebug().println(m);
             // call to EDF data put in dedicated module
 
             // Check IT / triggers
             ModuleTriggers::checkItStatus();
 
-            log("RMS is " + String(up ? "UP" : "DOWN"));
+            // log("RMS is " + String(up ? "UP" : "DOWN"));
         }
 
         // Connecté en  Access Point depuis 3mn. Pas normal
@@ -158,18 +159,23 @@ namespace ModuleCore {
         }
     }
 
-    void reboot(String $m, int $delay) {
-        if ($m.length() > 0) {
-            Serial.println($m);
+    void reboot(String m, int msDelay) {
+        if (m.length() > 0) {
+            Serial.println(m);
         }
-        Serial.println("REBOOT !!!");
-        if ($delay > 0) {
-            delay($delay);
+        ::reboot();
+        if (msDelay > 0) {
+            log("REBOOT in " + String(msDelay) + "s");
+            delay(msDelay);
         }
         ESP.restart();
     }
 
     // helpers
+    void checkup() {
+        // check if everything is OK to be UP
+        // UP means normal operation mode
+    }
     void log(const String &m)
     {
         char d[32];
@@ -190,9 +196,9 @@ namespace ModuleCore {
         }
         return mtsNow - startMillis;
     }
-    bool isUp() {
-        return up;
-    }
+    // bool isUp() {
+    //     return up;
+    // }
 
     // setters / getters
     const char *getHostname() {
@@ -260,7 +266,7 @@ namespace ModuleCore {
             + RS + WiFi.localIP().toString() 
             + RS + WiFi.gatewayIP().toString() 
             + RS + WiFi.subnetMask().toString();
-        S += RS + coeur0 + RS + coeur1 + RS + String(ModuleStockage::getEepromUsage()) + RS;
+        S += RS + coeur0 + RS + coeur1 + RS + String(ModuleEeprom::getEepromUsage()) + RS;
         if (it_infos->triac)
         {
             S += String(it_infos->it_10ms_in) + "/" + String(it_infos->it_10ms);

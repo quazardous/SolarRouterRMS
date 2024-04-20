@@ -1,7 +1,7 @@
 #include "ModuleElemMap.h"
 #include "ModuleCore.h"
 #include "ModuleTriggers.h"
-#include "ModuleStockage.h"
+#include "ModuleEeprom.h"
 #include "ModulePowerMeter.h"
 #include "ModulePowerMeterEnphase.h"
 #include "ModulePowerMeterShellyEm.h"
@@ -67,7 +67,7 @@ namespace ModuleElemMap {
     // setters / getters for mapped Elements
     // mainRomMap
     RMS_ELEM_MAP_MAIN_GETTER_ONLY(Version, const char *, ModuleCore::getVersion)
-    RMS_ELEM_MAP_MAIN_ACCESSORS(EepromKey, unsigned long, ModuleStockage::setEepromKey, ModuleStockage::getEepromKey)
+    RMS_ELEM_MAP_MAIN_ACCESSORS(EepromKey, unsigned long, ModuleEeprom::setEepromKey, ModuleEeprom::getEepromKey)
     RMS_ELEM_MAP_MAIN_ACCESSORS(RouterName, const char *, ModuleCore::setRouterName, ModuleCore::getRouterName)
     RMS_ELEM_MAP_MAIN_ACCESSORS(FixProbeName, const char *, ModuleCore::setFixProbeName, ModuleCore::getFixProbeName)
     RMS_ELEM_MAP_MAIN_ACCESSORS(MobileProbeName, const char *, ModuleCore::setMobileProbeName, ModuleCore::getMobileProbeName)

@@ -1,7 +1,7 @@
 #include "ModuleTime.h"
 #include <esp_sntp.h>
 #include "helpers.h"
-#include "ModuleStockage.h"
+#include "ModuleEeprom.h"
 #include "ModuleCore.h"
 #include "ModuleDebug.h"
 
@@ -11,11 +11,15 @@
 #define RMS_NTP_TIMEZONE "CET-1CEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00"
 #define RMS_NTP_SYNC_INTERVAL 3600
 
+void dayIsGone();
+void onTime();
+
 namespace ModuleTime
 {
     void time_sync_notification(struct timeval *tv);
 
-    bool DATEvalid = false;
+    bool ntpSync = false;
+    bool onTimeTriggered = false;
     const char *ntpServers[] = {
         RMS_NTP_SERVER1,
         RMS_NTP_SERVER2
@@ -29,15 +33,21 @@ namespace ModuleTime
     float decimalHour = 0;
 
     void boot() {
-        ModuleCore::log("ModuleTime::boot()");
+
+        // setting NTP
         //Heure / Hour . A Mettre en priorité avant WIFI (exemple ESP32 Simple Time)
         //External timer to obtain the Hour and reset Watt Hour every day at 0h
         sntp_set_time_sync_notification_cb(time_sync_notification);
         // Option
         sntp_servermode_dhcp(1);
         sntp_set_sync_interval(RMS_NTP_SYNC_INTERVAL * 1 * 1000); // 1h
-        ModuleCore::log("NTP client running every " + String(RMS_NTP_SYNC_INTERVAL) + "s");
+        ModuleCore::log("NTP running every " + String(RMS_NTP_SYNC_INTERVAL) + "s");
         configTzTime(RMS_NTP_TIMEZONE, ntpServers[0], ntpServers[1]);
+
+        if (ModuleEeprom::hasData()) {
+            DateCeJour = ModuleEeprom::readToday();
+            ModuleCore::log("Reading today from EEPROM: " + DateCeJour);
+        }
     }
 
     void loopTimer(unsigned long mtsNow) {
@@ -47,19 +57,13 @@ namespace ModuleTime
     void loop(unsigned long msLoop) {
         unsigned long msNow = millis();
         if (TICKTOCK(msNow, lastTock, 30000)) {
-            JourHeureChange();
+            checkDayHourChange();
         }
     }
 
-    // Event once a day at the end of the day
-    void onNewDay()
+    time_t checkDayHourChange()
     {
-        ModuleStockage::onNewDay();
-    }
-
-    time_t JourHeureChange()
-    {
-        if (!DATEvalid) return 0;
+        if (!timeIsValid()) return 0;
         // Time Update / de l'heure
         now = time(NULL);
         JourCourant = String(ts2str(now, "%d%m%Y"));
@@ -74,9 +78,12 @@ namespace ModuleTime
         // compare with the last date read from EEPROM and/or from 24h ago
         if (DateCeJour != JourCourant)
         {
-            // It's a new day !!
-            if (DateCeJour != "")
-                onNewDay();
+            // It's a new full day !!
+            if (DateCeJour != "") {
+                ModuleEeprom::writeToday(JourCourant);
+                ModuleCore::log("Event dayIsGone()");
+                ::dayIsGone();
+            }
             DateCeJour = JourCourant;
         }
         return now;
@@ -87,12 +94,17 @@ namespace ModuleTime
     // **************
     void time_sync_notification(struct timeval *tv) {
         ModuleCore::log("NTP Time Sync");
-        DATEvalid = true;
+        ntpSync = true;
         String message = String("Sync time in ms:");
         message += sntp_get_sync_interval();
         ModuleCore::log(message);
-        JourHeureChange();
-        ModuleDebug::stockMessage("Time events done");
+        if (!onTimeTriggered) {
+            onTimeTriggered = true;
+            checkDayHourChange();
+            ModuleDebug::stockMessage("Time events done");
+            ModuleCore::log("Event onTime()");
+            ::onTime();
+        }
     }
 
     float getDecimalHour() {
@@ -100,7 +112,7 @@ namespace ModuleTime
     }
 
     bool timeIsValid() {
-        return DATEvalid;
+        return ntpSync;
     }
 
     // setters / getters

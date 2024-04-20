@@ -5,7 +5,7 @@
 #include <WebServer.h>
 #include "ModulePowerMeter.h"
 #include "ModuleHardware.h"
-#include "ModuleStockage.h"
+#include "ModuleEeprom.h"
 #include "ModuleCore.h"
 #include "ModuleTriggers.h"
 #include "ModuleWifi.h"
@@ -33,7 +33,7 @@ namespace ModuleServer
     void handleParaUpdate()
     {
         String S = "";
-        ModuleStockage::httpUpdatePara(server, S);
+        ModuleEeprom::httpUpdatePara(server, S);
         server.send(200, "text/plain", S);
     }
 

@@ -3,7 +3,7 @@
 #include "ModuleTime.h"
 #include "ModulePowerMeter.h"
 #include "ModuleSensor.h"
-#include "ModuleStockage.h"
+#include "ModuleEeprom.h"
 #include "ModuleEDF.h"
 #include "hardware.h"
 #include "helpers.h"
@@ -56,6 +56,8 @@ namespace ModuleTriggers
 
     void boot()
     {
+        resetGpioActions();
+
         //Tableau Longueur Pulse et Longueur Trame pour Multi-Sinus de 0 à 100%
         float erreur;
         float vrai;
@@ -412,7 +414,7 @@ namespace ModuleTriggers
             LesActions[NbActions].Definir(ligne);
             NbActions++;
         }
-        adresse_max = ModuleStockage::EcritureEnROM();
+        adresse_max = ModuleEeprom::writeEeprom();
         resetGpioActions();
         S = "OK" + String(adresse_max);
     }

@@ -2,7 +2,7 @@
 #include "ModuleDebug.h"
 #include "ModuleCore.h"
 #include "ModuleHardware.h"
-#include "ModuleStockage.h"
+#include "ModuleEeprom.h"
 #include "config.h"
 #include "rms.h"
 
@@ -37,8 +37,8 @@ namespace ModuleWifi
         }
 
         // WIFI
-        Serial.println(String("SSID:") + String(ssid));
-        Serial.println(String("Pass:") + String(password));
+        ModuleCore::log(String("SSID:") + String(ssid));
+        ModuleCore::log(String("Pass:") + String(password));
         if (strlen(ssid) > 0) {
             if (dhcpOn == 0) {  //Static IP
                 byte arr[4];
@@ -56,7 +56,7 @@ namespace ModuleWifi
                 IPAddress primaryDNS(arr[3], arr[2], arr[1], arr[0]);  //optional
                 IPAddress secondaryDNS(8, 8, 4, 4);                    //optional
                 if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
-                    Serial.println("WIFI STA Failed to configure");
+                    ModuleCore::log("WIFI STA Failed to configure");
                 }
             }
             ModuleDebug::stockMessage("Wifi Begin : " + String(ssid));
@@ -245,7 +245,7 @@ namespace ModuleWifi
             S += "ESP 32 connecté avec succès au wifi : " + NewSsid + " avec l'adresse IP : " + IP;
             S += "<br><br> Connectez vous au wifi : " + NewSsid;
             S += "<br><br> Cliquez sur l'adresse : <a href='http://" + IP + "' >http://" + IP + "</a>";
-            ModuleStockage::EcritureEnROM();
+            ModuleEeprom::writeEeprom();
         }
         else
         {
