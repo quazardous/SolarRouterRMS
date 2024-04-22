@@ -12,6 +12,8 @@ namespace ModuleWifi
 {
     void wifiSteps(); // wifi connect steps (in loop)
     IPAddress ip2ip(unsigned long ip);
+    bool startScanWifi();
+    bool checkScanWifi();
 
     unsigned long staticIp = 0;
     unsigned long gateway = 0;
@@ -30,6 +32,10 @@ namespace ModuleWifi
     unsigned long lastCheckTock = 0;
     unsigned long beginWifiConnect = 0;
     unsigned long beginWifiAP = 0;
+    unsigned long lastWifiScan = 0;
+    unsigned long lastCheckWifiScan = 0;
+    unsigned long doWifiScan = 0;
+    bool scanningWifi = false;
 
     void boot() {
         const char *hostname = ModuleCore::getHostname();
@@ -64,6 +70,22 @@ namespace ModuleWifi
             return;
         }
 
+        // Async WiFi scan
+        if (lastWifiScan < doWifiScan) {
+            if (scanningWifi) {
+                if (TICKTOCK(msNow, lastCheckWifiScan, 1000))
+                {
+                    scanningWifi = checkScanWifi();
+                    if (!scanningWifi) {
+                        // scanning done
+                        lastWifiScan = millis();
+                    }
+                }
+            } else {
+                scanningWifi = startScanWifi();
+            }
+        }
+
         if (TICKTOCK(msNow, lastCheckTock, 30000))
         {
             // Check WIFI
@@ -95,13 +117,21 @@ namespace ModuleWifi
             } else {
                 ModuleCore::log("AP Mode. IP address: " + WiFi.softAPIP().toString());
             }
+
+            if (wifiStep == WIFI_STEP_AP_FINAL && (!scanningWifi) && (doWifiScan == 0 || (doWifiScan < lastWifiScan && (millis() - doWifiScan) > 300000))) {
+                // AP mode: doing wifi scan every 5 minutes
+                ModuleCore::log("WIFI: AP mode => auto wifi scan");
+                doWifiScan = millis();
+            }
+
+            if (wifiStep == WIFI_STEP_AP_FINAL && strlen(ssid) > 0 && (millis() - beginWifiAP > 300000)) {
+                // AP mode for 5 minutes but we have a SSID => trying STA mode again (maybe WIFI router was down or something)
+                ModuleCore::log("WIFI: AP mode for 5 minutes but we have a SSID => trying STA mode again");
+                wifiStep = WIFI_STEP_BOOT;
+            }
         }
 
-        if (wifiStep == WIFI_STEP_AP_FINAL && strlen(ssid) > 0 && (millis() - beginWifiAP > 300000)) {
-            // AP mode for 5 minutes but we have a SSID => trying STA mode again (maybe WIFI router was down or something)
-            ModuleCore::log("WIFI: AP mode for 5 minutes but we have a SSID => trying STA mode again");
-            wifiStep = WIFI_STEP_BOOT;
-        }
+
     }
 
     // states
@@ -140,6 +170,34 @@ namespace ModuleWifi
     }
 
     // helpers
+    bool startScanWifi() {
+        ModuleCore::log("WIFI: Starting WiFi scan");
+        WiFi.scanNetworks(true, false, false, 2000U);
+        return true;
+    }
+
+    // Check if scan is done (true: running, false: done/failed)
+    bool checkScanWifi() {
+        int status = WiFi.scanComplete();
+        if (status == WIFI_SCAN_RUNNING) {
+            return true;
+        }
+        if (status == WIFI_SCAN_FAILED) {
+            ModuleCore::log("WIFI: Scan failed");
+            return false;
+        }
+        ModuleCore::log("WIFI: Scan done in " + String((millis() - doWifiScan) / 1000) + " seconds");
+        if (status == 0) {
+            ModuleCore::log("WIFI: No networks found :/");
+        } else {
+            ModuleCore::log("WIFI: " + String(status) + " networks found");
+            for (int i = 0; i < status; ++i) {
+                ModuleCore::log(" - " + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + ")");
+            }
+        }
+        return false;
+    }
+
     void wifiSteps() {
         switch (wifiStep)
         {
@@ -237,6 +295,8 @@ namespace ModuleWifi
                     ModuleCore::log("Access Point Mode. IP address: " + WiFi.softAPIP().toString());
                     wifiStep = WIFI_STEP_AP_FINAL;
                     beginWifiAP = millis();
+                    ModuleCore::log("WIFI: auto scan WiFi networks");
+                    doWifiScan = millis();
                     ::wifiUp();
                 } else {
                     ModuleCore::log("WIFI: Failed to configure AP");

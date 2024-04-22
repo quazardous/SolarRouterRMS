@@ -39,16 +39,26 @@ COMPILE_CMD = $(ARDUINO_CLI) compile -v --fqbn $(BOARD) --build-path $(BUILD_DIR
 UPLOAD_CMD = $(ARDUINO_CLI) upload -v -p $(PORT) --fqbn $(BOARD) --input-dir $(BUILD_DIR)
 
 setup: ## Setup the Arduino-cli environment
-setup: env
+setup: env setup-lib
 	$(ARDUINO_CLI) config add board_manager.additional_urls $(ESPRESSIF_BOARDS_URL)
 	$(ARDUINO_CLI) core download esp32:esp32
 	$(ARDUINO_CLI) core install esp32:esp32
+
+setup-lib: ## Install the required libraries
 	$(ARDUINO_CLI) lib install RemoteDebug2
 	$(ARDUINO_CLI) lib install PubSubClient
 	$(ARDUINO_CLI) lib install OneWire
 	$(ARDUINO_CLI) lib install DallasTemperature
 	$(ARDUINO_CLI) lib install ArduinoJson
 	$(ARDUINO_CLI) lib install UrlEncode
+	$(ARDUINO_CLI) lib install Hashtable
+	$(ARDUINO_CLI) lib install ArrayList
+
+arduino-update: ## Update the Arduino-cli
+	$(ARDUINO_CLI) update
+
+upgrade-lib: ## Upgrade the installed libraries
+	$(ARDUINO_CLI) lib upgrade
 
 # Default target
 all: compile
