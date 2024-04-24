@@ -39,10 +39,13 @@ COMPILE_CMD = $(ARDUINO_CLI) compile -v --fqbn $(BOARD) --build-path $(BUILD_DIR
 UPLOAD_CMD = $(ARDUINO_CLI) upload -v -p $(PORT) --fqbn $(BOARD) --input-dir $(BUILD_DIR)
 
 setup: ## Setup the Arduino-cli environment
-setup: env setup-lib
+setup: env patch-lib
 	$(ARDUINO_CLI) config add board_manager.additional_urls $(ESPRESSIF_BOARDS_URL)
 	$(ARDUINO_CLI) core download esp32:esp32
 	$(ARDUINO_CLI) core install esp32:esp32
+
+patch-lib: setup-lib
+	sed -i 's/#define ELEGANTOTA_USE_ASYNC_WEBSERVER 0/#define ELEGANTOTA_USE_ASYNC_WEBSERVER 1/' $(ARDUINO_LIBRARIES)/ElegantOTA/src/ElegantOTA.h
 
 setup-lib: ## Install the required libraries
 	$(ARDUINO_CLI) lib install RemoteDebug2
@@ -55,6 +58,7 @@ setup-lib: ## Install the required libraries
 	$(ARDUINO_CLI) lib install ArrayList
 	$(ARDUINO_CLI) lib install AsyncTCP
 	$(ARDUINO_CLI) lib install "ESP Async WebServer"
+	$(ARDUINO_CLI) lib install ElegantOTA
 
 arduino-update: ## Update the Arduino-cli
 	$(ARDUINO_CLI) update
@@ -66,13 +70,13 @@ upgrade-lib: ## Upgrade the installed libraries
 	$(ARDUINO_CLI) lib upgrade
 
 setup-web: ## Setup the web pages
-setup-web: ./web/lib/simple.min.css ./web/lib/reef.min.js
+setup-web: ./web/pages/lib/simple.min.css ./web/pages/lib/reef.min.js
 
-./web/lib/simple.min.css:
-	curl https://cdn.simplecss.org/simple.min.css --output ./web/lib/simple.min.css
+./web/pages/lib/simple.min.css:
+	curl https://cdn.simplecss.org/simple.min.css --output ./web/pages/lib/simple.min.css
 
-./web/lib/reef.min.js:
-	curl https://cdn.jsdelivr.net/npm/reefjs@13.0.2/dist/reef.min.js --output ./web/lib/reef.min.js
+./web/pages/lib/reef.min.js:
+	curl https://cdn.jsdelivr.net/npm/reefjs@13.0.2/dist/reef.min.js --output ./web/pages/lib/reef.min.js
 
 # Default target
 all: compile
@@ -82,10 +86,11 @@ compile-pages: setup-web
 	- rm -f ./web/build/*.css
 	- rm -f ./web/build/*.js
 	- rm -f ./web/build/*.html
-	- cp ./web/lib/* ./web/build/
-	- find ./web/pages -name '*.html' -exec sh -c 'html-minifier --collapse-whitespace --remove-comments --remove-optional-tags --remove-redundant-attributes --remove-script-type-attributes --remove-tag-whitespace --use-short-doctype --minify-css true --minify-js true "$$0" -o "./web/build/$$(basename "$$0" .html).html"' {} \;
-	- find ./web/pages -name '*.js' -exec sh -c 'uglifyjs "$$0" -o "./web/build/$$(basename "$$0" .js).js"' {} \;
-	- find ./web/pages -name '*.css' -exec sh -c 'uglifycss "$$0" --output "./web/build/$$(basename "$$0" .js).css"' {} \;
+	- cp ./web/pages/lib/*.js ./web/build/
+	- cp ./web/pages/lib/*.css ./web/build/
+	- find ./web/pages -maxdepth 1 -type f -name '*.html' -exec sh -c 'html-minifier --collapse-whitespace --remove-comments --remove-optional-tags --remove-redundant-attributes --remove-script-type-attributes --remove-tag-whitespace --use-short-doctype --minify-css true --minify-js true "$$0" -o "./web/build/$$(basename "$$0" .html).html"' {} \;
+	- find ./web/pages -maxdepth 1 -type f -name '*.js' -exec sh -c 'uglifyjs "$$0" -o "./web/build/$$(basename "$$0" .js).js"' {} \;
+	- find ./web/pages -maxdepth 1 -type f -name '*.css' -exec sh -c 'uglifycss "$$0" --output "./web/build/$$(basename "$$0" .js).css"' {} \;
 	- python3 tools/gen-pages.py ./web/build/ ./src/pages/
 
 compile: ## Build the sketch

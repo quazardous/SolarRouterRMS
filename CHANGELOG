@@ -2,13 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v8.06ng] - 2024-04-07
+## [v0.3] - 2024-04-24
 
 ### Refactor
-- Added a script to compile html/js into C++ code
+- Refactor WiFi to be more async friendly
+- Use Async Web Server (web+ota)
+- Add uglifyjs/uglifycss/html_minifier to the web pages precompilation
 
-## [v8.06ng2] - 2024-04-18
+## [v0.2] - 2024-04-18
 
 ### Refactor
 - Split code in modules using namespaces
 - Create mapped setter/getter
+
+## [v0.1] - 2024-04-07
+
+### Refactor
+- Added a script to compile html/js into C++ code
+
+

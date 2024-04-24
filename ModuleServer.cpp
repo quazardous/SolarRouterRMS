@@ -5,7 +5,9 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include <ElegantOTA.h>
 #include "ModuleDebug.h"
+#include "pages.h"
 
 #define RMS_WEB_SERVER_PORT 80
 
@@ -49,6 +51,12 @@ namespace ModuleServer
     void boot()
     {
         // Init Web Server on port 80
+        server.on("/lib/simple.min.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/css", pages[RMS_PAGE_SIMPLE_MIN_CSS]);
+        });
+        server.on("/lib/reef.min.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/javascript", pages[RMS_PAGE_REEF_MIN_JS]);
+        });
         server.on("/", HTTP_GET, handleRoot);
         server.on("/MainJS", handleMainJS);
         server.on("/Para", handlePara);
@@ -75,7 +83,15 @@ namespace ModuleServer
         server.on("/AP_ScanWifi", handleAP_ScanWifi);
         server.on("/AP_SetWifi", handleAP_SetWifi);
         server.onNotFound(handleNotFound);
+
+        ElegantOTA.begin(&server); // Start ElegantOTA
         server.begin();
         ModuleDebug::getDebug().println("HTTP Async Server started");
+    }
+
+    void loop(unsigned long msLoop)
+    {
+        // handles reboot after update
+        ElegantOTA.loop();
     }
 } // namespace ModuleServer

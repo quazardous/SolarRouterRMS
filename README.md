@@ -44,6 +44,7 @@ Install miscellaneous tools. Open an admin PowerShell/Terminal and type the foll
 ```bash
 choco install make
 choco install curl
+choco install sed
 choco install arduino-cli
 choco install python3 --pre
 ```
@@ -67,6 +68,8 @@ Finally we need to setup Arduino Cli dependencies.
 ```bash
 make setup
 ```
+
+NB: the install will patch the file `/path/to/arduino/libraries/ElegantOTA/src/ElegantOTA.h` as explained [here](https://docs.elegantota.pro/async-mode/).
 
 #### Optionally
 

@@ -66,7 +66,6 @@
 #include "ModuleSensor.h"
 #include "ModuleTime.h"
 #include "ModuleWifi.h"
-#include "ModuleOTAUpdate.h"
 #include "ModuleTriggers.h"
 #include "ModuleHardware.h"
 #include "ModulePowerMeter.h"
@@ -89,7 +88,6 @@ void setup()
     ModuleEDF::boot();
     ModuleDebug::boot(); // init remote debug
     ModuleServer::boot();
-    ModuleOTAUpdate::boot();
     ModulePowerMeter::boot();
     ModuleTriggers::boot();
 
@@ -120,7 +118,7 @@ void loop()
     unsigned long msLoop = millis();
     ModuleCore::loop(msLoop);
     ModuleHardware::loop(msLoop);
-    ModuleOTAUpdate::loop(msLoop);
+    ModuleServer::loop(msLoop);
     ModuleTime::loop(msLoop);
     ModuleSensor::loop(msLoop);
     ModuleDebug::loop(msLoop);

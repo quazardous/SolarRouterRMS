@@ -2,7 +2,7 @@
 /build/
 /web/build/*
 !/web/build/readme.txt
-/web/lib/*
-!/web/lib/readme.txt
+/web/pages/lib/*
+!/web/pages/lib/readme.txt
 /.vscode/
 /trash/
