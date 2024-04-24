@@ -19,48 +19,48 @@ namespace ModuleServer
 
         // Reset du timeout pour rester en mode AP
         ModuleWifi::resetApTimout();
-        request->send(200, "text/html", pages[ModuleWifi::isStationMode() ? RMS_PAGE_MAIN_HTML : RMS_PAGE_CONNECT_HTML]);
+        request->send_P(200, "text/html", pages[ModuleWifi::isStationMode() ? RMS_PAGE_MAIN_HTML : RMS_PAGE_CONNECT_HTML]);
     }
 
     void handleMainJS(AsyncWebServerRequest *request)
     {                                                               // Code Javascript
-        request->send(200, "text/html", pages[RMS_PAGE_MAIN_JS]); // Javascript code
+        request->send_P(200, "text/html", pages[RMS_PAGE_MAIN_JS]); // Javascript code
     }
 
     void handleBrute(AsyncWebServerRequest *request)
     {
         // Page données brutes
-        request->send(200, "text/html", pages[RMS_PAGE_BRUTE_HTML]);
+        request->send_P(200, "text/html", pages[RMS_PAGE_BRUTE_HTML]);
     }
 
     void handleBruteJS(AsyncWebServerRequest *request)
     {                                                                // Code Javascript
-        request->send(200, "text/html", pages[RMS_PAGE_BRUTE_JS]); // Javascript code
+        request->send_P(200, "text/html", pages[RMS_PAGE_BRUTE_JS]); // Javascript code
     }
 
     void handleActions(AsyncWebServerRequest *request)
     {
-        request->send(200, "text/html", pages[RMS_PAGE_ACTIONS_HTML]);
+        request->send_P(200, "text/html", pages[RMS_PAGE_ACTIONS_HTML]);
     }
 
     void handleActionsJS(AsyncWebServerRequest *request)
     {
-        request->send(200, "text/html", pages[RMS_PAGE_ACTIONS_JS]);
+        request->send_P(200, "text/html", pages[RMS_PAGE_ACTIONS_JS]);
     }
 
     void handlePara(AsyncWebServerRequest *request)
     {
-        request->send(200, "text/html", pages[RMS_PAGE_PARA_HTML]);
+        request->send_P(200, "text/html", pages[RMS_PAGE_PARA_HTML]);
     }
 
     void handleParaJS(AsyncWebServerRequest *request)
     {
-        request->send(200, "text/html", pages[RMS_PAGE_PARA_JS]);
+        request->send_P(200, "text/html", pages[RMS_PAGE_PARA_JS]);
     }
 
     void handleParaRouteurJS(AsyncWebServerRequest *request)
     {
-        request->send(200, "text/html", pages[RMS_PAGE_GLOBAL_PARA_JS]);
+        request->send_P(200, "text/html", pages[RMS_PAGE_GLOBAL_PARA_JS]);
     }
 
     void handleNotFound(AsyncWebServerRequest *request)

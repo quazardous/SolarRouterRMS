@@ -1,0 +1,1 @@
+Temporary folder to hold all static pages to inject into RMS

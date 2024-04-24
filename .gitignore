@@ -1,4 +1,8 @@
 /.env.local
 /build/
+/web/build/*
+!/web/build/readme.txt
+/web/lib/*
+!/web/lib/readme.txt
 /.vscode/
 /trash/

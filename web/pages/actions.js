@@ -50,9 +50,9 @@ function TracePlanning(iAct) {
       S +="<div  class='bouton_curseur' ><div class='boutons'><input id='adds' type='button' value='-' class='tbut'  onclick='AddSub(-1," + iAct + ")' onmousemove='Disp(this)' >";
       S +="<input id='adds' type='button' value='+' class='tbut' onclick='AddSub(1," + iAct + ")' onmousemove='Disp(this)'></div>";
       S +="<div class='slideTriac' id='fen_slide" + iAct +"'><div class='slideTriacIn'>";
-            S +="<div>R&eacute;activit&eacute; lente ou charge importante</div>";
-            S +="<input type='range' min='1' max='100' value='50' id='slider" + iAct + "' style='width:30%;' oninput=\"GH('sensi" + iAct +"',Math.floor(this.value));\" onmousemove='Disp(this)' >";
-            S +="<div>R&eacute;activit&eacute; rapide ou charge faible</div><br>";
+      S +="<div>R&eacute;activit&eacute; lente ou charge importante</div>";
+      S +="<input type='range' min='1' max='100' value='50' id='slider" + iAct + "' style='width:30%;' oninput=\"GH('sensi" + iAct +"',Math.floor(this.value));\" onmousemove='Disp(this)' >";
+      S +="<div>R&eacute;activit&eacute; rapide ou charge faible</div><br>";
       S +="</div><div class='slideTriacIn'><strong><div id='sensi" + iAct + "'></div></strong></div>";
       S +="</div></div>";
       S += "<div id='infoAction" + iAct + "' class='infoAction'></div>";

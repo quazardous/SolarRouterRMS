@@ -65,12 +65,28 @@ arduino-config-dump: ## Update the Arduino-cli
 upgrade-lib: ## Upgrade the installed libraries
 	$(ARDUINO_CLI) lib upgrade
 
+setup-web: ## Setup the web pages
+setup-web: ./web/lib/simple.min.css ./web/lib/reef.min.js
+
+./web/lib/simple.min.css:
+	curl https://cdn.simplecss.org/simple.min.css --output ./web/lib/simple.min.css
+
+./web/lib/reef.min.js:
+	curl https://cdn.jsdelivr.net/npm/reefjs@13.0.2/dist/reef.min.js --output ./web/lib/reef.min.js
+
 # Default target
 all: compile
 
 compile-pages: ## Build the web pages into C++ code
-compile-pages:
-	python3 tools/gen-pages.py ./pages/ ./src/pages/
+compile-pages: setup-web
+	- rm -f ./web/build/*.css
+	- rm -f ./web/build/*.js
+	- rm -f ./web/build/*.html
+	- cp ./web/lib/* ./web/build/
+	- find ./web/pages -name '*.html' -exec sh -c 'html-minifier --collapse-whitespace --remove-comments --remove-optional-tags --remove-redundant-attributes --remove-script-type-attributes --remove-tag-whitespace --use-short-doctype --minify-css true --minify-js true "$$0" -o "./web/build/$$(basename "$$0" .html).html"' {} \;
+	- find ./web/pages -name '*.js' -exec sh -c 'uglifyjs "$$0" -o "./web/build/$$(basename "$$0" .js).js"' {} \;
+	- find ./web/pages -name '*.css' -exec sh -c 'uglifycss "$$0" --output "./web/build/$$(basename "$$0" .js).css"' {} \;
+	- python3 tools/gen-pages.py ./web/build/ ./src/pages/
 
 compile: ## Build the sketch
 	$(COMPILE_CMD)

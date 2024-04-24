@@ -22,7 +22,7 @@ def append_gen_file(filepath, content="", init=False):
 def gen_page_setup_function(dictionary_header_filename, pages_header_filename, filename, counter):
     # Generate the variable name from the filename
     info = os.path.splitext(filename)
-    variable_basename = info[0].replace("-", "_")
+    variable_basename = info[0].replace("-", "_").replace(".", "_")
     ext = info[1][1:]
 
     # Read the contents of the HTML file
@@ -65,7 +65,7 @@ def generate_files(input_folder, output_folder):
     counter = 0
     # Loop through the input folder
     for filename in os.listdir(input_folder):
-        if filename.endswith(".html") or filename.endswith(".js"):
+        if filename.endswith(".html") or filename.endswith(".js") or filename.endswith(".css"):
             counter = gen_page_setup_function(dictionary_header_filename, pages_header_filename, filename, counter)
 
     content = """\
@@ -78,7 +78,7 @@ def generate_files(input_folder, output_folder):
 # Check if the correct number of command line arguments is provided
 if len(sys.argv) != 3:
     # Display help message
-    print("Usage: python gen-pages.py <input_folder> <output_folder>")
+    print("Usage: python gen-pages.py <namespace> <input_folder> <output_folder>")
     sys.exit(1)
 
 # Read the input and output folder paths from command args
