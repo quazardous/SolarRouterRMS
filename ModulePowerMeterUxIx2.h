@@ -12,5 +12,5 @@ namespace ModulePowerMeterUxIx2
     void gauge(unsigned long msLoop);
 
     // web handlers
-    void httpAjaxRMS(WebServer& server, String& S);
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S);
 } // namespace ModulePowerMeterUxIx2

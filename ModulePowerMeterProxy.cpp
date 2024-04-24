@@ -174,9 +174,9 @@ namespace ModulePowerMeterProxy
     }
 
     // http handlers
-    void httpAjaxRMS(WebServer& server, String& S)
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S)
     {
-        int LastIdx = server.arg(0).toInt();
+        int LastIdx = request->arg((size_t)0).toInt();
 
         // Use WiFiClient class to create TCP connections
         WiFiClient clientESP_RMS;

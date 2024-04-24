@@ -1,9 +1,11 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WebServer.h>
+#include "ModuleServer.h"
 
-#define RMS_HISTORY_RANGE 370 // Nb jour historique stocké (x 4 bytes)
+// Nb jour historique stocké (x 4 bytes)
+// should not be less than 370 in case of migration from v8.06_rms
+#define RMS_HISTORY_RANGE 370
 
 #define RMS_HISTORY_5MIN_SIZE 600
 #define RMS_HISTORY_2SEC_SIZE 300
@@ -16,7 +18,7 @@ namespace ModuleHistory
     void dayIsGone();
 
     // web handlers
-    void httpAjaxHisto48h(WebServer &server, String &S);
-    void httpAjaxHisto10mn(WebServer &server, String &S);
-    void httpAjaxHistoriqueEnergie1An(WebServer &server, String &S);
+    void httpAjaxHisto48h(AsyncWebServerRequest* request, String &S);
+    void httpAjaxHisto10mn(AsyncWebServerRequest* request, String &S);
+    void httpAjaxHistoriqueEnergie1An(AsyncWebServerRequest* request, String &S);
 } // namespace ModuleHistory

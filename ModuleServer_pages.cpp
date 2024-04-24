@@ -2,82 +2,83 @@
 // *  WEB SERVER *
 // ***************
 
-#include <WebServer.h>
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 #include "ModuleWifi.h"
 #include "ModuleDebug.h"
+#include "ModuleCore.h"
 #include "pages.h"
 
 namespace ModuleServer
 {
-    extern WebServer server;
-
-    void handleRoot()
+    void handleRoot(AsyncWebServerRequest *request)
     { 
         // Pages principales
         // en AP et STA mode ou Station Mode seul
 
         // Reset du timeout pour rester en mode AP
         ModuleWifi::resetApTimout();
-        server.send(200, "text/html", pages[ModuleWifi::isStationMode() ? RMS_PAGE_MAIN_HTML : RMS_PAGE_CONNECT_HTML]);
+        request->send(200, "text/html", pages[ModuleWifi::isStationMode() ? RMS_PAGE_MAIN_HTML : RMS_PAGE_CONNECT_HTML]);
     }
 
-    void handleMainJS()
+    void handleMainJS(AsyncWebServerRequest *request)
     {                                                               // Code Javascript
-        server.send(200, "text/html", pages[RMS_PAGE_MAIN_JS]); // Javascript code
+        request->send(200, "text/html", pages[RMS_PAGE_MAIN_JS]); // Javascript code
     }
 
-    void handleBrute()
+    void handleBrute(AsyncWebServerRequest *request)
     {
         // Page données brutes
-        server.send(200, "text/html", pages[RMS_PAGE_BRUTE_HTML]);
+        request->send(200, "text/html", pages[RMS_PAGE_BRUTE_HTML]);
     }
 
-    void handleBruteJS()
+    void handleBruteJS(AsyncWebServerRequest *request)
     {                                                                // Code Javascript
-        server.send(200, "text/html", pages[RMS_PAGE_BRUTE_JS]); // Javascript code
+        request->send(200, "text/html", pages[RMS_PAGE_BRUTE_JS]); // Javascript code
     }
 
-    void handleActions()
+    void handleActions(AsyncWebServerRequest *request)
     {
-        server.send(200, "text/html", pages[RMS_PAGE_ACTIONS_HTML]);
+        request->send(200, "text/html", pages[RMS_PAGE_ACTIONS_HTML]);
     }
 
-    void handleActionsJS()
+    void handleActionsJS(AsyncWebServerRequest *request)
     {
-        server.send(200, "text/html", pages[RMS_PAGE_ACTIONS_JS]);
+        request->send(200, "text/html", pages[RMS_PAGE_ACTIONS_JS]);
     }
 
-    void handlePara()
+    void handlePara(AsyncWebServerRequest *request)
     {
-        server.send(200, "text/html", pages[RMS_PAGE_PARA_HTML]);
+        request->send(200, "text/html", pages[RMS_PAGE_PARA_HTML]);
     }
 
-    void handleParaJS()
+    void handleParaJS(AsyncWebServerRequest *request)
     {
-        server.send(200, "text/html", pages[RMS_PAGE_PARA_JS]);
+        request->send(200, "text/html", pages[RMS_PAGE_PARA_JS]);
     }
 
-    void handleParaRouteurJS()
+    void handleParaRouteurJS(AsyncWebServerRequest *request)
     {
-        server.send(200, "text/html", pages[RMS_PAGE_GLOBAL_PARA_JS]);
+        request->send(200, "text/html", pages[RMS_PAGE_GLOBAL_PARA_JS]);
     }
 
-    void handleNotFound()
+    void handleNotFound(AsyncWebServerRequest *request)
     {
         // Page Web pas trouvé
-        ModuleDebug::getDebug().println(F("Fichier non trouvé"));
-        String message = "Fichier non trouvé\n\n";
+        ModuleCore::log("Not Found");
+        String message = "Not Found\n\n";
         message += "URI: ";
-        message += server.uri();
+        message += request->url();
         message += "\nMethod: ";
-        message += (server.method() == HTTP_GET) ? "GET" : "POST";
+        message += (request->method() == HTTP_GET) ? "GET" : "POST";
         message += "\nArguments: ";
-        message += server.args();
+        message += String(request->args());
         message += "\n";
-        for (uint8_t i = 0; i < server.args(); i++)
+        for (uint8_t i = 0; i < request->args(); i++)
         {
-            message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+            message += " " + request->argName(i) + ": " + request->arg(i) + "\n";
         }
-        server.send(404, "text/plain", message);
+        request->send(404, "text/plain", message);
     }
 } // namespace ModuleServer

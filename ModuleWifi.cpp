@@ -364,48 +364,34 @@ namespace ModuleWifi
     }
 
     // web handlers
-    void httpAjaxScanWifi(WebServer& server, String& S) {
+    void httpAjaxScanWifi(AsyncWebServerRequest* request, String& S) {
         String RS = RMS_RS;
         String GS = RMS_GS;
         resetWifiBug();
 
-        Serial.println("Scan start");
-
-        // WiFi.scanNetworks will return the number of networks found.
-        int n = WiFi.scanNetworks();
+        // WiFi.scanComplete will return the number of networks found.
+        int n = WiFi.scanComplete();
         Serial.println("Scan done");
         S = "";
-        if (n == 0)
+        if (n < 0)
         {
-            WiFi.scanDelete();
-            Serial.println("Pas de réseau Wifi trouvé");
+            ModuleCore::log("WIFI: scan not available");
             return;
         }
-        Serial.print(n);
-        Serial.println(" réseaux trouvés");
-        Serial.println("Nr | SSID                             | RSSI | CH | Encryption");
         for (int i = 0; i < n; ++i)
         {
-            // Print SSID and RSSI for each network found
-            Serial.printf("%2d", i + 1);
-            Serial.print(" | ");
-            Serial.printf("%-32.32s", WiFi.SSID(i).c_str());
-            Serial.print(" | ");
-            Serial.printf("%4d", WiFi.RSSI(i));
-            Serial.println();
             S += WiFi.SSID(i).c_str() + RS + WiFi.RSSI(i) + GS;
         }
-        WiFi.scanDelete();
     }
 
-    void httpUpdateWifi(WebServer& server, String& S) {
+    void httpUpdateWifi(AsyncWebServerRequest* request, String& S) {
         String RS = RMS_RS;
         String GS = RMS_GS;
         ModuleWifi::resetWifiBug();
         Serial.println("Set Wifi");
-        String NewSsid = server.arg("ssid");
+        String NewSsid = request->arg("ssid");
         NewSsid.trim();
-        String NewPassword = server.arg("passe");
+        String NewPassword = request->arg("passe");
         NewPassword.trim();
         Serial.println(NewSsid);
         Serial.println(NewPassword);

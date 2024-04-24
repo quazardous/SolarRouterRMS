@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include "Actions.h"
-#include <WebServer.h>
+#include "ModuleServer.h"
 
 //Nombre Actions Max
 #define RMS_TRIGGERS_MAX 20
@@ -37,7 +37,7 @@ namespace ModuleTriggers
     it_counters_infos_s *getItCountersInfos(bool $check = false);
 
     // handlers
-    void httpAjaxTriggersStates(WebServer& server, String& S);
-    void httpAjaxTriggers(WebServer& server, String& S);
-    void httpUpdateTriggers(WebServer& server, String& S);
+    void httpAjaxTriggersStates(AsyncWebServerRequest* request, String& S);
+    void httpAjaxTriggers(AsyncWebServerRequest* request, String& S);
+    void httpUpdateTriggers(AsyncWebServerRequest* request, String& S);
 } // namespace ModuleTriggers

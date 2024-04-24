@@ -223,7 +223,7 @@ namespace ModuleCore {
 
 
     // web handlers
-    void httpAjaxESP32(WebServer& server, String& S) {
+    void httpAjaxESP32(AsyncWebServerRequest* request, String& S) {
         String GS = RMS_GS;
         String RS = RMS_RS;
         S = "";
@@ -269,7 +269,7 @@ namespace ModuleCore {
         }
     }
 
-    void httpAjaxData(WebServer& server, String& S) {
+    void httpAjaxData(AsyncWebServerRequest* request, String& S) {
         String GS = RMS_GS;
         String RS = RMS_RS;
         // Données page d'accueil
@@ -326,7 +326,7 @@ namespace ModuleCore {
     };
     const int ajax_params_map_size = sizeof(ajax_params_map) / sizeof(elem_map_t);
 
-    void httpAjaxPara(WebServer& server, String& S) {
+    void httpAjaxPara(AsyncWebServerRequest* request, String& S) {
         String RS = RMS_RS;
         S = "";
         for (int i = 0; i < ajax_params_map_size; i++)

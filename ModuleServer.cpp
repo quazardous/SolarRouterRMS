@@ -2,7 +2,9 @@
 // *  WEB SERVER *
 // ***************
 
-#include <WebServer.h>
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 #include "ModuleDebug.h"
 
 #define RMS_WEB_SERVER_PORT 80
@@ -10,44 +12,44 @@
 namespace ModuleServer
 {
     // Simple Web Server on port 80
-    WebServer server(RMS_WEB_SERVER_PORT);
+    AsyncWebServer server(RMS_WEB_SERVER_PORT);
 
     // in file ModuleServer_pages.cpp
-    void handleRoot();
-    void handleMainJS();
-    void handleBrute();
-    void handleBruteJS();
-    void handleActions();
-    void handleActionsJS();
-    void handlePara();
-    void handleParaJS();
-    void handleParaRouteurJS();
-    void handleNotFound();
+    void handleRoot(AsyncWebServerRequest *request);
+    void handleMainJS(AsyncWebServerRequest *request);
+    void handleBrute(AsyncWebServerRequest *request);
+    void handleBruteJS(AsyncWebServerRequest *request);
+    void handleActions(AsyncWebServerRequest *request);
+    void handleActionsJS(AsyncWebServerRequest *request);
+    void handlePara(AsyncWebServerRequest *request);
+    void handleParaJS(AsyncWebServerRequest *request);
+    void handleParaRouteurJS(AsyncWebServerRequest *request);
+    void handleNotFound(AsyncWebServerRequest *request);
 
     // in file ModuleServer_ajax.cpp
-    void handleParaAjax();
-    void handleParaRouteurAjax();
-    void handleActionsAjax();
-    void handleAjaxHisto48h();
-    void handleAjaxHisto1an();
-    void handleAjaxRMS();
-    void handleAjaxESP32();
-    void handleAjaxData();
-    void handleAjaxData10mn();
-    void handleAjax_etatActions();
-    void handleAP_ScanWifi();
+    void handleParaAjax(AsyncWebServerRequest *request);
+    void handleParaRouteurAjax(AsyncWebServerRequest *request);
+    void handleActionsAjax(AsyncWebServerRequest *request);
+    void handleAjaxHisto48h(AsyncWebServerRequest *request);
+    void handleAjaxHisto1an(AsyncWebServerRequest *request);
+    void handleAjaxRMS(AsyncWebServerRequest *request);
+    void handleAjaxESP32(AsyncWebServerRequest *request);
+    void handleAjaxData(AsyncWebServerRequest *request);
+    void handleAjaxData10mn(AsyncWebServerRequest *request);
+    void handleAjax_etatActions(AsyncWebServerRequest *request);
+    void handleAP_ScanWifi(AsyncWebServerRequest *request);
 
     // in file ModuleServer_updates.cpp
-    void handleParaUpdate();
-    void handleActionsUpdate();
-    void handleSetGpio();
-    void handleRestart();
-    void handleAP_SetWifi();
+    void handleParaUpdate(AsyncWebServerRequest *request);
+    void handleActionsUpdate(AsyncWebServerRequest *request);
+    void handleSetGpio(AsyncWebServerRequest *request);
+    void handleRestart(AsyncWebServerRequest *request);
+    void handleAP_SetWifi(AsyncWebServerRequest *request);
 
     void boot()
     {
         // Init Web Server on port 80
-        server.on("/", handleRoot);
+        server.on("/", HTTP_GET, handleRoot);
         server.on("/MainJS", handleMainJS);
         server.on("/Para", handlePara);
         server.on("/ParaJS", handleParaJS);
@@ -74,12 +76,6 @@ namespace ModuleServer
         server.on("/AP_SetWifi", handleAP_SetWifi);
         server.onNotFound(handleNotFound);
         server.begin();
-        ModuleDebug::getDebug().println("HTTP server started");
+        ModuleDebug::getDebug().println("HTTP Async Server started");
     }
-
-    void loop(unsigned long msLoop)
-    {
-        server.handleClient();
-    }
-
 } // namespace ModuleServer

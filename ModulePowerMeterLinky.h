@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WebServer.h>
+#include "ModuleServer.h"
 
 namespace ModulePowerMeterLinky
 {
@@ -9,5 +9,5 @@ namespace ModulePowerMeterLinky
     void gauge(unsigned long msLoop);
 
     // web handlers
-    void httpAjaxRMS(WebServer& server, String& S);
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S);
 } // namespace ModulePowerMeterLinky

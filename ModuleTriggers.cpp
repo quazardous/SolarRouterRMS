@@ -352,7 +352,7 @@ namespace ModuleTriggers
         it_counters_infos.synchronized = (int) (it_counters_infos.it_mode > 0);
     }
 
-    void httpAjaxTriggersStates(WebServer& server, String& S) {
+    void httpAjaxTriggersStates(AsyncWebServerRequest* request, String& S) {
         String RS = RMS_RS;
         String GS = RMS_GS;
         int NbActifs = 0;
@@ -387,7 +387,7 @@ namespace ModuleTriggers
             + GS + NbActifs + GS + S;
     }
 
-    void httpAjaxTriggers(WebServer& server, String& S) {
+    void httpAjaxTriggers(AsyncWebServerRequest* request, String& S) {
         String RS = RMS_RS;
         String GS = RMS_GS;
         S = String(ModuleSensor::getTemperature()) 
@@ -399,11 +399,11 @@ namespace ModuleTriggers
         }
     }
 
-    void httpUpdateTriggers(WebServer& server, String& S) {
+    void httpUpdateTriggers(AsyncWebServerRequest* request, String& S) {
         String RS = RMS_RS;
         String GS = RMS_GS;
         int adresse_max = 0;
-        String s = server.arg("actions");
+        String s = request->arg("actions");
         String ligne = "";
         resetGpioActions(); // RAZ anciennes actions
         NbActions = 0;

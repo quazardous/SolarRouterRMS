@@ -53,9 +53,14 @@ setup-lib: ## Install the required libraries
 	$(ARDUINO_CLI) lib install UrlEncode
 	$(ARDUINO_CLI) lib install Hashtable
 	$(ARDUINO_CLI) lib install ArrayList
+	$(ARDUINO_CLI) lib install AsyncTCP
+	$(ARDUINO_CLI) lib install "ESP Async WebServer"
 
 arduino-update: ## Update the Arduino-cli
 	$(ARDUINO_CLI) update
+
+arduino-config-dump: ## Update the Arduino-cli
+	$(ARDUINO_CLI) config dump
 
 upgrade-lib: ## Upgrade the installed libraries
 	$(ARDUINO_CLI) lib upgrade

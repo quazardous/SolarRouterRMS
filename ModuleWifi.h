@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WebServer.h>
+#include "ModuleServer.h"
 
 namespace ModuleWifi
 {
@@ -54,6 +54,6 @@ namespace ModuleWifi
     unsigned int getWifiBug();
 
     // web handlers
-    void httpAjaxScanWifi(WebServer& server, String& S);
-    void httpUpdateWifi(WebServer& server, String& S);
+    void httpAjaxScanWifi(AsyncWebServerRequest* request, String& S);
+    void httpUpdateWifi(AsyncWebServerRequest* request, String& S);
 } // namespace ModuleWifi

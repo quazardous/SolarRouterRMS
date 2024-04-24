@@ -92,7 +92,7 @@ namespace ModuleHistory
     // setters / getters
 
     // web handlers
-    void httpAjaxHistoriqueEnergie1An(WebServer& server, String& S)
+    void httpAjaxHistoriqueEnergie1An(AsyncWebServerRequest* request, String& S)
     {
         S = "";
         int Adr_SoutInjec = 0;
@@ -117,7 +117,7 @@ namespace ModuleHistory
     }
 
     // Envoi Historique de 50h (600points) toutes les 5mn
-    void httpAjaxHisto48h(WebServer& server, String& S) {
+    void httpAjaxHisto48h(AsyncWebServerRequest* request, String& S) {
         String GS = RMS_GS;
         String RS = RMS_RS;
         String HouseH = "";
@@ -152,7 +152,7 @@ namespace ModuleHistory
             + GS + TempH;
     }
 
-    void httpAjaxHisto10mn(WebServer& server, String& S) {
+    void httpAjaxHisto10mn(AsyncWebServerRequest* request, String& S) {
         // Envoi Historique de 10mn (300points)Energie Active Soutiré - Injecté
         String GS = RMS_GS;
         String RS = RMS_RS;

@@ -124,7 +124,6 @@ void loop()
     ModuleTime::loop(msLoop);
     ModuleSensor::loop(msLoop);
     ModuleDebug::loop(msLoop);
-    ModuleServer::loop(msLoop); // TODO: use async server
     ModuleEeprom::loop(msLoop);
     ModuleHistory::loop(msLoop);
     ModuleMQTT::loop(msLoop);

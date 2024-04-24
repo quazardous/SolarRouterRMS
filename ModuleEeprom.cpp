@@ -20,10 +20,14 @@ namespace ModuleEeprom
 {
     void init();
     unsigned long readEepromKey();
+    unsigned long readEepromLegacy806Key();
     void destroy();
 
     // key read from EEPROM
     unsigned long eepromKey = 0;
+    unsigned long legacyKey = 0;
+
+    bool readOnly = true;
 
     String GS = RMS_GS;  //Group Separator
     String RS = RMS_RS;  //Record Separator
@@ -49,6 +53,16 @@ namespace ModuleEeprom
     void boot()
     {
         init();
+        unsigned long legacyKey = readEepromLegacy806Key();
+        if (legacyKey == RMS_EEPROM_LEGACY806_KEY)
+        {
+            readOnly = true;
+            // legacy data found, migrate to new format
+            ModuleCore::log("Found EEPROM data from v8.06rms");
+            ModuleCore::log("EEPROM will be read only until migration is done");
+            return;
+        }
+        readOnly = false;
         // Lecture Clé pour identifier si la ROM a déjà été initialisée
         eepromKey = readEepromKey();
         ModuleCore::log("EEPROM KEY: " + String(eepromKey));
@@ -132,6 +146,11 @@ namespace ModuleEeprom
     }
 
     void writeHistoDay(short idxDay, long energy) {
+        if (readOnly)
+        {
+            ModuleCore::log("EEPROM: Cannot write history data of day (read-only)");
+            return;
+        }
         // On enregistre les conso en début de journée pour l'historique de l'année
         EEPROM.writeLong(getHistoryAddress(idxDay), energy);
         EEPROM.writeString(addressMap[ADDRESS_MAP_TODAY], ModuleTime::getJourCourant());
@@ -149,6 +168,11 @@ namespace ModuleEeprom
     }
 
     void writeEnergyData(unsigned long energyInTriac, unsigned long energyOutTriac, unsigned long energyInHouse, unsigned long energyOutHouse) {
+        if (readOnly)
+        {
+            ModuleCore::log("EEPROM: Cannot write energy data (read-only)");
+            return;
+        }
         EEPROM.writeULong(addressMap[ADDRESS_MAP_TRIAC_ENERGY_IN], energyInTriac);
         EEPROM.writeULong(addressMap[ADDRESS_MAP_TRIAC_ENERGY_OUT], energyOutTriac);
         EEPROM.writeULong(addressMap[ADDRESS_MAP_HOUSE_ENERGY_IN], energyInHouse);
@@ -163,6 +187,11 @@ namespace ModuleEeprom
 
     void writeToday(const String &today)
     {
+        if (readOnly)
+        {
+            ModuleCore::log("EEPROM: Cannot write today (read-only)");
+            return;
+        }
         char buffer[9];
         strncpy(buffer, today.c_str(), 8);
         buffer[8] = '\0';
@@ -197,9 +226,27 @@ namespace ModuleEeprom
         return EEPROM.readUShort(addressMap[ADDRESS_MAP_HISTORY_DAY_IDX]);
     }
 
+    short readLegacy806Histo(long* histoEnergy)
+    {
+        // put legacy histo in RAM
+
+        int address = RMS_EEPROM_LEGACY806_HISTO_OFFSET;
+        for (short i = 0; i < RMS_EEPROM_LEGACY806_HISTO_RANGE; i++)
+        {
+            histoEnergy[i] = EEPROM.readLong(address);
+            address += sizeof(long);
+        }
+        return EEPROM.readUShort(addressMap[ADDRESS_MAP_HISTORY_DAY_IDX]);
+    }
+
     unsigned long readEepromKey()
     {
         return EEPROM.readULong(addressMap[ADDRESS_MAP_PARAMS]);
+    }
+
+    unsigned long readEepromLegacy806Key()
+    {
+        return EEPROM.readULong(RMS_EEPROM_LEGACY806_KEY_OFFSET);
     }
 
     void eepromUsage(int addressEnd)
@@ -223,6 +270,11 @@ namespace ModuleEeprom
     }
     int writeEeprom()
     {
+        if (readOnly)
+        {
+            ModuleCore::log("EEPROM is read-only");
+            return 0;
+        }
         int address = addressMap[ADDRESS_MAP_PARAMS];
         address = ModuleRomMap::writeParameters(address);
         eepromUsage(address);
@@ -236,6 +288,9 @@ namespace ModuleEeprom
     }
     bool hasData() {
         return eepromKey == RMS_EEPROM_KEY;
+    }
+    bool hasLegacy806Data() {
+        return legacyKey == RMS_EEPROM_LEGACY806_KEY;
     }
 
     // setters / getters
@@ -286,7 +341,7 @@ namespace ModuleEeprom
     };
     const int ajax_params_map_size = sizeof(ajax_params_map) / sizeof(elem_map_t);
 
-    void httpAjaxPara(WebServer& server, String& S) {
+    void httpAjaxPara(AsyncWebServerRequest* request, String& S) {
         
         S = "";
         for (int i = 0; i < ajax_params_map_size; i++)
@@ -296,8 +351,8 @@ namespace ModuleEeprom
         }
     }
 
-    void httpUpdatePara(WebServer& server, String& S) {
-        String lesparas = server.arg("lesparas") + RS;
+    void httpUpdatePara(AsyncWebServerRequest* request, String& S) {
+        String lesparas = request->arg("lesparas") + RS;
         if (count_chars(lesparas.c_str(), RS[0]) != (ajax_params_map_size - 1))
         {
             S = "ERR";

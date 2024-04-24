@@ -112,7 +112,7 @@ namespace ModulePowerMeterUxI
     }
 
     // web handlers
-    void httpAjaxRMS(WebServer& server, String& S)
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S)
     {
         String GS = RMS_GS;
         String RS = RMS_RS;

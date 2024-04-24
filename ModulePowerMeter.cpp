@@ -469,7 +469,7 @@ namespace ModulePowerMeter
     }
 
     // handlers
-    void httpAjaxRMS(WebServer& server, String& S)
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S)
     {
         // Envoi des dernières données  brutes reçues du RMS
         S = "";
@@ -478,7 +478,7 @@ namespace ModulePowerMeter
 
         if (activeSource == ModulePowerMeter::SOURCE_PROXY)
         {
-            ModulePowerMeterProxy::httpAjaxRMS(server, S);
+            ModulePowerMeterProxy::httpAjaxRMS(request, S);
             return;
         }
 
@@ -489,27 +489,27 @@ namespace ModulePowerMeter
         switch (activeSource)
         {
         case ModulePowerMeter::SOURCE_UXI:
-            ModulePowerMeterUxI::httpAjaxRMS(server, S);
+            ModulePowerMeterUxI::httpAjaxRMS(request, S);
             break;
 
         case ModulePowerMeter::SOURCE_UXIX2:
-            ModulePowerMeterUxIx2::httpAjaxRMS(server, S);
+            ModulePowerMeterUxIx2::httpAjaxRMS(request, S);
             break;
 
         case ModulePowerMeter::SOURCE_LINKY:
-            ModulePowerMeterLinky::httpAjaxRMS(server, S);
+            ModulePowerMeterLinky::httpAjaxRMS(request, S);
             break;
 
         case ModulePowerMeter::SOURCE_ENPHASE:
-            ModulePowerMeterEnphase::httpAjaxRMS(server, S);
+            ModulePowerMeterEnphase::httpAjaxRMS(request, S);
             break;
 
         case ModulePowerMeter::SOURCE_SMARTG:
-            ModulePowerMeterSmartG::httpAjaxRMS(server, S);
+            ModulePowerMeterSmartG::httpAjaxRMS(request, S);
             break;
 
         case ModulePowerMeter::SOURCE_SHELLYEM:
-            ModulePowerMeterShellyEm::httpAjaxRMS(server, S);
+            ModulePowerMeterShellyEm::httpAjaxRMS(request, S);
             break;
         }
     }

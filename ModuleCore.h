@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include "helpers.h"
-#include <WebServer.h>
+#include "ModuleServer.h"
 
 namespace ModuleCore
 {
@@ -35,7 +35,7 @@ namespace ModuleCore
     void checkup();
 
     // web handlers
-    void httpAjaxESP32(WebServer& server, String& S);
-    void httpAjaxData(WebServer& server, String& S);
-    void httpAjaxPara(WebServer& server, String& S);
+    void httpAjaxESP32(AsyncWebServerRequest* request, String& S);
+    void httpAjaxData(AsyncWebServerRequest* request, String& S);
+    void httpAjaxPara(AsyncWebServerRequest* request, String& S);
 } // namespace ModuleCore

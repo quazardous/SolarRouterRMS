@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WebServer.h>
+#include "ModuleServer.h"
 #include "helpers.h"
 
 #define RMS_POWER_METER_SOURCE_NONE "*NONE*"
@@ -105,5 +105,5 @@ namespace ModulePowerMeter
     void powerFilter();
 
     // handlers
-    void httpAjaxRMS(WebServer& server, String& S);
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S);
 } // namespace ModulePowerMeter

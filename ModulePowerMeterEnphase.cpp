@@ -326,7 +326,7 @@ namespace ModulePowerMeterEnphase
     }
 
     // web handlers
-    void httpAjaxRMS(WebServer& server, String& S) {
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S) {
         String GS = RMS_GS;
         String RS = RMS_RS;
         ModulePowerMeter::electric_data_t *elecDataHouse = ModulePowerMeter::getElectricData();

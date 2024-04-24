@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Arduino.h>
+#include <ESPAsyncWebServer.h>
 
 namespace ModuleServer {
     void boot();
-    void loop(unsigned long msLoop);
 } // namespace ModuleServer

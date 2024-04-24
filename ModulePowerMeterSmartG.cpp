@@ -83,7 +83,7 @@ namespace ModulePowerMeterSmartG
     }
 
     // web handlers
-    void httpAjaxRMS(WebServer& server, String& S) {
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S) {
         String GS = RMS_GS;
         S += GS + SG_dataBrute;
     }

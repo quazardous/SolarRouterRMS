@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include <WebServer.h>
+#include "ModuleServer.h"
 
 namespace ModulePowerMeterShellyEm
 {
@@ -14,5 +14,5 @@ namespace ModulePowerMeterShellyEm
     unsigned short getPhasesNumber();
 
     // web handlers
-    void httpAjaxRMS(WebServer& server, String& S);
+    void httpAjaxRMS(AsyncWebServerRequest* request, String& S);
 } // namespace ModulePowerMeterShellyEm
