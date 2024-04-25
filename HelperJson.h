@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
+#include "ModuleElemMap.h"
 
 namespace HelperJson
 {
@@ -10,4 +12,5 @@ namespace HelperJson
     long LongJson(String nom, String Json);
     long shiftedLongJson(String nom, String Json, char sep = ',', int shift = 999);
     float ValJsonSG(String nom, String Json);
+    void e2json(JsonDocument &doc, ModuleElemMap::elem_map_t* e, void* context = NULL);
 } // namespace HelperJson

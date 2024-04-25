@@ -38,4 +38,7 @@ namespace ModuleCore
     void httpAjaxESP32(AsyncWebServerRequest* request, String& S);
     void httpAjaxData(AsyncWebServerRequest* request, String& S);
     void httpAjaxPara(AsyncWebServerRequest* request, String& S);
+
+    // API handlers
+    void apiHello(AsyncWebServerRequest* request, JsonDocument& doc);
 } // namespace ModuleCore

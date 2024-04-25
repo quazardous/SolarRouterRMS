@@ -16,6 +16,8 @@ namespace ModuleServer
     // Simple Web Server on port 80
     AsyncWebServer server(RMS_WEB_SERVER_PORT);
 
+    void bootApi(AsyncWebServer& server);
+
     // in file ModuleServer_pages.cpp
     void handleRoot(AsyncWebServerRequest *request);
     void handleMainJS(AsyncWebServerRequest *request);
@@ -51,13 +53,36 @@ namespace ModuleServer
     void boot()
     {
         // Init Web Server on port 80
-        server.on("/lib/simple.min.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bootApi(server);
+
+        // non minified URL
+        server.on("/lib/simple.css", HTTP_GET, [](AsyncWebServerRequest *request) {
             request->send_P(200, "text/css", pages[RMS_PAGE_SIMPLE_MIN_CSS]);
         });
-        server.on("/lib/reef.min.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+        // non minified URL
+        server.on("/lib/reef.js", HTTP_GET, [](AsyncWebServerRequest *request) {
             request->send_P(200, "text/javascript", pages[RMS_PAGE_REEF_MIN_JS]);
         });
-        server.on("/", HTTP_GET, handleRoot);
+        server.on("/js/rms.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/javascript", pages[RMS_PAGE_RMS_JS]);
+        });
+        server.on("/js/helpers.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/javascript", pages[RMS_PAGE_HELPERS_JS]);
+        });
+        server.on("/js/render.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/javascript", pages[RMS_PAGE_RENDER_JS]);
+        });
+        server.on("/js/app.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/javascript", pages[RMS_PAGE_APP_JS]);
+        });
+        server.on("/css/rms.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/css", pages[RMS_PAGE_RMS_CSS]);
+        });
+
+        server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/html", pages[RMS_PAGE_INDEX_HTML]);
+        });
+        // server.on("/", HTTP_GET, handleRoot);
         server.on("/MainJS", handleMainJS);
         server.on("/Para", handlePara);
         server.on("/ParaJS", handleParaJS);

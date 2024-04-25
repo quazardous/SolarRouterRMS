@@ -6,9 +6,10 @@
 namespace ModuleElemMap
 {
     // list of kown elements
+    // don't forget to update elem_names
     enum elem_t
     {
-        ELEM_VERSION,
+        ELEM_VERSION = 0,
         ELEM_EEPROM_KEY,
         ELEM_WIFI_SSID,
         ELEM_WIFI_PASSWORD,
@@ -18,7 +19,7 @@ namespace ModuleElemMap
         ELEM_NETMASK,
         ELEM_DNS,
         ELEM_SOURCE,
-        ELEM_DATA_SOURCE,
+        ELEM_DATA_SOURCE, // 10
         ELEM_EXT_IP,
         ELEM_ENPHASE_USER,
         ELEM_ENPHASE_PWD,
@@ -28,7 +29,7 @@ namespace ModuleElemMap
         ELEM_MQTT_IP,
         ELEM_MQTT_PORT,
         ELEM_MQTT_USER,
-        ELEM_MQTT_PWD,
+        ELEM_MQTT_PWD, // 20
         ELEM_MQTT_PREFIX,
         ELEM_MQTT_DEVICE_NAME,
         ELEM_ROUTER_NAME,
@@ -38,7 +39,7 @@ namespace ModuleElemMap
         ELEM_TEMPERATURE,
         ELEM_CALIB_U,
         ELEM_CALIB_I,
-        ELEM_TEMPO_EDF_ON,
+        ELEM_TEMPO_EDF_ON, // 30
         // Triggers
         ELEM_TRIGGERS_COUNT,
         // Trigger sub elements
@@ -114,6 +115,7 @@ namespace ModuleElemMap
     String e2s(elem_map_t* elem, void* context = NULL);
     // string to setter
     void s2e(elem_map_t* elem, const String& str, void* context = NULL);
+    const char* elemName(elem_t elem);
 
     #undef RMS_ELEM_MAP_MAIN_ACCESSORS
     #define RMS_ELEM_MAP_MAIN_ACCESSORS(elem, type) \

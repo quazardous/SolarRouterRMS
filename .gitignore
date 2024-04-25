@@ -4,5 +4,7 @@
 !/web/build/readme.txt
 /web/pages/lib/*
 !/web/pages/lib/readme.txt
+/web/lib/*
+!/web/lib/readme.txt
 /.vscode/
 /trash/

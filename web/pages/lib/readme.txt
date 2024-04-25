@@ -1,1 +1,1 @@
-Folder to hold all libraries to inject into RMS (see Makefile)
+Folder to hold all dev libraries.

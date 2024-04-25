@@ -35,7 +35,7 @@ def gen_page_setup_function(pages_h_filename, pages_cpp_filename, filename, coun
     append_gen_file(pages_h_filename, f"#define {dictionary_entry} {counter}\n")
     counter += 1
 
-    append_gen_file(pages_cpp_filename, f"    // Generated from {filename}\n")
+    append_gen_file(pages_cpp_filename, f"    // {dictionary_entry}: generated from {filename}\n")
     append_gen_file(pages_cpp_filename, f"    R\"=====(\n{file_content}\n)=====\",\n")
     return counter
 
@@ -66,7 +66,7 @@ def generate_files(input_folder, output_folder):
 
     counter = 0
     # Loop through the input folder
-    for filename in os.listdir(input_folder):
+    for filename in sorted(os.listdir(input_folder)):
         if filename.endswith(".html") or filename.endswith(".js") or filename.endswith(".css"):
             counter = gen_page_setup_function(pages_h_filename, pages_cpp_filename, filename, counter)
 

@@ -11,6 +11,68 @@
 #include "ModuleMQTT.h"
 
 namespace ModuleElemMap {
+
+    // Element names
+    // NB: order must match the enum in ModuleElemMap.h
+    const char* elem_names[] = {
+        "version",
+        "eepromKey",
+        "wifiSsid",
+        "wifiPassword",
+        "dhcpOn",
+        "staticIp",
+        "gateway",
+        "netmask",
+        "dns",
+        "source",
+        "dataSource", // 10
+        "extIp",
+        "enphaseUser",
+        "enphasePwd",
+        "enphaseSerial",
+        "shellyEmPhases",
+        "mqttRepeat",
+        "mqttIp",
+        "mqttPort",
+        "mqttUser",
+        "mqttPwd", // 20
+        "mqttPrefix",
+        "mqttDeviceName",
+        "routerName",
+        "fixProbeName",
+        "mobileProbeName",
+        "temperatureName",
+        "temperature",
+        "calibU",
+        "calibI",
+        "tempoEdfOn", // 30
+        "triggersCount",
+        // Triggers
+        "triggerTitle",
+        "triggerHost",
+        "triggerPort",
+        "triggerOrdreOn",
+        "triggerOrdreOff",
+        "triggerRepeat",
+        "triggerTempo",
+        "triggerReact",
+        "triggerActive",
+        "triggerPeriodsCount",
+        // Trigger Periods
+        "triggerPeriodHfin",
+        "triggerPeriodHdeb",
+        "triggerPeriodVmin",
+        "triggerPeriodVmax",
+        "triggerPeriodTinf",
+        "triggerPeriodTsup",
+        "triggerPeriodTarif",
+        "triggerPeriodType",
+    };
+
+    const char* elemName(elem_t elem) {
+        return elem_names[elem];
+    }
+
     #define RMS_ELEM_MAP_MAIN_GETTER_ONLY(elem, type, get) \
         type elemGet ## elem(void* context) \
         { \
@@ -67,7 +129,7 @@ namespace ModuleElemMap {
     // setters / getters for mapped Elements
     // mainRomMap
     RMS_ELEM_MAP_MAIN_GETTER_ONLY(Version, const char *, ModuleCore::getVersion)
-    RMS_ELEM_MAP_MAIN_ACCESSORS(EepromKey, unsigned long, ModuleEeprom::setEepromKey, ModuleEeprom::getEepromKey)
+    RMS_ELEM_MAP_MAIN_GETTER_ONLY(EepromKey, unsigned long, ModuleEeprom::getEepromKey)
     RMS_ELEM_MAP_MAIN_ACCESSORS(RouterName, const char *, ModuleCore::setRouterName, ModuleCore::getRouterName)
     RMS_ELEM_MAP_MAIN_ACCESSORS(FixProbeName, const char *, ModuleCore::setFixProbeName, ModuleCore::getFixProbeName)
     RMS_ELEM_MAP_MAIN_ACCESSORS(MobileProbeName, const char *, ModuleCore::setMobileProbeName, ModuleCore::getMobileProbeName)

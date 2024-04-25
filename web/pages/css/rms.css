@@ -1,0 +1,16 @@
+dialog {
+    width: 70%;;
+}
+
+help {
+    display: block;
+    font-style: italic;
+}
+
+input.valid {
+    border: 2px solid green;
+}
+
+input.invalid {
+    border: 2px solid red;
+}

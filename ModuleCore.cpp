@@ -12,6 +12,7 @@
 #include "config.h"
 #include "version.h"
 #include "rms.h"
+#include "HelperJson.h"
 
 #define RMS_MAX_NAME_LENGTH 128
 
@@ -333,6 +334,26 @@ namespace ModuleCore {
         {
             if (i > 0) S += RS;
             S += ModuleElemMap::e2s(&ajax_params_map[i]);
+        }
+    }
+
+    elem_map_t hello_params_map[] = {
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_EEPROM_KEY, TYPE_ULONG, EepromKey, ULong),
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_SOURCE, TYPE_CSTRING, Source, CString),
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_DATA_SOURCE, TYPE_CSTRING, DataSource, CString),
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_ROUTER_NAME, TYPE_CSTRING, RouterName, CString),
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_FIX_PROBE_NAME, TYPE_CSTRING, FixProbeName, CString),
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_MOBILE_PROBE_NAME, TYPE_CSTRING, MobileProbeName, CString),
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_EXT_IP, TYPE_ULONG, ExtIp, ULong),
+        RMS_CORE_AJAX_PARAM_ELEM(ELEM_TEMPERATURE_NAME, TYPE_CSTRING, TemperatureName, CString)
+    };
+    const int hello_params_map_size = sizeof(hello_params_map) / sizeof(elem_map_t);
+
+    // API handlers
+    void apiHello(AsyncWebServerRequest* request, JsonDocument& doc) {
+        for (int i = 0; i < hello_params_map_size; i++)
+        {
+            HelperJson::e2json(doc, &hello_params_map[i]);
         }
     }
 

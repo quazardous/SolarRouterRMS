@@ -96,4 +96,34 @@ namespace HelperJson
         }
         return val;
     }
+
+    void e2json(JsonDocument &doc, ModuleElemMap::elem_map_t* e, void* context) {
+        String name = ModuleElemMap::elemName(e->element);
+        switch (e->type) {
+            case ModuleElemMap::TYPE_BYTE:
+                doc[name] = e->getter.getByte(context);
+                break;
+            case ModuleElemMap::TYPE_USHORT:
+                doc[name] = e->getter.getUShort(context);
+                break;
+            case ModuleElemMap::TYPE_SHORT:
+                doc[name] = e->getter.getShort(context);
+                break;
+            case ModuleElemMap::TYPE_ULONG:
+                doc[name] = e->getter.getULong(context);
+                break;
+            case ModuleElemMap::TYPE_LONG:
+                doc[name] = e->getter.getLong(context);
+                break;
+            case ModuleElemMap::TYPE_BOOL:
+                doc[name] = e->getter.getBool(context);
+                break;
+            case ModuleElemMap::TYPE_FLOAT:
+                doc[name] = e->getter.getFloat(context);
+                break;
+            case ModuleElemMap::TYPE_CSTRING:
+                doc[name] = String(e->getter.getCString(context));
+                break;
+        }
+    }
 } // namespace HelperJson
