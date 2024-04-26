@@ -33,7 +33,6 @@ class ManagedInput {
     }
 
     handleChange(event) {
-        console.log('Change:', event.target.value);
         this.onChange(event.target.value, event);
     }
 
@@ -142,8 +141,8 @@ class PopupTpl {
 
     }
 
-    store() {
-        if (!this._store) {
+    store(refresh) {
+        if (refresh || !this._store) {
             this._store = store(this.data(), {
                 set(data, k, v) {
                     data[k] = v;
@@ -255,8 +254,6 @@ class MultiPopup {
         }
     }
 }
-
-const multiPopup = MultiPopup.factory('multi-popup');
 
 // execute deferred functions after rendering
 addEventListener('reef:render', function (event) {

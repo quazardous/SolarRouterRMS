@@ -1,3 +1,6 @@
+// business class and component factories
+
+// popup for RMS initialization (Mode Offshore / Mode Direct)
 class PopupInitTpl extends PopupTpl {
     constructor() {
         super();
@@ -16,32 +19,35 @@ class PopupInitTpl extends PopupTpl {
         }));
         this.form.addInput(new ManagedButton('form-init-reset', (confirmed, event) => {
             if (confirmed) {
-                event.preventDefault();
                 rmsInfoBoxProxy.resetOffshoreMode();
                 this.popup.close();
             }
-        }, 'Are you sure you want to reset the form?'));
+            event.preventDefault();
+        }, 'Are you sure you want to reset the IPs?'));
     }
 
     data() {
         return {
-            localIpClass: rms.localConfig.getStationIp() ? 'valid' : 'invalid',
+            localIpClass: rms.getStationIp() ? 'valid' : 'invalid',
             apIpClass: '',
         };
     }
 
     template() {
         const store = this.store();
-        const localIp = new IpFormInputHelper('form-init-stationIp', rms.localConfig.getStationIp());
+        const localIp = new IpFormInputHelper('form-init-stationIp', rms.getStationIp());
         localIp.required = true;
         localIp.label = 'Local IP';
         localIp.help = 'Provide the IP on your local network';
         localIp.attr.class = store.value.localIpClass;
-        const apIp = new IpFormInputHelper('form-init-apIp', rms.localConfig.getAPIp());
+        // localIp.attr.autocomplete = 'off';
+        const apIp = new IpFormInputHelper('form-init-apIp', rms.getAPIp());
         apIp.label = 'AP IP';
         apIp.help = 'Provide the IP when in AP mode. Empty for default.';
         apIp.attr.class = store.value.apIpClass;
         apIp.attr.placeholder = DEFAULT_AP_IP;
+        // apIp.attr.autocomplete = 'off';
+        console.log('Render form init', rms.getStationIp(), rms.getAPIp());
         return `
 <h2>Initialize RMS</h2>
 <p>It seams this admin is not running on the RMS.<br> We need to kown the IP of the RMS.</p>
@@ -68,12 +74,25 @@ ${apIp.html()}
     }
 }
 
+// factories
+
+// Info Box Proxy
+/**
+ * @typedef {Object} InfoBoxProxy
+ * @property {function(string, any): void} set - Sets a value in the proxy and updates the corresponding RMS configuration.
+ * @property {function(): void} setOffshoreMode - Sets the offshore mode and updates the corresponding RMS configuration.
+ * @property {function(): void} resetOffshoreMode - Resets the offshore mode and related IPs.
+ * @property {function(string, string): void} setOffshoreModeIps - Sets the offshore mode and the station IP and AP IP.
+ */
+
+/**
+ * @returns {InfoBoxProxy}
+ */
 function rmsInfoBox() {
-    // proxy between RMS and DOM
     let data = {
         offshoreMode: false,
-        stationIp: rms.localConfig.getStationIp(),
-        apIp: rms.localConfig.getAPIp(),
+        stationIp: rms.getStationIp(),
+        apIp: rms.getAPIp(),
     };
     console.log('Data:', data);
     const rmsInfoBoxProxy = store({}, {
@@ -105,8 +124,8 @@ function rmsInfoBox() {
             if (rms.offshoreMode) {
                 return `
     <b><a id="#rms-info-config" href="#" onClick="config()" title="Click to config">OFFSHORE MODE</a></b>
-    Local IP: <b>${rms.localConfig.getStationIp()}</b> -
-    AP IP: <b>${rms.localConfig.getAPIp()}</b>
+    Local IP: <b>${rms.getStationIp()}</b> -
+    AP IP: <b>${rms.getAPIp()}</b>
     `;
             }
             return '<b><a id="#rms-info-config" href="#" onClick="config()" title="Click to config">DIRECT MODE</a></b>';
@@ -114,4 +133,22 @@ function rmsInfoBox() {
     });
 
     return rmsInfoBoxProxy;
+}
+
+function businessListeners() {
+    // checking if we are in Offshore mode or not
+    document.addEventListener('DOMContentLoaded', () => {
+        rms.checkHello().then(data => {
+            console.log('Hello:', data);
+        }).catch(error => {
+            // seams we are running in offshore mode aka from local file system or another server
+            // rms.setOffshoreMode();
+            rmsInfoBoxProxy.setOffshoreMode();
+            console.error('Error checking hello:', error);
+            if (!rms.hasLocalConfig()) {
+                console.log('Local storage has not been initialized.');
+                multiPopup.popup('init');
+            }
+        });
+    });
 }
