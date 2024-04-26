@@ -1,39 +1,40 @@
-/**
- * @var {Reef} reef
- * @source ../lib/reef.js
- */
-
-/**
- * @var {SolarRouterRMS} rms
- */
-
 let {signal, component, render, store} = reef;
 
 class ManagedInput {
     constructor(id, onChange) {
         this.id = id;
         this.onChange = onChange;
+        this.listeners = [];
     }
 
-    addListener() {
+    addListeners() {
         const element = document.getElementById(this.id);
-        console.log('Id:', this.id, 'Element:', element);
         // const inputType = element.getAttribute('type').toLowerCase();
         const tagName = element.tagName.toLowerCase();
+        const onChange = this.handleChange.bind(this);
         if (tagName === 'input') {
-            element.addEventListener('input', this.handleChange.bind(this));
+            this.addEventListener('input', onChange);
         } else {
-            element.addEventListener('change', this.handleChange.bind(this));
+            this.addEventListener('change', onChange);
         }
     }
 
-    removeListener() {
+    addEventListener(event, callback) {
         const element = document.getElementById(this.id);
-        element.removeEventListener('change', this.handleChange.bind(this));
+        this.listeners.push({element, event, callback});
+        element.addEventListener(event, callback);
+    }
+
+    removeListeners() {
+        while (this.listeners.length > 0) {
+            const listener = this.listeners.shift();
+            listener.element.removeEventListener(listener.event, listener.callback);
+        }
     }
 
     handleChange(event) {
-        this.onChange(event.target.value, event.target);
+        console.log('Change:', event.target.value);
+        this.onChange(event.target.value, event);
     }
 
     getValue() {
@@ -41,10 +42,33 @@ class ManagedInput {
     }
 }
 
+class ManagedButton extends ManagedInput {
+    constructor(id, onClick, confirm = '') {
+        super(id, null);
+        this.onClick = onClick;
+        this.confirm = confirm;
+        this.bypassValidation = false;
+    }
+
+    addListeners() {
+        this.addEventListener('click', this.handleClick.bind(this));
+    }
+
+    handleClick(event) {
+        let confirmed = true;
+        if (this.confirm && this.confirm !== '') {
+            confirmed = confirm(this.confirm);
+        }
+        this.onClick(confirmed, event);
+    }
+}
+
 class ManagedForm {
     constructor(id, onSubmit) {
         this.id = id;
         this.onSubmit = onSubmit;
+        this.listeners = [];
+        this.eventController = new AbortController();
         /**
          * @var {Array.<MonitoredInput>}
          */
@@ -57,20 +81,28 @@ class ManagedForm {
     addInput(input) {
         this.inputs.push(input);
     }
-    addListener() {
+
+    addListeners() {
         this.inputs.forEach(input => {
-            input.addListener();
+            input.addListeners();
         });
-        const element = document.getElementById(this.id);
-        element.addEventListener('submit', this.handleSubmit.bind(this));
+        this.addEventListener('submit', this.handleSubmit.bind(this));
     }
 
-    removeListener() {
-        this.inputs.forEach(input => {
-            input.removeListener();
-        });
+    addEventListener(event, callback) {
         const element = document.getElementById(this.id);
-        element.removeEventListener('submit', this.handleSubmit.bind(this));
+        this.listeners.push({element, event, callback});
+        element.addEventListener(event, callback, {signal: this.eventController.signal});
+    }
+
+    removeListeners() {
+        while (this.listeners.length > 0) {
+            const listener = this.listeners.shift();
+            listener.element.removeEventListener(listener.event, listener.callback);
+        }
+        this.inputs.forEach(input => {
+            input.removeListeners();
+        });
     }
 
     handleSubmit(event) {
@@ -79,7 +111,7 @@ class ManagedForm {
         this.inputs.forEach(input => {
             data[input.id] = input.getValue();
         });
-        this.onSubmit(data);
+        this.onSubmit(data, event);
     }
 }
 
@@ -102,11 +134,8 @@ class PopupTpl {
         return true;
     }
 
-    /**
-     * @returns {Array.<ManagedInput>}
-     */
-    monitor() {
-        return [];
+    onShow() {
+        
     }
 
     onClose() {
@@ -122,72 +151,6 @@ class PopupTpl {
             }, this.id);
         }
         return this._store;
-    }
-}
-
-class PopupInitTpl extends PopupTpl {
-    constructor() {
-        super();
-        this.form = new ManagedForm('form-init', (data) => {
-            rmsProxy.setOfflineModeIps(data['form-init-stationIp'], data['form-init-apIp']);
-            this.popup.close();
-        });
-        this.form.addInput(new ManagedInput('form-init-stationIp', (value, input) => {
-            const data = this.store();
-            data.set('localIpClass', IPAddress.validateIP(value) ? 'valid' : 'invalid');
-        }));
-        this.form.addInput(new ManagedInput('form-init-apIp', (value, input) => {
-            const data = this.store();
-            data.set('apIpClass', value.trim() === '' || IPAddress.validateIP(value) ? 'valid' : 'invalid');
-        }));
-    }
-
-    data() {
-        return {
-            localIpClass: rms.localConfig.getStationIp() ? 'valid' : 'invalid',
-            apIpClass: '',
-        };
-    }
-
-    template() {
-        const store = this.store();
-        const localIp = new IpFormInputHelper('form-init-stationIp', rms.localConfig.getStationIp());
-        localIp.required = true;
-        localIp.label = 'Local IP';
-        localIp.help = 'Provide the IP on your local network';
-        localIp.attr.class = store.value.localIpClass;
-        const apIp = new IpFormInputHelper('form-init-apIp', rms.localConfig.getAPIp());
-        apIp.label = 'AP IP';
-        apIp.help = 'Provide the IP when in AP mode. Empty for default.';
-        apIp.attr.class = store.value.apIpClass;
-        apIp.attr.placeholder = DEFAULT_AP_IP;
-        return `
-<h2>Initialize RMS</h2>
-<p>It seams this admin is not running on the RMS.<br> We need to kown the IP of the RMS.</p>
-<form id="form-init">
-<fieldset>
-<p>
-${localIp.html()}
-</p>
-<p>
-${apIp.html()}
-</p>
-<p><button>Save</button></p>
-</fieldset>
-</form>
-`;
-    }
-
-    canClose() {
-        return false;
-    }
-
-    monitor() {
-        this.form.addListener();
-    }
-
-    onClose() {
-        this.form.removeListener();
     }
 }
 
@@ -235,7 +198,6 @@ class MultiPopup {
     }
 
     popup(tplId) {
-        console.log('Popup:', tplId);
         const self = this;
         this.closable = true;
         const renderTpl = () => {
@@ -252,17 +214,31 @@ class MultiPopup {
          * @var {PopupTpl} tpl
          */
         const tpl = this.templates[tplId];
+
+        let preventCloseCallback = null;
+        if (!tpl.canClose()) {
+            preventCloseCallback = e => {
+                if (e.key === "Escape") {
+                    e.preventDefault();
+                }
+            };
+            // prevents modal to close on ESC if not allowed
+            addEventListener('keydown', preventCloseCallback);
+        }
         
         component('#' + this.id, renderTpl, {signals: [tpl.id]});
         const popup = document.querySelector('#' + this.id);
-
         this.pendingPostRender.push(() => {
-            tpl.monitor();
+            tpl.onShow();
             popup.showModal();
             popup.addEventListener('close', () => {
+                console.log('Closing:', tpl.id);
+                if (preventCloseCallback) {
+                    removeEventListener('keydown', preventCloseCallback);
+                }
                 self.currentTpl = null;
                 tpl.onClose();
-            });
+            }, {once: true});
         });
         this.currentTpl = tpl;
     }
@@ -278,26 +254,9 @@ class MultiPopup {
             fn();
         }
     }
-
-    preventClose() {
-        return this.currentTpl && !this.currentTpl.canClose();
-    }
 }
 
 const multiPopup = MultiPopup.factory('multi-popup');
-multiPopup.registerTemplate('init', new PopupInitTpl());
-
-// prevents modal to close on ESC if not allowed
-addEventListener('keydown', e => {
-    if (e.key === "Escape") {
-        for (const popup of Object.values(MultiPopup.popups)) {
-            if (popup.preventClose()) {
-                e.preventDefault();
-                break;
-            }
-        }
-    }
-});
 
 // execute deferred functions after rendering
 addEventListener('reef:render', function (event) {
@@ -309,39 +268,13 @@ addEventListener('reef:render', function (event) {
     }
 });
 
-// proxy between RMS and DOM
-let data = {
-    offlineMode: false,
-    stationIp: rms.localConfig.getStationIp(),
-    apIp: rms.localConfig.getAPIp(),
-};
-console.log('Data:', data);
-const rmsProxy = store({}, {
-    set(data, key, value) {
-        data[key] = value;
-        rms.setConfig(key, value);
-    },
-    setOfflineMode() {
-        data['offlineMode'] = true;
-        rms.setOfflineMode();
-    },
-    setOfflineModeIps(data, stationIp, apIp) {
-        data['offlineMode'] = true;
-        data['stationIp'] = stationIp;
-        data['apIp'] = apIp;
-        rms.setOfflineModeIps(stationIp, apIp);
-    }
-}, 'rms-info');
-
-addEventListener('DOMContentLoaded', () => {
-    component('#rms-info', () => {
-        if (rms.offlineMode) {
-            return `
-<b><a id="#rms-info-config" href="#" onClick="config" title="Click to config">OFFLINE MODE</a></b>
-Local IP: <b>${rms.localConfig.getStationIp()}</b> -
-AP IP: <b>${rms.localConfig.getAPIp()}</b>
-`;
+addEventListener('click', (event) => {
+    if (['button', 'a'].includes(event.target.tagName.toLowerCase())) {
+        const message = event.target.getAttribute('confirm');
+        if(message !== null) {
+            if (!confirm(message ? message : 'Are you sure?')) {
+                event.preventDefault();
+            }
         }
-        return '<b>DIRECT MODE</b>';
-    }, {signals: ['rms-info'], events:{config: () => { multiPopup.popup('init'); }}});
+    }
 });

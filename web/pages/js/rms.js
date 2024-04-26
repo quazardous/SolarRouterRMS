@@ -2,6 +2,10 @@ const DEFAULT_AP_IP = '192.168.1.4'
 
 class LocalConfig {
     saveData(key, data) {
+        if (this.empty(data)) {
+            this.removeData(key);
+            return;
+        }
         localStorage.setItem(key, JSON.stringify(data));
     }
     getData(key) {
@@ -15,7 +19,8 @@ class LocalConfig {
         localStorage.clear();
     }
     getStationIp() {
-        return this.getData('stationIp');
+        let ip = this.getData('stationIp');
+        return this.empty(ip) ? '' : ip;
     }
     setStationIp(ip) {
         this.saveData('stationIp', ip);
@@ -73,9 +78,19 @@ class RMSAPI {
         this.baseUrl = baseUrl;
     }
 
+    url(endpoint) {
+        let url;
+        if (typeof this.baseUrl === 'function') {
+            url = this.baseUrl(endpoint);
+        } else {
+            url = this.baseUrl;
+        }
+        return `${url}${endpoint}`;
+    }
+
     get(endpoint) {
         return new Promise((resolve, reject) => {
-            fetch(`${this.baseUrl}${endpoint}`)
+            fetch(this.url(endpoint))
                 .then(response => response.json())
                 .then(data => resolve(data))
                 .catch(error => {
@@ -87,7 +102,7 @@ class RMSAPI {
 
     post(endpoint, payload) {
         return new Promise((resolve, reject) => {
-            fetch(`${this.baseUrl}${endpoint}`, {
+            fetch(this.url(endpoint), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -108,8 +123,17 @@ class SolarRouterRMS {
     constructor(configs = {}) {
         this.configs = configs;
         this.localConfig = new LocalConfig();
-        this.api = new RMSAPI();
-        this.offlineMode = false;
+        const self = this;
+        // Offshore Mode allows to use a local version of the admin panel with a remote RMS
+        // This is useful for development and testing
+        // Normally the admin panel is served by the RMS
+        this.offshoreMode = false;
+        this.api = new RMSAPI(() => {
+            if (this.offshoreMode) {
+                return `http://${self.localConfig.getStationIp()}:3000/`;
+            }
+            return '';
+        });
     }
 
     setConfig(name, value) {
@@ -128,11 +152,11 @@ class SolarRouterRMS {
         return this.api.get('api/hello');
     }
 
-    setOfflineMode(offline = true) {
-        this.offlineMode = offline;
+    setOffshoreMode(offshore = true) {
+        this.offshoreMode = offshore;
     }
 
-    setOfflineModeIps(stationIp, apIp) {
+    setOffshoreModeIps(stationIp, apIp) {
         this.localConfig.setStationIp(stationIp);
         this.localConfig.setAPIp(apIp);
     }

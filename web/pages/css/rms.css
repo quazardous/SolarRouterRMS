@@ -1,5 +1,5 @@
 dialog {
-    width: 70%;;
+    width: 70%;
 }
 
 help {
@@ -13,4 +13,18 @@ input.valid {
 
 input.invalid {
     border: 2px solid red;
+}
+
+button {
+    margin-right: 5px;
+}
+
+button[confirm], button.confirm {
+    background-color: #fa1360;
+    border-color: #fc417f;
+}
+
+button[confirm]:hover, button.confirm:hover{
+    background-color: #fc417f;
+    border-color: #fa1360;
 }

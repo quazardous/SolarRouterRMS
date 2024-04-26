@@ -72,6 +72,9 @@ namespace ModuleServer
         server.on("/js/render.js", HTTP_GET, [](AsyncWebServerRequest *request) {
             request->send_P(200, "text/javascript", pages[RMS_PAGE_RENDER_JS]);
         });
+        server.on("/js/components.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, "text/javascript", pages[RMS_PAGE_COMPONENTS_JS]);
+        });
         server.on("/js/app.js", HTTP_GET, [](AsyncWebServerRequest *request) {
             request->send_P(200, "text/javascript", pages[RMS_PAGE_APP_JS]);
         });
