@@ -77,6 +77,7 @@ ${apIp.html()}
 // factories
 
 // Info Box Proxy
+// Proxies are essentially kitchen to handle Reef JS stuff
 /**
  * @typedef {Object} InfoBoxProxy
  * @property {function(string, any): void} set - Sets a value in the proxy and updates the corresponding RMS configuration.

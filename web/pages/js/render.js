@@ -1,4 +1,6 @@
-let {signal, component, render, store} = reef;
+// Render helpers ans stuff
+
+const {signal, component, render, store} = reef;
 
 class ManagedInput {
     constructor(id, onChange) {

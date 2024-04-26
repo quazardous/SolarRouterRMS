@@ -1,3 +1,5 @@
+// miscellaneous helper classes
+
 class IPAddress {
     /**
      * @param {String} ip 
