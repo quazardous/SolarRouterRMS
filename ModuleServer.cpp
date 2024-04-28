@@ -8,6 +8,7 @@
 #include <ElegantOTA.h>
 #include "ModuleDebug.h"
 #include "pages.h"
+#include "config.h"
 
 #define RMS_WEB_SERVER_PORT 80
 
@@ -50,41 +51,53 @@ namespace ModuleServer
     void handleRestart(AsyncWebServerRequest *request);
     void handleAP_SetWifi(AsyncWebServerRequest *request);
 
+    const String MIME_JSON = "application/json";
+    const String MIME_HTML = "text/html";
+    const String MIME_CSS = "text/css";
+    const String MIME_JS = "text/javascript";
+
     void boot()
     {
+        #if RMS_WEB_SERVER_ALLOW_OFFSHORE == 1
+        // Allow CORS for Offshore mode
+        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+        #endif
+
         // Init Web Server on port 80
         bootApi(server);
 
-        // non minified URL
+        // Serving minified files on non minified URL
+        // libraries
         server.on("/lib/simple.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/css", pages[RMS_PAGE_SIMPLE_MIN_CSS]);
+            request->send_P(200, MIME_CSS, pages[RMS_PAGE_SIMPLE_MIN_CSS]);
         });
-        // non minified URL
         server.on("/lib/reef.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/javascript", pages[RMS_PAGE_REEF_MIN_JS]);
-        });
-        server.on("/js/rms.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/javascript", pages[RMS_PAGE_RMS_JS]);
-        });
-        server.on("/js/helpers.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/javascript", pages[RMS_PAGE_HELPERS_JS]);
-        });
-        server.on("/js/render.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/javascript", pages[RMS_PAGE_RENDER_JS]);
-        });
-        server.on("/js/components.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/javascript", pages[RMS_PAGE_COMPONENTS_JS]);
-        });
-        server.on("/js/app.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/javascript", pages[RMS_PAGE_APP_JS]);
-        });
-        server.on("/css/rms.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/css", pages[RMS_PAGE_RMS_CSS]);
+            request->send_P(200, MIME_JS, pages[RMS_PAGE_REEF_MIN_JS]);
         });
 
-        server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-            request->send_P(200, "text/html", pages[RMS_PAGE_INDEX_HTML]);
+        // core files
+        server.on("/css/rms.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, MIME_CSS, pages[RMS_PAGE_RMS_CSS]);
         });
+        server.on("/js/rms.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, MIME_JS, pages[RMS_PAGE_RMS_JS]);
+        });
+        server.on("/js/helpers.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, MIME_JS, pages[RMS_PAGE_HELPERS_JS]);
+        });
+        server.on("/js/ui_helpers.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, MIME_JS, pages[RMS_PAGE_UI_HELPERS_JS]);
+        });
+        server.on("/js/ui.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, MIME_JS, pages[RMS_PAGE_UI_JS]);
+        });
+        server.on("/js/app.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, MIME_JS, pages[RMS_PAGE_APP_JS]);
+        });
+        server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send_P(200, MIME_HTML, pages[RMS_PAGE_INDEX_HTML]);
+        });
+
         // server.on("/", HTTP_GET, handleRoot);
         server.on("/MainJS", handleMainJS);
         server.on("/Para", handlePara);

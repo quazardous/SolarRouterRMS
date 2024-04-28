@@ -7,6 +7,14 @@ help {
     font-style: italic;
 }
 
+.invalid {
+    color: red;
+}
+
+.valid {
+    color: green;
+}
+
 input.valid {
     border: 2px solid green;
 }
@@ -28,3 +36,4 @@ button[confirm]:hover, button.confirm:hover{
     background-color: #fc417f;
     border-color: #fa1360;
 }
+

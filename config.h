@@ -36,3 +36,8 @@
 #ifndef RMS_WIFI_KEY
 #define RMS_WIFI_KEY ""
 #endif
+
+// Allow Offshore mode. This will allow CORS for all requests.
+#ifndef RMS_WEB_SERVER_ALLOW_OFFSHORE
+#define RMS_WEB_SERVER_ALLOW_OFFSHORE 1
+#endif

@@ -94,7 +94,7 @@ class IpFormInputHelper extends FormInputHelper {
 
 class LocalConfig {
     saveData(key, data) {
-        if (this.empty(data)) {
+        if (LocalConfig.empty(data)) {
             this.removeData(key);
             return;
         }
@@ -110,7 +110,7 @@ class LocalConfig {
     clearAllData() {
         localStorage.clear();
     }
-    empty(val) {
+    static empty(val) {
 
         // test results
         //---------------

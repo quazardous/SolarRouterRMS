@@ -15,6 +15,7 @@ namespace ModuleServer
     }
 
     void bootApi(AsyncWebServer& server) {
+        // DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 
         // AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/rest/endpoint", [](AsyncWebServerRequest *request, JsonVariant &json) {
         //     StaticJsonDocument<200> data;
@@ -35,9 +36,12 @@ namespace ModuleServer
             JsonDocument doc;
             prepareJsonDoc(doc);
             ModuleCore::apiHello(request, doc);
-            String response;
-            serializeJson(doc, response);
-            request->send(200, "application/json", response);
+            String jsonStr;
+            serializeJson(doc, jsonStr);
+            request->send(200, MIME_JSON, jsonStr);
+            // AsyncWebServerResponse *response = request->beginResponse(200, "application/json", jsonStr);
+            // response->addHeader("Access-Control-Allow-Origin", "*");
+            // request->send(response);
         });
     }
 

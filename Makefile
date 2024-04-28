@@ -85,6 +85,9 @@ setup-web: ./web/pages/lib/simple.css ./web/lib/simple.min.css ./web/pages/lib/r
 	curl https://cdn.jsdelivr.net/npm/reefjs@13.0.2/dist/reef.min.js --output ./web/lib/reef.min.js
 
 dev-server: ## Start the development server	
+	http-server ./web/pages/ -p 7000 --cors
+
+light-server: ## Start the development server	
 	light-server -s ./web/pages/ -p 7000
 
 # Default target

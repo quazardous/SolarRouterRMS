@@ -1,4 +1,4 @@
-// Render helpers ans stuff
+// UI render helpers ans stuff
 
 const {signal, component, render, store} = reef;
 

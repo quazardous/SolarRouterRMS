@@ -1,11 +1,11 @@
-// business class and component factories
+// UI business class and UI component factories
 
 // popup for RMS initialization (Mode Offshore / Mode Direct)
 class PopupInitTpl extends PopupTpl {
     constructor() {
         super();
         this.form = new ManagedForm('form-init', (data) => {
-            rmsInfoBoxProxy.setOffshoreModeIps(data['form-init-stationIp'], data['form-init-apIp']);
+            rmsInfoBoxProxy.setOffshoreIps(data['form-init-stationIp'], data['form-init-apIp']);
             this.popup.close();
             return;
         });
@@ -19,7 +19,7 @@ class PopupInitTpl extends PopupTpl {
         }));
         this.form.addInput(new ManagedButton('form-init-reset', (confirmed, event) => {
             if (confirmed) {
-                rmsInfoBoxProxy.resetOffshoreMode();
+                rmsInfoBoxProxy.resetOffshore();
                 this.popup.close();
             }
             event.preventDefault();
@@ -45,7 +45,7 @@ class PopupInitTpl extends PopupTpl {
         apIp.label = 'AP IP';
         apIp.help = 'Provide the IP when in AP mode. Empty for default.';
         apIp.attr.class = store.value.apIpClass;
-        apIp.attr.placeholder = DEFAULT_AP_IP;
+        apIp.attr.placeholder = SolarRouterRMS.DEFAULT_AP_IP;
         // apIp.attr.autocomplete = 'off';
         console.log('Render form init', rms.getStationIp(), rms.getAPIp());
         return `
@@ -71,6 +71,7 @@ ${apIp.html()}
 
     onClose() {
         this.form.removeListeners();
+        rms.loop();
     }
 }
 
@@ -80,76 +81,104 @@ ${apIp.html()}
 // Proxies are essentially kitchen to handle Reef JS stuff
 /**
  * @typedef {Object} InfoBoxProxy
- * @property {function(string, any): void} set - Sets a value in the proxy and updates the corresponding RMS configuration.
- * @property {function(): void} setOffshoreMode - Sets the offshore mode and updates the corresponding RMS configuration.
- * @property {function(): void} resetOffshoreMode - Resets the offshore mode and related IPs.
- * @property {function(string, string): void} setOffshoreModeIps - Sets the offshore mode and the station IP and AP IP.
+ * @property {function(string, any): void} set - Sets the value of a key in the data object and updates the corresponding RMS configuration.
+ * @property {function(): void} setMode - Sets the direct mode and updates the corresponding RMS configuration.
+ * @property {function(): void} setOffshore - Sets the offshore mode and updates the corresponding RMS configuration.
+ * @property {function(): void} resetOffshore - Resets the offshore mode and related IPs.
+ * @property {function(string, string): void} setOffshoreIps - Sets the offshore mode and the station IP and AP IP.
  */
 
 /**
  * @returns {InfoBoxProxy}
  */
 function rmsInfoBox() {
-    let data = {
-        offshoreMode: false,
-        stationIp: rms.getStationIp(),
-        apIp: rms.getAPIp(),
+    const proxyData = () => {
+        return {
+            mode: rms.mode,
+            offshore: rms.offshore,
+            stationIp: rms.getStationIp(),
+            apIp: rms.getAPIp(),
+            hello: rms.hellok,
+        };
     };
-    console.log('Data:', data);
-    const rmsInfoBoxProxy = store({}, {
+
+    const rmsProxy = store(proxyData(), {
         set(data, key, value) {
-            data[key] = value;
             rms.setConfig(key, value);
+            Object.assign(data, proxyData());
         },
-        setOffshoreMode() {
-            data['offshoreMode'] = true;
-            rms.setOffshoreMode();
+        setMode(data, mode) {
+            rms.setMode(mode);
+            Object.assign(data, proxyData());
         },
-        resetOffshoreMode() {
-            data['offshoreMode'] = true;
-            data['stationIp'] = null;
-            data['apIp'] = null;
-            rms.setOffshoreMode(true);
-            rms.setOffshoreModeIps(null, null);
+        setOffshore(data) {
+            rms.setOffshore(true);
+            Object.assign(data, proxyData());
         },
-        setOffshoreModeIps(data, stationIp, apIp) {
-            data['offshoreMode'] = true;
-            data['stationIp'] = stationIp;
-            data['apIp'] = apIp;
-            rms.setOffshoreModeIps(stationIp, apIp);
+        resetOffshore(data) {
+            rms.setOffshore(true);
+            rms.setOffshoreIps(null, null);
+            Object.assign(data, proxyData());
+        },
+        setOffshoreIps(data, stationIp, apIp) {
+            rms.setOffshoreIps(stationIp, apIp);
+            Object.assign(data, proxyData());
+        },
+        hello(data) {
+            Object.assign(data, proxyData());
         }
     }, 'rms-info');
 
     addEventListener('DOMContentLoaded', () => {
         component('#rms-info', () => {
-            if (rms.offshoreMode) {
+            console.log('Render rms info', rmsProxy.value);
+            if (rmsProxy.value.offshore) {
+                let apClass = '';
+                let stationClass = '';
+                switch (rmsProxy.value.mode) {
+                    case SolarRouterRMS.MODE_AP:
+                        apClass = rmsProxy.value.hello ? 'valid' : 'invalid';
+                        break;
+                    case SolarRouterRMS.MODE_STATION:
+                        stationClass = rmsProxy.value.hello ? 'valid' : 'invalid';
+                        break;
+                }
                 return `
     <b><a id="#rms-info-config" href="#" onClick="config()" title="Click to config">OFFSHORE MODE</a></b>
-    Local IP: <b>${rms.getStationIp()}</b> -
-    AP IP: <b>${rms.getAPIp()}</b>
+    Local IP: <b class="${stationClass}">${rmsProxy.value.stationIp}</b> -
+    AP IP: <b class="${apClass}">${rmsProxy.value.apIp}</b>
     `;
             }
-            return '<b><a id="#rms-info-config" href="#" onClick="config()" title="Click to config">DIRECT MODE</a></b>';
+            if (rmsProxy.value.mode === SolarRouterRMS.MODE_DIRECT) {
+                return '<b><a id="#rms-info-config" href="#" onClick="config()" title="Click to config">DIRECT MODE</a></b>';
+            }
+            return '<b><a id="#rms-info-config" href="#" onClick="config()" title="Click to config">UNKNOWN MODE</a></b>';
         }, {signals: ['rms-info'], events:{config: () => { multiPopup.popup('init'); }}});
     });
 
-    return rmsInfoBoxProxy;
+    return rmsProxy;
 }
 
 function businessListeners() {
     // checking if we are in Offshore mode or not
     document.addEventListener('DOMContentLoaded', () => {
-        rms.checkHello().then(data => {
+        rms.queryHello(SolarRouterRMS.MODE_DIRECT).then(data => {
+            rmsInfoBoxProxy.setMode(SolarRouterRMS.MODE_DIRECT);
             console.log('Hello:', data);
+            rms.start();
         }).catch(error => {
             // seams we are running in offshore mode aka from local file system or another server
-            // rms.setOffshoreMode();
-            rmsInfoBoxProxy.setOffshoreMode();
-            console.error('Error checking hello:', error);
+            console.info('Offshore mode');
+            rmsInfoBoxProxy.setOffshore();
             if (!rms.hasLocalConfig()) {
                 console.log('Local storage has not been initialized.');
                 multiPopup.popup('init');
             }
+            rms.start();
         });
+    });
+
+    addEventListener('rms.hello', event => {
+        rmsInfoBoxProxy.hello();
     });
 }
