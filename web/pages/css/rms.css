@@ -1,3 +1,7 @@
+* {
+    box-sizing: border-box;
+}
+
 dialog {
     width: 70%;
 }
@@ -37,88 +41,63 @@ button[confirm]:hover, button.confirm:hover{
     border-color: #fa1360;
 }
 
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    /* max-width: 700px; */
+    background: #efefef;
+    box-shadow: 0 48px 80px -32px rgba(0, 0, 0, 0.3);
+}
 
-/*
- CSS for the main interaction
-*/
-.tabset>input[type="radio"] {
+.tabs > .input {
     position: absolute;
-    left: -200vw;
+    opacity: 0;
 }
 
-.tabset .tab-panel {
-    display: none;
-}
-
-.tabset>input:first-child:checked~.tab-panels>.tab-panel:first-child,
-.tabset>input:nth-child(3):checked~.tab-panels>.tab-panel:nth-child(2),
-.tabset>input:nth-child(5):checked~.tab-panels>.tab-panel:nth-child(3),
-.tabset>input:nth-child(7):checked~.tab-panels>.tab-panel:nth-child(4),
-.tabset>input:nth-child(9):checked~.tab-panels>.tab-panel:nth-child(5),
-.tabset>input:nth-child(11):checked~.tab-panels>.tab-panel:nth-child(6) {
-    display: block;
-}
-  
-  /*
-   Styling
-  */
-  /* body {
-    font: 16px/1.5em "Overpass", "Open Sans", Helvetica, sans-serif;
-    color: #333;
-    font-weight: 300;
-  } */
-  
-.tabset>label {
-    position: relative;
-    display: inline-block;
-    padding: 15px 15px 25px;
-    border: 1px solid transparent;
-    border-bottom: 0;
+.tabs > .label {
+    width: 100%;
+    padding: 20px 30px;
+    background: #e5e5e5;
     cursor: pointer;
-    font-weight: 600;
+    font-weight: bold;
+    font-size: 18px;
+    color: #7f7f7f;
+    transition: background 0.1s, color 0.1s;
 }
 
-.tabset>label::after {
-    content: "";
-    position: absolute;
-    left: 15px;
-    bottom: 10px;
-    width: 22px;
-    height: 4px;
-    background: #8d8d8d;
+.tabs > .label:hover {
+    background: #d8d8d8;
 }
 
-input:focus-visible+label {
-    outline: 2px solid rgba(0, 102, 204, 1);
-    border-radius: 3px;
+.tabs > .label:active {
+    background: #ccc;
 }
 
-.tabset>label:hover,
-.tabset>input:focus+label,
-.tabset>input:checked+label {
-    color: #06c;
+.tabs > .input:focus + .label {
+    box-shadow: inset 0px 0px 0px 3px #2aa1c0;
+    z-index: 1;
 }
 
-.tabset>label:hover::after,
-.tabset>input:focus+label::after,
-.tabset>input:checked+label::after {
-    background: #06c;
+.tabs >.input:checked + .label {
+    background: #fff;
+    color: #000;
 }
 
-.tabset>input:checked+label {
-    border-color: #ccc;
-    border-bottom: 1px solid #fff;
-    margin-bottom: -1px;
+@media (min-width: 600px) {
+    .tabs > .label {
+        width: auto;
+    }
+    .tabs > .panel {
+        order: 99;
+    }
 }
 
-.tab-panel {
-    padding: 0 !important;
-    border: 0 !important;
-    border-top: 1px solid #ccc;
+.tabs > .panel {
+    display: none;
+    padding: 20px 30px 30px;
+    background: #fff;
 }
 
-/**/
-
-#tabs {
-    margin-top: 10px;
+.tabs > .input:checked + .label + .panel {
+    display: block;
 }
