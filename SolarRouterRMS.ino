@@ -59,6 +59,7 @@
 
 // Modules
 #include "ModuleCore.h"
+#include "ModuleConfig.h"
 #include "ModuleDebug.h"
 #include "ModuleServer.h"
 #include "ModuleHistory.h"
@@ -90,6 +91,8 @@ void setup()
     ModuleServer::boot();
     ModulePowerMeter::boot();
     ModuleTriggers::boot();
+    // last
+    ModuleConfig::boot();
 
     // Core 0 Task Loop
     // The Power Meter Loop is near real time

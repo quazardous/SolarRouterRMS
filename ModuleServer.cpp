@@ -2,6 +2,7 @@
 // *  WEB SERVER *
 // ***************
 
+#include "ModuleServer.h"
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>

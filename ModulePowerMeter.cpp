@@ -10,6 +10,7 @@
 #include "ModuleTime.h"
 #include "ModuleEeprom.h"
 #include "ModuleCore.h"
+#include "ModuleConfig.h"
 #include "helpers.h"
 #include "rms.h"
 // for variable params ?
@@ -24,6 +25,8 @@
 
 namespace ModulePowerMeter
 {
+    void config();
+
     void init_puissance();
     void powerMeterLoopCallback(void *pvParameters);
     void powerMeterLoop(unsigned long msNow);
@@ -88,6 +91,8 @@ namespace ModulePowerMeter
             ModuleCore::log("Reading energy data from EEPROM");
             readEnergyData();
         }
+
+        config();
 
         activeDataSource = activeSource;
         switch (activeSource)
@@ -215,6 +220,18 @@ namespace ModulePowerMeter
             ModulePowerMeterEnphase::loop(msLoop);
             break;
         }
+    }
+
+    ModuleElem::elem_map_t config_map[] = {
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_TEMPERATURE_NAME, TYPE_CSTRING, CString, setSourceByName, getSourceName, NULL, const char*),
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_EXT_IP, TYPE_IP, ULong, setExtIp, getExtIp, NULL, unsigned long),
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_U, TYPE_USHORT, UShort, setCalibU, getCalibU, NULL, unsigned short),
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_I, TYPE_USHORT, UShort, setCalibI, getCalibI, NULL, unsigned short),
+    };
+    const int config_map_size = sizeof(config_map) / sizeof(ModuleElem::elem_map_t);
+
+    void config() {
+        ModuleConfig::registerConfig(config_map, config_map_size);
     }
 
     void dayIsGone()

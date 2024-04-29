@@ -8,7 +8,7 @@
 #include "ModuleTriggers.h"
 #include "ModuleEDF.h"
 #include "ModuleSensor.h"
-#include "ModuleElemMap.h"
+#include "ModuleConfig.h"
 #include "config.h"
 #include "version.h"
 #include "rms.h"
@@ -30,6 +30,7 @@ namespace ModuleCore {
     // bool triggerDown = false;
 
     unsigned long getStartupSince(unsigned long mtsNow = 0);
+    void config();
 
     cpu_load_t cpuLoad1;
 
@@ -54,6 +55,8 @@ namespace ModuleCore {
         // Ports Série ESP
         Serial.begin(115200);
         log("Booting");
+
+        config();
     }
 
     // void upAndReady(bool ready) {
@@ -149,11 +152,24 @@ namespace ModuleCore {
         ESP.restart();
     }
 
+    ModuleElem::elem_map_t config_map[] = {
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_ROUTER_NAME, TYPE_CSTRING, CString, setRouterName, getRouterName, NULL, const char*),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_MOBILE_PROBE_NAME, TYPE_CSTRING, CString, setMobileProbeName, getMobileProbeName, NULL, const char*),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_FIX_PROBE_NAME, TYPE_CSTRING, CString, setFixProbeName, getFixProbeName, NULL, const char*),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_TEMPERATURE_NAME, TYPE_CSTRING, CString, setTemperatureName, getTemperatureName, NULL, const char*),
+    };
+    const int config_map_size = sizeof(config_map) / sizeof(ModuleElem::elem_map_t);
+
+    void config() {
+        ModuleConfig::registerConfig(config_map, config_map_size);
+    }
+
     // helpers
     void checkup() {
         // check if everything is OK to be UP
         // UP means normal operation mode
     }
+
     void log(const String &m)
     {
         char d[32];
@@ -310,10 +326,10 @@ namespace ModuleCore {
         S += GS + "Fin";
     }
 
-    using ModuleElemMap::elem_map_t;
-    using ModuleElemMap::elem_type_t;
+    using ModuleElem::elem_map_t;
+    using ModuleElem::elem_type_t;
     #define RMS_CORE_AJAX_PARAM_ELEM(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM, ModuleElemMap::TYPE, {.set ## Type = ModuleElemMap::elemSet ## Elem}, {.get ## Type = ModuleElemMap::elemGet ## Elem}}
+        {ModuleElem::ELEM, ModuleElem::TYPE, {.set ## Type = ModuleElem::elemSet ## Elem}, {.get ## Type = ModuleElem::elemGet ## Elem}}
 
     elem_map_t ajax_params_map[] = {
         RMS_CORE_AJAX_PARAM_ELEM(ELEM_SOURCE, TYPE_CSTRING, Source, CString),
@@ -333,7 +349,7 @@ namespace ModuleCore {
         for (int i = 0; i < ajax_params_map_size; i++)
         {
             if (i > 0) S += RS;
-            S += ModuleElemMap::e2s(&ajax_params_map[i]);
+            S += ModuleElem::e2s(&ajax_params_map[i]);
         }
     }
 

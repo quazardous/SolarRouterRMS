@@ -11,7 +11,7 @@
 #include "ModuleTime.h"
 #include "ModuleMQTT.h"
 #include "ModuleRomMap.h"
-#include "ModuleElemMap.h"
+#include "ModuleElem.h"
 #include "ModuleHistory.h"
 #include "helpers.h"
 #include "rms.h"
@@ -304,12 +304,12 @@ namespace ModuleEeprom
     }
 
     // web handlers
-    using ModuleElemMap::elem_map_t;
-    using ModuleElemMap::elem_type_t;
+    using ModuleElem::elem_map_t;
+    using ModuleElem::elem_type_t;
     #define RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM, ModuleElemMap:: TYPE, {.set ## Type = ModuleElemMap::elemSet ## Elem}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 0}
+        {ModuleElem::ELEM, ModuleElem:: TYPE, {.set ## Type = ModuleElem::elemSet ## Elem}, {.get ## Type = ModuleElem::elemGet ## Elem}, 0}
     #define RMS_STOCKAGE_AJAX_PARAM_READ(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM, ModuleElemMap:: TYPE, {.set ## Type = NULL}, {.get ## Type = ModuleElemMap::elemGet ## Elem}, 1}
+        {ModuleElem::ELEM, ModuleElem:: TYPE, {.set ## Type = NULL}, {.get ## Type = ModuleElem::elemGet ## Elem}, 1}
 
     elem_map_t ajax_params_map[] = {
         RMS_STOCKAGE_AJAX_PARAM_ELEM(ELEM_DHCP_ON, TYPE_BOOL, DhcpOn, Bool),
@@ -347,7 +347,7 @@ namespace ModuleEeprom
         for (int i = 0; i < ajax_params_map_size; i++)
         {
             if (i > 0) S += RS;
-            S += ModuleElemMap::e2s(&ajax_params_map[i]);
+            S += ModuleElem::e2s(&ajax_params_map[i]);
         }
     }
 
@@ -366,7 +366,7 @@ namespace ModuleEeprom
                 continue;
             String val = lesparas.substring(0, lesparas.indexOf(RS));
             val.trim();
-            ModuleElemMap::s2e(e, val);
+            ModuleElem::s2e(e, val);
         }
         int adresse_max = writeEeprom();
         S = "OK" + String(adresse_max);

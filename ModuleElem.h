@@ -2,9 +2,17 @@
 
 #include <Arduino.h>
 
-// helps with list of elements to set/get
-namespace ModuleElemMap
+// helps with list of elements
+namespace ModuleElem
 {
+
+    enum group_t
+    {
+        GROUP_MAIN = 0,
+        GROUP_NETWORK,
+        GROUP_POWERMETER,
+    };
+
     // list of kown elements
     // don't forget to update elem_names
     enum elem_t
@@ -68,12 +76,13 @@ namespace ModuleElemMap
     // data types
     enum elem_type_t
     {
-        TYPE_BYTE,
-        TYPE_USHORT,
-        TYPE_SHORT,
-        TYPE_ULONG,
-        TYPE_LONG,
         TYPE_BOOL,
+        TYPE_BYTE,
+        TYPE_SHORT,
+        TYPE_USHORT,
+        TYPE_LONG,
+        TYPE_ULONG,
+        TYPE_IP,
         TYPE_FLOAT,
         TYPE_CSTRING
     };
@@ -102,6 +111,9 @@ namespace ModuleElemMap
         float (*getFloat)(void *context);
     } getter_t;
 
+    // callback type
+    typedef void (*persist_t)(bool read_or_write, void* context);
+
     // managed element
     struct elem_map_t {
         elem_t element;
@@ -109,6 +121,9 @@ namespace ModuleElemMap
         setter_t setter;
         getter_t getter;
         bool readonly;
+        group_t group;
+        persist_t persist;
+        bool dirty;
     };
 
     // getter to string
@@ -116,6 +131,8 @@ namespace ModuleElemMap
     // string to setter
     void s2e(elem_map_t* elem, const String& str, void* context = NULL);
     const char* elemName(elem_t elem);
+    const char* typeName(elem_type_t type);
+    const char* groupName(group_t group);
 
     #undef RMS_ELEM_MAP_MAIN_ACCESSORS
     #define RMS_ELEM_MAP_MAIN_ACCESSORS(elem, type) \
@@ -194,4 +211,4 @@ namespace ModuleElemMap
     RMS_ELEM_MAP_TRIGGER_PERIOD_ACCESSORS(Tarif, byte)
     RMS_ELEM_MAP_TRIGGER_PERIOD_ACCESSORS(Type, byte)
 
-} // namespace ModuleElemMap
+} // namespace ModuleElem

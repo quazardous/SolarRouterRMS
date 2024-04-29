@@ -4,6 +4,7 @@
 
 #include "ModuleServer.h"
 #include "ModuleCore.h"
+#include "ModuleConfig.h"
 #include "version.h"
 // #include <AsyncJson.h>
 
@@ -36,6 +37,18 @@ namespace ModuleServer
             JsonDocument doc;
             prepareJsonDoc(doc);
             ModuleCore::apiHello(request, doc);
+            String jsonStr;
+            serializeJson(doc, jsonStr);
+            request->send(200, MIME_JSON, jsonStr);
+            // AsyncWebServerResponse *response = request->beginResponse(200, "application/json", jsonStr);
+            // response->addHeader("Access-Control-Allow-Origin", "*");
+            // request->send(response);
+        });
+
+        server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request) {
+            JsonDocument doc;
+            prepareJsonDoc(doc);
+            ModuleConfig::apiGetConfig(request, doc);
             String jsonStr;
             serializeJson(doc, jsonStr);
             request->send(200, MIME_JSON, jsonStr);

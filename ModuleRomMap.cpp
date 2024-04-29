@@ -1,5 +1,5 @@
 #include "ModuleRomMap.h"
-#include "ModuleElemMap.h"
+#include "ModuleElem.h"
 #include "ModuleTriggers.h"
 #include <EEPROM.h>
 #include "Actions.h"
@@ -12,14 +12,14 @@
 
 namespace ModuleRomMap
 {
-    using ModuleElemMap::elem_map_t;
-    using ModuleElemMap::elem_type_t;
+    using ModuleElem::elem_map_t;
+    using ModuleElem::elem_type_t;
 
     int readRomMap(elem_map_t *romMap, int romMapSize, int address, void *context = NULL);
     int writeRomMap(elem_map_t *romMap, int romMapSize, int address, void *context = NULL);
 
     #define RMS_ROM_MAP_MAIN_ROM_MAP_ELEM(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM_ ## ELEM, ModuleElemMap::TYPE_ ## TYPE, {.set ## Type = ModuleElemMap::elemSet ## Elem}, {.get ## Type = ModuleElemMap::elemGet  ## Elem}}
+        {ModuleElem::ELEM_ ## ELEM, ModuleElem::TYPE_ ## TYPE, {.set ## Type = ModuleElem::elemSet ## Elem}, {.get ## Type = ModuleElem::elemGet  ## Elem}}
 
     // mapping for Main elements
     // each element will be sequentially read/write from/to EEPROM
@@ -58,7 +58,7 @@ namespace ModuleRomMap
     const int mainRomMapSize = sizeof(mainRomMap) / sizeof(mainRomMap[0]);
 
     #define RMS_ROM_MAP_TRIGGER_ROM_MAP_ELEM(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM_TRIGGER_ ## ELEM, ModuleElemMap::TYPE_ ## TYPE, {.set ## Type = ModuleElemMap::elemSetTrigger ## Elem}, {.get ## Type = ModuleElemMap::elemGetTrigger  ## Elem}}
+        {ModuleElem::ELEM_TRIGGER_ ## ELEM, ModuleElem::TYPE_ ## TYPE, {.set ## Type = ModuleElem::elemSetTrigger ## Elem}, {.get ## Type = ModuleElem::elemGetTrigger  ## Elem}}
 
     // mapping for Trigger elements
     // each element will be sequentially read/write from/to EEPROM
@@ -79,7 +79,7 @@ namespace ModuleRomMap
     const int triggerRomMapSize = sizeof(triggerRomMap) / sizeof(triggerRomMap[0]);
 
     #define RMS_ROM_MAP_TRIGGER_PERIOD_ROM_MAP_ELEM(ELEM, TYPE, Elem, Type) \
-        {ModuleElemMap::ELEM_TRIGGER_PERIOD_ ## ELEM, ModuleElemMap::TYPE_ ## TYPE, {.set ## Type = ModuleElemMap::elemSetTriggerPeriod ## Elem}, {.get ## Type = ModuleElemMap::elemGetTriggerPeriod  ## Elem}}
+        {ModuleElem::ELEM_TRIGGER_PERIOD_ ## ELEM, ModuleElem::TYPE_ ## TYPE, {.set ## Type = ModuleElem::elemSetTriggerPeriod ## Elem}, {.get ## Type = ModuleElem::elemGetTriggerPeriod  ## Elem}}
 
     // mapping for Trigger Periods elements
     // each element will be sequentially read/write from/to EEPROM
@@ -144,49 +144,49 @@ namespace ModuleRomMap
     {
         switch (romElem->type)
         {
-        case ModuleElemMap::TYPE_BYTE:
+        case ModuleElem::TYPE_BYTE:
         {
             uint8_t vByte = EEPROM.readByte(address);
             romElem->setter.setByte(vByte, context);
             address += sizeof(uint8_t);
             break;
         }
-        case ModuleElemMap::TYPE_USHORT:
+        case ModuleElem::TYPE_USHORT:
         {
             uint16_t vUShort = EEPROM.readUShort(address);
             romElem->setter.setUShort(vUShort, context);
             address += sizeof(uint16_t);
             break;
         }
-        case ModuleElemMap::TYPE_SHORT:
+        case ModuleElem::TYPE_SHORT:
         {
             int16_t vShort = EEPROM.readShort(address);
             romElem->setter.setShort(vShort, context);
             address += sizeof(int16_t);
             break;
         }
-        case ModuleElemMap::TYPE_ULONG:
+        case ModuleElem::TYPE_ULONG:
         {
             uint32_t vULong = EEPROM.readULong(address);
             romElem->setter.setULong(vULong, context);
             address += sizeof(uint32_t);
             break;
         }
-        case ModuleElemMap::TYPE_LONG:
+        case ModuleElem::TYPE_LONG:
         {
             int32_t vLong = EEPROM.readLong(address);
             romElem->setter.setLong(vLong, context);
             address += sizeof(int32_t);
             break;
         }
-        case ModuleElemMap::TYPE_BOOL:
+        case ModuleElem::TYPE_BOOL:
         {
             int8_t vByte = EEPROM.readBool(address);
             romElem->setter.setByte(vByte, context);
             address += sizeof(int8_t);
             break;
         }
-        case ModuleElemMap::TYPE_CSTRING:
+        case ModuleElem::TYPE_CSTRING:
         {
             const String vCString = EEPROM.readString(address);
             romElem->setter.setCString(vCString.c_str(), context);
@@ -211,31 +211,31 @@ namespace ModuleRomMap
     {
         switch (romElem->type)
         {
-        case ModuleElemMap::TYPE_BYTE:
+        case ModuleElem::TYPE_BYTE:
             EEPROM.writeByte(address, romElem->getter.getByte(context));
             address += sizeof(uint8_t);
             break;
-        case ModuleElemMap::TYPE_USHORT:
+        case ModuleElem::TYPE_USHORT:
             EEPROM.writeUShort(address, romElem->getter.getUShort(context));
             address += sizeof(uint16_t);
             break;
-        case ModuleElemMap::TYPE_SHORT:
+        case ModuleElem::TYPE_SHORT:
             EEPROM.writeShort(address, romElem->getter.getShort(context));
             address += sizeof(int16_t);
             break;
-        case ModuleElemMap::TYPE_ULONG:
+        case ModuleElem::TYPE_ULONG:
             EEPROM.writeULong(address, romElem->getter.getULong(context));
             address += sizeof(uint32_t);
             break;
-        case ModuleElemMap::TYPE_LONG:
+        case ModuleElem::TYPE_LONG:
             EEPROM.writeLong(address, romElem->getter.getLong(context));
             address += sizeof(int32_t);
             break;
-        case ModuleElemMap::TYPE_BOOL:
+        case ModuleElem::TYPE_BOOL:
             EEPROM.writeBool(address, romElem->getter.getByte(context));
             address += sizeof(int8_t);
             break;
-        case ModuleElemMap::TYPE_CSTRING:
+        case ModuleElem::TYPE_CSTRING:
             const char *vCString = romElem->getter.getCString(context);
             EEPROM.writeString(address, vCString);
             address += strlen(vCString) + 1;

@@ -1,4 +1,4 @@
-#include "ModuleElemMap.h"
+#include "ModuleElem.h"
 #include "ModuleCore.h"
 #include "ModuleTriggers.h"
 #include "ModuleEeprom.h"
@@ -10,10 +10,30 @@
 #include "ModuleWifi.h"
 #include "ModuleMQTT.h"
 
-namespace ModuleElemMap {
+namespace ModuleElem {
+
+    // Configuration groups
+    // NB: order must match the enum in ModuleElem.h
+    const char* group_names[] = {
+        "main",
+        "network",
+        "powermeter",
+    };
+
+    const char* type_names[] = {
+        "bool",
+        "byte",
+        "short",
+        "ushort",
+        "long",
+        "ulong",
+        "ip",
+        "float",
+        "cstring",
+    };
 
     // Element names
-    // NB: order must match the enum in ModuleElemMap.h
+    // NB: order must match the enum in ModuleElem.h
     const char* elem_names[] = {
         "version",
         "eepromKey",
@@ -73,12 +93,20 @@ namespace ModuleElemMap {
         return elem_names[elem];
     }
 
+    const char* typeName(elem_type_t type) {
+        return type_names[type];
+    }
+
+    const char* groupName(group_t group) {
+        return group_names[group];
+    }
+
     #define RMS_ELEM_MAP_MAIN_GETTER_ONLY(elem, type, get) \
         type elemGet ## elem(void* context) \
         { \
             return get(); \
         } \
-        void elemSet ## elem(type value, void* context) {} // dummy setter
+        void elemSet ## elem(type value, void* context) { } // dummy setter
     
     #define RMS_ELEM_MAP_MAIN_SETTER_ONLY(elem, type, set) \
         void elemSet ## elem(type value, void* context) \
@@ -119,7 +147,7 @@ namespace ModuleElemMap {
     #define RMS_ELEM_MAP_TRIGGER_PERIOD_ACCESSORS(attr, type) \
         type elemGetTriggerPeriod##attr(void* context) \
         { \
-            return RMS_ELEM_MAP_CONTEXT_TRIGGER_PERIOD_ARRAY_ATTR_ELEM_TUPLE(context, attr); \
+            RMS_ELEM_MAP_CONTEXT_TRIGGER_PERIOD_ARRAY_ATTR_ELEM_TUPLE(context, attr); \
         } \
         void elemSetTriggerPeriod##attr(type value, void* context) \
         { \
@@ -262,4 +290,4 @@ namespace ModuleElemMap {
 
     
     
-} // namespace ModuleElemMap
+} // namespace ModuleElem

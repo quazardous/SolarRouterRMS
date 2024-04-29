@@ -97,31 +97,32 @@ namespace HelperJson
         return val;
     }
 
-    void e2json(JsonDocument &doc, ModuleElemMap::elem_map_t* e, void* context) {
-        String name = ModuleElemMap::elemName(e->element);
+    void e2json(JsonDocument &doc, ModuleElem::elem_map_t* e, void* context) {
+        String name = ModuleElem::elemName(e->element);
         switch (e->type) {
-            case ModuleElemMap::TYPE_BYTE:
+            case ModuleElem::TYPE_BYTE:
                 doc[name] = e->getter.getByte(context);
                 break;
-            case ModuleElemMap::TYPE_USHORT:
+            case ModuleElem::TYPE_USHORT:
                 doc[name] = e->getter.getUShort(context);
                 break;
-            case ModuleElemMap::TYPE_SHORT:
+            case ModuleElem::TYPE_SHORT:
                 doc[name] = e->getter.getShort(context);
                 break;
-            case ModuleElemMap::TYPE_ULONG:
+            case ModuleElem::TYPE_ULONG:
+            case ModuleElem::TYPE_IP:
                 doc[name] = e->getter.getULong(context);
                 break;
-            case ModuleElemMap::TYPE_LONG:
+            case ModuleElem::TYPE_LONG:
                 doc[name] = e->getter.getLong(context);
                 break;
-            case ModuleElemMap::TYPE_BOOL:
+            case ModuleElem::TYPE_BOOL:
                 doc[name] = e->getter.getBool(context);
                 break;
-            case ModuleElemMap::TYPE_FLOAT:
+            case ModuleElem::TYPE_FLOAT:
                 doc[name] = e->getter.getFloat(context);
                 break;
-            case ModuleElemMap::TYPE_CSTRING:
+            case ModuleElem::TYPE_CSTRING:
                 doc[name] = String(e->getter.getCString(context));
                 break;
         }
