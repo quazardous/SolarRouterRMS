@@ -1,5 +1,5 @@
 # SolarRouterRMS
-version: v0.1 (from v8.06)
+version: v0.4 (from v8.06)
 
 ## Description
 SolarRouterRMS is a project that aims to create a solar-powered router monitoring system.  

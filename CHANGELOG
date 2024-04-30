@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.4] - 2024-04-30
+
+### Refactor
+- New DHTML admin
+- Mode Offshore for dev (local admin can use RMS API)
+- Start refactor of configs
+
 ## [v0.3] - 2024-04-24
 
 ### Refactor
