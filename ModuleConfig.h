@@ -8,12 +8,12 @@
 
 // Macro for non contextual element
 // persit = NULL for default persist (EEPROM)
-#define RMS_CONFIG_ELEM_MAP(GROUP, ELEM, TYPE, Type, setter, getter, persist, ctype) \
+#define RMS_CONFIG_ELEM_MAP(GROUP, ELEM, TYPE, Type, setter, getter, persist, ctype, help, label) \
     {ModuleElem::ELEM, ModuleElem::TYPE, {.set ## Type = [](ctype v, void* context) -> void { \
         setter(v); \
     }}, {.get ## Type = [](void* context) -> ctype { \
         return getter(); \
-    }}, false, ModuleElem::GROUP, persist, false}
+    }}, false, ModuleElem::GROUP, persist, false, label, help}
 
 namespace ModuleConfig {
 

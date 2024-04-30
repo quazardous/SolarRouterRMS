@@ -43,6 +43,12 @@ namespace ModuleConfig {
         obj["type"] = ModuleElem::typeName(e->type);
         obj["readonly"] = e->readonly;
         obj["dirty"] = e->dirty;
+        if (e->label != NULL) {
+            obj["label"] = e->label;
+        }
+        if (e->help != NULL) {
+            obj["help"] = e->help;
+        }
         switch (e->type) {
             case ModuleElem::TYPE_BYTE:
                 obj["value"] = e->getter.getByte(context);

@@ -124,6 +124,8 @@ namespace ModuleElem
         group_t group;
         persist_t persist;
         bool dirty;
+        const char* label;
+        const char* help;
     };
 
     // getter to string

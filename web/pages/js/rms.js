@@ -1,3 +1,46 @@
+
+class ConfigParam {
+    constructor(group, type, name, value, readonly, dirty, label, help) {
+        this.group = group;
+        this.type = type;
+        this.name = name;
+        this.value = value;
+        this.readonly = readonly;
+        this.dirty = dirty;
+        this.label = label;
+        this.help = help;
+        if (!this.label) {
+            this.label = this.getLabel();
+        }
+    }
+
+    getLabel() {
+        return this.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^(.)(.*)$/, (_, first, rest) => first.toUpperCase() + rest);
+    }
+}
+
+class ConfigParamGroup {
+    constructor(name) {
+        this.name = name;
+        /**
+         * @var {Object.<String, ConfigParam>}
+         */
+        this.params = {};
+    }
+
+    addParam(name, param) {
+        this.params[name] = new ConfigParam(
+            this.name,
+            param.type,
+            name,
+            param.value,
+            param.readonly,
+            param.dirty,
+            param.label,
+            param.help);
+    }
+}
+
 class SolarRouterRMS {
     static DEFAULT_AP_IP = '192.168.4.1';
     static LOOP_INTERVAL = 3000;
@@ -11,12 +54,20 @@ class SolarRouterRMS {
     constructor(configs = {}) {
         this.configs = configs;
         this.localConfig = new LocalConfig();
+        this.configParams = {};
+        /**
+         * @var {Object.<String, ConfigParamGroup>}
+         */
+        this.configParamsGroups = {};
         const self = this;
         // Offshore Mode allows to use a local version of the admin panel with a remote RMS
         // This is useful for development and testing
         // Normally the admin panel is served by the RMS
         this.offshore = false;
         this.mode = SolarRouterRMS.MODE_UNKNOWN;
+        /**
+         * @var {RMSAPI}
+         */
         this.api = new RMSAPI(() => {
             switch (self.mode) {
                 case SolarRouterRMS.MODE_DIRECT:
@@ -32,6 +83,16 @@ class SolarRouterRMS {
 
         this.hello = {};
         this.hellok = false;
+
+        this.configParamsDone = false;
+    }
+
+    addConfigParam(name, param) {
+        if (!this.configParamsGroups[param.group]) {
+            this.configParamsGroups[param.group] = new ConfigParamGroup(param.group);
+        }
+        this.configParamsGroups[param.group].addParam(name, param);
+        this.configParams[name] = param;
     }
 
     setConfig(name, value) {
@@ -162,24 +223,27 @@ class SolarRouterRMS {
         const self = this;
         if (this.offshore && this.mode === SolarRouterRMS.MODE_UNKNOWN) {
             console.log('Guessing Offshore Mode');
-            this.guessHelloOffshore()
+            return this.guessHelloOffshore()
                 .then(data => {
                     self.emit('rms.hello', {rms:self, hello: data.data, mode: data.mode});
+                    return true;
                 })
                 .catch(error => {
                     self.emit('rms.hello', {rms:self, hello: false, mode: this.mode});
                 }); 
         } else {
             if ([SolarRouterRMS.MODE_DIRECT, SolarRouterRMS.MODE_AP, SolarRouterRMS.MODE_STATION].includes(this.mode)) {
-                this.queryHello()
+                return this.queryHello()
                     .then(data => {
                         self.emit('rms.hello', {rms:self, mode: this.mode, hello: data});
+                        return true;
                     })
                     .catch(error => {
                         self.emit('rms.hello', {rms:self, mode: this.mode, hello: false});
                     });
             }
         }
+        return Promise.resolve(false);
     }
 
     startLoops() {
@@ -204,7 +268,22 @@ class SolarRouterRMS {
     }
 
     loop() {
-        this.checkHello();
+        const self = this;
+        this.checkHello().then(hello => {
+            if (hello && ! self.configParamsDone) {
+                self.configParamsDone = true;
+                self.queryConfigParams();
+            }
+        });
+    }
+
+    queryConfigParams() {
+        this.api.get('api/config').then(data => {
+            for (const key in data.configs) {
+                this.addConfigParam(key, data.configs[key]);
+            }
+            this.emit('rms.config', {rms: self, config: data.configs});
+        });
     }
 }
 

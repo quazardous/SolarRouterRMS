@@ -153,10 +153,10 @@ namespace ModuleCore {
     }
 
     ModuleElem::elem_map_t config_map[] = {
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_ROUTER_NAME, TYPE_CSTRING, CString, setRouterName, getRouterName, NULL, const char*),
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_MOBILE_PROBE_NAME, TYPE_CSTRING, CString, setMobileProbeName, getMobileProbeName, NULL, const char*),
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_FIX_PROBE_NAME, TYPE_CSTRING, CString, setFixProbeName, getFixProbeName, NULL, const char*),
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_TEMPERATURE_NAME, TYPE_CSTRING, CString, setTemperatureName, getTemperatureName, NULL, const char*),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_ROUTER_NAME, TYPE_CSTRING, CString, setRouterName, getRouterName, NULL, const char*, "Router Name", NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_MOBILE_PROBE_NAME, TYPE_CSTRING, CString, setMobileProbeName, getMobileProbeName, NULL, const char*, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_FIX_PROBE_NAME, TYPE_CSTRING, CString, setFixProbeName, getFixProbeName, NULL, const char*, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_TEMPERATURE_NAME, TYPE_CSTRING, CString, setTemperatureName, getTemperatureName, NULL, const char*, NULL, NULL),
     };
     const int config_map_size = sizeof(config_map) / sizeof(ModuleElem::elem_map_t);
 

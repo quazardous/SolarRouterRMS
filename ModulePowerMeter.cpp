@@ -223,10 +223,10 @@ namespace ModulePowerMeter
     }
 
     ModuleElem::elem_map_t config_map[] = {
-        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_TEMPERATURE_NAME, TYPE_CSTRING, CString, setSourceByName, getSourceName, NULL, const char*),
-        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_EXT_IP, TYPE_IP, ULong, setExtIp, getExtIp, NULL, unsigned long),
-        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_U, TYPE_USHORT, UShort, setCalibU, getCalibU, NULL, unsigned short),
-        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_I, TYPE_USHORT, UShort, setCalibI, getCalibI, NULL, unsigned short),
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_SOURCE, TYPE_CSTRING, CString, setSourceByName, getSourceName, NULL, const char*, "Provider of the power meter data", NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_EXT_IP, TYPE_IP, ULong, setExtIp, getExtIp, NULL, unsigned long, "External IP for some providers", NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_U, TYPE_USHORT, UShort, setCalibU, getCalibU, NULL, unsigned short, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_I, TYPE_USHORT, UShort, setCalibI, getCalibI, NULL, unsigned short, NULL, NULL),
     };
     const int config_map_size = sizeof(config_map) / sizeof(ModuleElem::elem_map_t);
 

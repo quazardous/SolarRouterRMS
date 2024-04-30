@@ -5,7 +5,7 @@ class PopupInitTpl extends PopupTpl {
     constructor() {
         super();
         this.form = new ManagedForm('form-init', (data) => {
-            rmsInfoBoxProxy.setOffshoreIps(data['form-init-stationIp'], data['form-init-apIp']);
+            infoBoxProxy.setOffshoreIps(data['form-init-stationIp'], data['form-init-apIp']);
             this.popup.close();
             return;
         });
@@ -19,7 +19,7 @@ class PopupInitTpl extends PopupTpl {
         }));
         this.form.addInput(new ManagedButton('form-init-reset', (confirmed, event) => {
             if (confirmed) {
-                rmsInfoBoxProxy.resetOffshore();
+                infoBoxProxy.resetOffshore();
                 this.popup.close();
             }
             event.preventDefault();
@@ -91,7 +91,7 @@ ${apIp.html()}
 /**
  * @returns {InfoBoxProxy}
  */
-function rmsInfoBox() {
+function proxyInfoBox() {
     const proxyData = () => {
         return {
             mode: rms.mode,
@@ -159,17 +159,106 @@ function rmsInfoBox() {
     return rmsProxy;
 }
 
+// Config Forms Proxy
+// Proxies are essentially kitchen to handle Reef JS stuff
+/**
+ * @typedef {Object} ConfigFormsProxy
+ */
+
+/**
+ * @returns {ConfigFormsProxy}
+ */
+function proxyConfigForms() {
+    const proxyData = () => {
+        return {
+            mode: rms.mode,
+            offshore: rms.offshore,
+            stationIp: rms.getStationIp(),
+            apIp: rms.getAPIp(),
+            hello: rms.hellok,
+        };
+    };
+
+    const formProxy = store(proxyData(), {
+    }, 'config-forms');
+
+    /**
+     * @param {ConfigParamGroup} group 
+     * @returns 
+     */
+    const renderTab = (name, group) => {
+        const fieldset = [];
+        
+        for (const [name, param] of Object.entries(group.params)) {
+            let input;
+            switch (param.type) {
+                case 'ip':
+                    input = new IpFormInputHelper(name, IPAddress.toString(param.value));
+                    break;
+                default:
+                    input = new FormInputHelper(name, param.type, param.value);
+            }
+            input.id = `config-param-${name}`;
+            input.label = param.label;
+            input.help = param.help;
+            fieldset.push(input);
+        }
+
+        const html = `${fieldset.map(input => `<p>${input.html()}</p>`).join('')}`
+
+        return `
+<input name="tabs" type="radio" id="tab-${name}" class="input" />
+<label for="tab-${name}" class="label">${name}</label>
+<div class="panel" style="width: 100%;">
+<h1>${name}</h1>
+<p style="width: 100%;">
+    <form id="config-form-${name}" style="width: 100%;">
+    <fieldset>
+    ${fieldset.map(input => `<p>${input.html()}</p>`).join('')}
+    <p><button class="confirm">Save</button></p>
+    </fieldset>
+    </form>
+</p>
+</div>
+`;
+    };
+
+/*
+
+<form id="form-${name}">
+<fieldset>
+<p><button class="confirm">Save</button></p>
+</fieldset>
+</form>
+
+*/
+
+    const renderTabs = () => {
+        let tabsHtml = '';
+        for (const [name, group] of Object.entries(rms.configParamsGroups)) {
+            tabsHtml += renderTab(name, group);
+        }
+        return tabsHtml;
+    };
+
+    addEventListener('rms.config', event => {
+        render('#config-forms', renderTabs());
+    });
+
+    return formProxy;
+}
+
 function businessListeners() {
     // checking if we are in Offshore mode or not
     document.addEventListener('DOMContentLoaded', () => {
         rms.queryHello(SolarRouterRMS.MODE_DIRECT).then(data => {
-            rmsInfoBoxProxy.setMode(SolarRouterRMS.MODE_DIRECT);
+            infoBoxProxy.setMode(SolarRouterRMS.MODE_DIRECT);
             console.log('Hello:', data);
             rms.start();
         }).catch(error => {
             // seams we are running in offshore mode aka from local file system or another server
             console.info('Offshore mode');
-            rmsInfoBoxProxy.setOffshore();
+            infoBoxProxy.setOffshore();
             if (!rms.hasLocalConfig()) {
                 console.log('Local storage has not been initialized.');
                 multiPopup.popup('init');
@@ -179,6 +268,6 @@ function businessListeners() {
     });
 
     addEventListener('rms.hello', event => {
-        rmsInfoBoxProxy.hello();
+        infoBoxProxy.hello();
     });
 }
