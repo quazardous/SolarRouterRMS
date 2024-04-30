@@ -182,6 +182,7 @@ function proxyConfigForms() {
     const formProxy = store(proxyData(), {
     }, 'config-forms');
 
+    let firstTab = true;
     /**
      * @param {ConfigParamGroup} group 
      * @returns 
@@ -206,8 +207,10 @@ function proxyConfigForms() {
 
         const html = `${fieldset.map(input => `<p>${input.html()}</p>`).join('')}`
 
+        const checked = firstTab ? 'checked' : '';
+        firstTab = false;
         return `
-<input name="tabs" type="radio" id="tab-${name}" class="input" />
+<input name="tabs" type="radio" id="tab-${name}" class="input" ${checked}/>
 <label for="tab-${name}" class="label">${name}</label>
 <div class="panel" style="width: 100%;">
 <h1>${name}</h1>
