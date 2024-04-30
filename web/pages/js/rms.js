@@ -239,6 +239,7 @@ class SolarRouterRMS {
                         return true;
                     })
                     .catch(error => {
+                        self.configParamsDone = false;
                         self.emit('rms.hello', {rms:self, mode: this.mode, hello: false});
                     });
             }
@@ -270,7 +271,7 @@ class SolarRouterRMS {
     loop() {
         const self = this;
         this.checkHello().then(hello => {
-            if (hello && ! self.configParamsDone) {
+            if (hello && !self.configParamsDone) {
                 self.configParamsDone = true;
                 self.queryConfigParams();
             }
