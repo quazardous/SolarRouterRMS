@@ -178,35 +178,63 @@ namespace ModuleConfig {
                     {
                         byte existingValue = e->getter.getByte(NULL);
                         byte newValue = update[name];
-                        if (existingValue != newValue)
-                        {
-                            e->backup.Byte = existingValue;
-                            e->setter.setByte(update[name], NULL);
-                            e->dirty = true;
+                        e->setter.setByte(newValue, NULL);
+                        newValue = e->getter.getByte(NULL);
+                        if (e->dirty) {
+                            if (e->backup.Byte == newValue) {
+                                e->dirty = false;
+                            }
+                        } else {
+                            if (existingValue != newValue) {
+                                e->backup.Byte = existingValue;
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }
                     case ModuleElem::TYPE_USHORT:
                     {
                         unsigned short existingValue = e->getter.getUShort(NULL);
-                        unsigned short newValue = update[name];
-                        if (existingValue != newValue)
-                        {
-                            e->backup.UShort = existingValue;
-                            e->setter.setUShort(update[name], NULL);
-                            e->dirty = true;
+                        unsigned short newValue;
+                        if (update[name].is<unsigned short>()) {
+                            newValue = update[name].as<unsigned short>();
+                        } else {
+                            newValue = String(update[name].as<const char*>()).toInt();
+                        }
+                        e->setter.setUShort(newValue, NULL);
+                        newValue = e->getter.getUShort(NULL);
+                        if (e->dirty) {
+                            if (e->backup.UShort == newValue) {
+                                e->dirty = false;
+                            }
+                        } else {
+                            if (existingValue != newValue) {
+                                e->backup.UShort = existingValue;
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }
                     case ModuleElem::TYPE_SHORT:
                     {
                         short existingValue = e->getter.getShort(NULL);
-                        short newValue = update[name];
-                        if (existingValue != newValue)
-                        {
-                            e->backup.Short = existingValue;
-                            e->setter.setShort(update[name], NULL);
-                            e->dirty = true;
+                        short newValue;
+                        if (update[name].is<short>()) {
+                            newValue = update[name].as<short>();
+                        } else {
+                            newValue = String(update[name].as<const char*>()).toInt();
+                        }
+                        e->setter.setShort(newValue, NULL);
+                        newValue = e->getter.getShort(NULL);
+                        if (e->dirty) {
+                            if (e->backup.Short == newValue) {
+                                e->dirty = false;
+                            }
+                        } else {
+                            if (existingValue != newValue) {
+                                e->backup.Short = existingValue;
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }
@@ -214,64 +242,121 @@ namespace ModuleConfig {
                     case ModuleElem::TYPE_IP:
                     {
                         unsigned long existingValue = e->getter.getULong(NULL);
-                        unsigned long newValue = update[name];
-                        if (existingValue != newValue)
-                        {
-                            e->backup.ULong = existingValue;
-                            e->setter.setULong(update[name], NULL);
-                            e->dirty = true;
+                        unsigned long newValue;
+                        if (update[name].is<unsigned long>()) {
+                            newValue = update[name].as<unsigned long>();
+                        } else {
+                            newValue = String(update[name].as<const char*>()).toInt();
+                        }
+                        e->setter.setULong(newValue, NULL);
+                        newValue = e->getter.getULong(NULL);
+                        if (e->dirty) {
+                            if (e->backup.ULong == newValue) {
+                                e->dirty = false;
+                            }
+                        } else {
+                            if (existingValue != newValue) {
+                                e->backup.ULong = existingValue;
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }
                     case ModuleElem::TYPE_LONG:
                     {
                         long existingValue = e->getter.getLong(NULL);
-                        long newValue = update[name];
-                        if (existingValue != newValue)
-                        {
-                            e->backup.Long = existingValue;
-                            e->setter.setLong(update[name], NULL);
-                            e->dirty = true;
+                        long newValue;
+                        if (update[name].is<long>()) {
+                            newValue = update[name].as<long>();
+                        } else {
+                            newValue = String(update[name].as<const char*>()).toInt();
+                        }
+                        e->setter.setLong(newValue, NULL);
+                        if (e->dirty) {
+                            if (e->backup.Long == newValue) {
+                                e->dirty = false;
+                            }
+                        } else {
+                            if (existingValue != newValue) {
+                                e->backup.Long = existingValue;
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }
                     case ModuleElem::TYPE_BOOL:
                     {
                         bool existingValue = e->getter.getBool(NULL);
-                        bool newValue = update[name];
-                        if (existingValue != newValue)
-                        {
-                            e->backup.Bool = existingValue;
-                            e->setter.setBool(update[name], NULL);
-                            e->dirty = true;
+                        bool newValue;
+                        if (update[name].as<bool>()) {
+                            newValue = update[name].as<bool>();
+                        } else {
+                            String str = String(update[name].as<const char*>());
+                            str.toLowerCase();
+                            if (str == "true") {
+                                newValue = true;
+                            } else if (str == "false") {
+                                newValue = false;
+                            } else {
+                                newValue = str.toInt();
+                            }
+                        }
+                        e->setter.setBool(newValue, NULL);
+                        newValue = e->getter.getBool(NULL);
+                        if (e->dirty) {
+                            if (e->backup.Bool == newValue) {
+                                e->dirty = false;
+                            }
+                        } else {
+                            if (existingValue != newValue) {
+                                e->backup.Bool = existingValue;
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }
                     case ModuleElem::TYPE_FLOAT:
                     {
                         float existingValue = e->getter.getFloat(NULL);
-                        float newValue = update[name];
-                        if (existingValue != newValue)
-                        {
-                            e->backup.Float = existingValue;
-                            e->setter.setFloat(update[name], NULL);
-                            e->dirty = true;
+                        float newValue;
+                        if (update[name].is<float>()) {
+                            newValue = update[name].as<float>();
+                        } else {
+                            newValue = String(update[name].as<const char*>()).toFloat();
+                        }
+                        e->setter.setFloat(newValue, NULL);
+                        newValue = e->getter.getFloat(NULL);
+                        if (e->dirty) {
+                            if (e->backup.Float == newValue) {
+                                e->dirty = false;
+                            }
+                        } else {
+                            if (existingValue != newValue) {
+                                e->backup.Float = existingValue;
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }
                     case ModuleElem::TYPE_CSTRING:
                     {
-                        const char *existingValue = e->getter.getCString(NULL);
+                        String existingValue = String(e->getter.getCString(NULL));
                         String newValue = String(update[name].as<const char*>());
-                        if (strcmp(existingValue, newValue.c_str()) != 0)
-                        {
-                            if (e->backup.CString != NULL) {
-                                free((void*)e->backup.CString); // free previous backup (if any)
-                                e->backup.CString = NULL;
+                        e->setter.setCString(newValue.c_str(), NULL);
+                        newValue = String(e->getter.getCString(NULL));
+                        if (e->dirty) {
+                            if (strcmp(e->backup.CString, newValue.c_str()) == 0) {
+                                e->dirty = false;
                             }
-                            e->backup.CString = strdup(existingValue);
-                            e->setter.setCString(update[name], NULL);
-                            e->dirty = true;
+                        } else {
+                            if (strcmp(existingValue.c_str(), newValue.c_str()) != 0) {
+                                if (e->backup.CString != NULL) {
+                                    free((void*)e->backup.CString); // free previous backup (if any)
+                                    e->backup.CString = NULL;
+                                }
+                                e->backup.CString = strdup(existingValue.c_str());
+                                e->dirty = true;
+                            }
                         }
                         break;
                     }

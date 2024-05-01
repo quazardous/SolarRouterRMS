@@ -63,6 +63,8 @@ namespace ModuleServer
         #if RMS_WEB_SERVER_ALLOW_OFFSHORE == 1
         // Allow CORS for Offshore mode
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, PUT");
+        DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
         #endif
 
         // server.enableCORS(true);

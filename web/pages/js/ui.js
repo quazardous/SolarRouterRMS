@@ -162,25 +162,16 @@ function proxyInfoBox() {
 // Proxies are essentially kitchen to handle Reef JS stuff
 /**
  * @typedef {Object} ConfigFormsProxy
+ * @property {function(): void} touch
  */
 
-/**
- * @returns {ConfigFormsProxy}
- */
 function proxyConfigForms() {
     const proxyData = () => {
         return {
-            mode: rms.mode,
-            offshore: rms.offshore,
-            stationIp: rms.getStationIp(),
-            apIp: rms.getAPIp(),
-            hello: rms.hellok,
         };
     };
 
-    const formProxy = store(proxyData(), {
-    }, 'config-forms');
-
+    // render only once
     let firstTab = true;
     /**
      * @param {ConfigParamGroup} group 
@@ -193,13 +184,25 @@ function proxyConfigForms() {
             let input;
             if (param.choices) {
                 input = new SelectFormInputHelper(name, param.value, param.choices);
+                input.baseline = `<span class="actual">${param.value}</span>`;
+                if (param.dirty) {
+                    input.baseline += ` <span class="dirty">${param.backup}</span>`;
+                }
             } else {
                 switch (param.type) {
                     case ConfigParam.TYPE_BOOL:
                         input = new CheckboxFormInputHelper(name, param.value);
+                        input.baseline = `<span class="actual">${param.value ? 'true' : 'false'}</span>`;
+                        if (param.dirty) {
+                            input.baseline += ` <span class="dirty">${param.backup ? 'true' : 'false'}</span>`;
+                        }
                         break;
                     case ConfigParam.TYPE_IP:
                         input = new IpFormInputHelper(name, IPAddress.toString(param.value));
+                        input.baseline = `<span class="actual">${IPAddress.toString(param.value)}</span>`;
+                        if (param.dirty) {
+                            input.baseline += ` <span class="dirty">${IPAddress.toString(param.backup)}</span>`;
+                        }
                         break;
                     default:
                         let type = 'text';
@@ -224,6 +227,10 @@ function proxyConfigForms() {
                                 input.attr.min = 0;
                                 input.attr.max = 4294967295;
                                 break;
+                        }
+                        input.baseline = `<span class="actual">${param.value}</span>`;
+                        if (param.dirty) {
+                            input.baseline += ` <span class="dirty">${param.backup}</span>`;
                         }
                 }
             }
@@ -267,7 +274,14 @@ function proxyConfigForms() {
     /**
      * @type {Object.<string, ManagedForm>}
      */
-    const forms = {};
+    let forms = {};
+
+    /**
+     * @type {ConfigFormsProxy}
+     */
+    const formsProxy = store(proxyData(), {
+        touch() {}
+    }, 'config-forms');
 
     const renderTabs = () => {
         let tabsHtml = '';
@@ -277,9 +291,27 @@ function proxyConfigForms() {
         return tabsHtml;
     };
 
+    const disableListerners = () => {
+        for (const [name, form] of Object.entries(forms)) {
+            form.removeListeners();
+        }
+    };
+
+    let initComponentDone = false;
+    const initComponent = () => {
+        if (!initComponentDone) {
+            component('#config-forms', renderTabs, {signals: ['config-forms']});
+            initComponentDone = true;
+        } else {
+            formsProxy.touch();
+        }
+    };
+
     addEventListener('rms:config', event => {
+        forms = {};
         for (const [name, group] of Object.entries(rms.configParamsGroups)) {
             const form = new ManagedForm(`config-form-${name}`, (data) => {
+                disableListerners();
                 for (const [name, param] of Object.entries(group.params)) {
                     switch (param.type) {
                         case ConfigParam.TYPE_IP:
@@ -302,13 +334,12 @@ function proxyConfigForms() {
                             break;
                     }
                 }
-                console.log(data);
                 rms.postConfigParams(data);
             });
 
             forms[name] = form;
         }
-        render('#config-forms', renderTabs());
+        initComponent();
     });
 
     // handle post render
@@ -320,7 +351,7 @@ function proxyConfigForms() {
         }
     });
 
-    return formProxy;
+    return formsProxy;
 }
 
 function businessListeners() {
@@ -328,7 +359,6 @@ function businessListeners() {
     document.addEventListener('DOMContentLoaded', () => {
         rms.queryHello(SolarRouterRMS.MODE_DIRECT).then(data => {
             infoBoxProxy.setMode(SolarRouterRMS.MODE_DIRECT);
-            console.log('Hello:', data);
             rms.start();
         }).catch(error => {
             // seams we are running in offshore mode aka from local file system or another server

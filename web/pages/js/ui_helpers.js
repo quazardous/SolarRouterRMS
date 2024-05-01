@@ -119,7 +119,6 @@ class ManagedForm {
     handleSubmit(event) {
         event.preventDefault();
         const formDoc = document.getElementById(this.id);
-        console.log(formDoc);
         const formData = new FormData(formDoc);
         const data = {};
         if (this.managedInputOnly) {
@@ -313,6 +312,7 @@ class FormInputHelper {
         this.type = type;
         this.value = value ?? '';
         this.label = '';
+        this.baseline = '';
         this.help = '';
         this.attr = {};
         this.required = false;
@@ -325,17 +325,24 @@ class FormInputHelper {
         ${this.required?'required="required"':''}`;
     }
 
+    inputHtml() {
+        return `<input ${this.htmlAttr()} value="${this.value}">`;
+    }
+
     /**
      * Generate the HTML for the input field
      * @returns {String} The HTML string
      */
     html() {
-        let inputHtml = `
-            <input ${this.htmlAttr()} value="${this.value}">
-        `;
+        let inputHtml = this.inputHtml();
         if (this.label) {
             inputHtml = `
             <label>${this.label}${inputHtml}</label>
+            `;
+        }
+        if (this.baseline) {
+            inputHtml += `
+            <baseline>${this.baseline}</baseline>
             `;
         }
         if (this.help) {
@@ -377,25 +384,12 @@ class SelectFormInputHelper extends FormInputHelper {
         this.choices = choices;
     }
 
-    html() {
-        let inputHtml = `
-            <select ${this.htmlAttr()}>
-                ${Object.keys(this.choices).map(key => `<option value="${this.choices[key]}" ${this.value == this.choices[key] ? 'selected' : ''}>${this.choices[key]}</option>`).join('')}
-            </select>
-        `;
-        if (this.label) {
-            inputHtml = `
-            <label>${this.label}${inputHtml}</label>
-            `;
-        }
-        if (this.help) {
-            inputHtml += `
-            <help>${this.help}</help>
-            `;
-        }
-        return inputHtml;
+    inputHtml() {
+        return `
+    <select ${this.htmlAttr()}>
+        ${Object.keys(this.choices).map(key => `<option value="${this.choices[key]}" ${this.value == this.choices[key] ? 'selected' : ''}>${this.choices[key]}</option>`).join('')}
+    </select>`;
     }
-
 }
 
 class IpFormInputHelper extends FormInputHelper {

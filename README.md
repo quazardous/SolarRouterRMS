@@ -69,7 +69,9 @@ Finally we need to setup Arduino Cli dependencies.
 make setup
 ```
 
-NB: the install will patch the file `/path/to/arduino/libraries/ElegantOTA/src/ElegantOTA.h` as explained [here](https://docs.elegantota.pro/async-mode/).
+NB: the install will patch the file `ElegantOTA.h` as explained [here](https://docs.elegantota.pro/async-mode/).
+
+NB 2: `AsyncTCP.h` will be patched to use Core 1 (CONFIG_ASYNC_TCP_RUNNING_CORE)
 
 #### Optionally
 

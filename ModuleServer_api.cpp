@@ -16,7 +16,6 @@ namespace ModuleServer
     }
 
     void bootApi(AsyncWebServer& server) {
-        // DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 
         server.on("/api/hello", HTTP_GET, [](AsyncWebServerRequest *request) {
             JsonDocument doc;
@@ -25,17 +24,7 @@ namespace ModuleServer
             String jsonStr;
             serializeJson(doc, jsonStr);
             request->send(200, MIME_JSON, jsonStr);
-            // AsyncWebServerResponse *response = request->beginResponse(200, "application/json", jsonStr);
-            // response->addHeader("Access-Control-Allow-Origin", "*");
-            // request->send(response);
         });
-
-        #if RMS_WEB_SERVER_ALLOW_OFFSHORE == 1
-        // Allow CORS for Offshore mode
-        server.on("/api/config", HTTP_OPTIONS, [](AsyncWebServerRequest *request) {
-            request->send(200);
-        });
-        #endif
 
         server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request) {
             JsonDocument doc;
@@ -44,9 +33,6 @@ namespace ModuleServer
             String jsonStr;
             serializeJson(doc, jsonStr);
             request->send(200, MIME_JSON, jsonStr);
-            // AsyncWebServerResponse *response = request->beginResponse(200, "application/json", jsonStr);
-            // response->addHeader("Access-Control-Allow-Origin", "*");
-            // request->send(response);
         });
 
         AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/api/config", [](AsyncWebServerRequest *request, JsonVariant &json) {

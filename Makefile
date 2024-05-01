@@ -46,6 +46,7 @@ setup: env patch-lib
 
 patch-lib: setup-lib
 	sed -i 's/#define ELEGANTOTA_USE_ASYNC_WEBSERVER 0/#define ELEGANTOTA_USE_ASYNC_WEBSERVER 1/' $(ARDUINO_LIBRARIES)/ElegantOTA/src/ElegantOTA.h
+	sed -i 's/#define CONFIG_ASYNC_TCP_RUNNING_CORE -1/#define CONFIG_ASYNC_TCP_RUNNING_CORE 1/' $(ARDUINO_LIBRARIES)/AsyncTCP/src/AsyncTCP.h
 
 setup-lib: ## Install the required libraries
 	$(ARDUINO_CLI) lib install RemoteDebug2

@@ -9,6 +9,7 @@
 #include "ModuleDebug.h"
 #include "ModuleCore.h"
 #include "pages.h"
+#include "config.h"
 
 namespace ModuleServer
 {
@@ -65,6 +66,14 @@ namespace ModuleServer
 
     void handleNotFound(AsyncWebServerRequest *request)
     {
+        #if RMS_WEB_SERVER_ALLOW_OFFSHORE == 1
+            // Allow CORS for Offshore mode
+            if (request->method() == HTTP_OPTIONS) {
+                request->send(200);
+                return;
+            }
+        #endif
+
         // Page Web pas trouvé
         String message = "Not Found\n\n";
         message += "URI: ";

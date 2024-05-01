@@ -1,6 +1,6 @@
 
 class ConfigParam {
-    constructor(group, type, name, value, readonly, dirty, label, help, choices) {
+    constructor(group, type, name, value, readonly, dirty, label, help, choices, backup) {
         this.group = group;
         this.type = type;
         this.name = name;
@@ -10,6 +10,7 @@ class ConfigParam {
         this.label = label;
         this.help = help;
         this.choices = choices;
+        this.backup = backup;
         if (!this.label) {
             this.label = this.getLabel();
         }
@@ -48,14 +49,15 @@ class ConfigParamGroup {
             param.dirty,
             param.label,
             param.help,
-            param.choices
+            param.choices,
+            param.backup
         );
     }
 }
 
 class SolarRouterRMS {
     static DEFAULT_AP_IP = '192.168.4.1';
-    static LOOP_INTERVAL = 3000;
+    static LOOP_INTERVAL = 10000;
 
     static MODE_AUTO = 'auto';
     static MODE_UNKNOWN = 'unknown';
@@ -105,6 +107,13 @@ class SolarRouterRMS {
         }
         this.configParamsGroups[param.group].addParam(name, param);
         this.configParams[name] = param;
+    }
+
+    setConfigParams(params, reset = true) {
+        if (reset) { this.configParams = {}; }
+        for (const key in params) {
+            this.addConfigParam(key, params[key]);
+        }
     }
 
     setConfig(name, value) {
@@ -291,9 +300,7 @@ class SolarRouterRMS {
 
     queryConfigParams() {
         this.api.get('api/config').then(data => {
-            for (const key in data.configs) {
-                this.addConfigParam(key, data.configs[key]);
-            }
+            this.setConfigParams(data.configs);
             this.emit('rms:config', {rms: self, config: data.configs});
         });
     }
@@ -303,6 +310,7 @@ class SolarRouterRMS {
      */
     postConfigParams(params) {
         this.api.post('api/config', {update: params}).then(data => {
+            this.setConfigParams(data.configs);
             this.emit('rms:config', {rms: self, config: data.configs});
         });
     }

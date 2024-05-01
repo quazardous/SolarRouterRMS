@@ -119,3 +119,13 @@ button[confirm]:hover, button.confirm:hover{
 #config-forms select.param {
     display: block;
 }
+
+#config-forms baseline .actual {
+    color: green;
+    font-size: smaller;
+}
+#config-forms baseline .dirty {
+    color: red;
+    font-size: smaller;
+    text-decoration-line: line-through;
+}
