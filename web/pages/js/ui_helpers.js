@@ -3,13 +3,17 @@
 const {signal, component, render, store} = reef;
 
 class ManagedInput {
-    constructor(id, onChange) {
-        this.id = id;
+    constructor(name, onChange, id) {
+        this.name = name;
+        this.id = id ? id : name;
         this.onChange = onChange;
         this.listeners = [];
     }
 
     addListeners() {
+        if (!this.onChange) {
+            return;
+        }
         const element = document.getElementById(this.id);
         // const inputType = element.getAttribute('type').toLowerCase();
         const tagName = element.tagName.toLowerCase();
@@ -38,8 +42,8 @@ class ManagedInput {
         this.onChange(event.target.value, event);
     }
 
-    getValue() {
-        return document.getElementById(this.id).value;
+    getValue(value) {
+        return value;
     }
 }
 
@@ -65,15 +69,16 @@ class ManagedButton extends ManagedInput {
 }
 
 class ManagedForm {
-    constructor(id, onSubmit) {
+    constructor(id, onSubmit, managedInputOnly = false) {
         this.id = id;
         this.onSubmit = onSubmit;
         this.listeners = [];
-        this.eventController = new AbortController();
+        this.managedInputOnly = managedInputOnly;
         /**
-         * @var {Array.<MonitoredInput>}
+         * @var {Array.<ManagedInput>}
          */
         this.inputs = [];
+        this.listening = false;
     }
 
     /**
@@ -84,16 +89,20 @@ class ManagedForm {
     }
 
     addListeners() {
+        if (this.listening) {
+            return;
+        }
         this.inputs.forEach(input => {
             input.addListeners();
         });
         this.addEventListener('submit', this.handleSubmit.bind(this));
+        this.listening = true;
     }
 
     addEventListener(event, callback) {
         const element = document.getElementById(this.id);
         this.listeners.push({element, event, callback});
-        element.addEventListener(event, callback, {signal: this.eventController.signal});
+        element.addEventListener(event, callback);
     }
 
     removeListeners() {
@@ -104,14 +113,24 @@ class ManagedForm {
         this.inputs.forEach(input => {
             input.removeListeners();
         });
+        this.listening = false;
     }
 
     handleSubmit(event) {
         event.preventDefault();
+        const formDoc = document.getElementById(this.id);
+        console.log(formDoc);
+        const formData = new FormData(formDoc);
         const data = {};
-        this.inputs.forEach(input => {
-            data[input.id] = input.getValue();
-        });
+        if (this.managedInputOnly) {
+            this.inputs.forEach(input => {
+                data[input.name] = input.getValue(formData.get(input.name));
+            });
+        } else {
+            for (const [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+        }
         this.onSubmit(data, event);
     }
 }
@@ -299,20 +318,24 @@ class FormInputHelper {
         this.required = false;
     }
 
+    htmlAttr() {
+        return `
+        type="${this.type}" id="${this.id}" name="${this.name}" value="${this.value}" 
+        ${Object.keys(this.attr).map(key => `${key}="${this.attr[key]}"`).join(' ')}
+        ${this.required?'required="required"':''}`;
+    }
+
     /**
      * Generate the HTML for the input field
      * @returns {String} The HTML string
      */
     html() {
         let inputHtml = `
-            <input type="${this.type}" id="${this.id}" name="${this.name}" value="${this.value}" 
-                ${Object.keys(this.attr).map(key => `${key}="${this.attr[key]}"`).join(' ')}
-                ${this.required?'required="required"':''}>
+            <input ${this.htmlAttr()}>
         `;
         if (this.label) {
             inputHtml = `
-            <label for="${this.name}">${this.label}</label>
-            ${inputHtml}
+            <label>${this.label}${inputHtml}</label>
             `;
         }
         if (this.help) {
@@ -321,6 +344,25 @@ class FormInputHelper {
             `;
         }
         return inputHtml;
+    }
+}
+
+class CheckboxFormInputHelper extends FormInputHelper {
+    /**
+     * @param {String} id 
+     * @param {String} value 
+     * @param {String} label 
+     */
+    constructor(id, checked = false) {
+        super(id, 'checkbox', 1);
+        this.checked = checked;
+    }
+    htmlAttr() {
+        let attr = super.htmlAttr();
+        if (this.checked) {
+            attr += " checked";
+        }
+        return `${attr}`;
     }
 }
 

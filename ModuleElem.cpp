@@ -18,6 +18,7 @@ namespace ModuleElem {
         "main",
         "network",
         "powermeter",
+        "edf",
     };
 
     const char* type_names[] = {

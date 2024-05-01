@@ -11,6 +11,7 @@ namespace ModuleElem
         GROUP_MAIN = 0,
         GROUP_NETWORK,
         GROUP_POWERMETER,
+        GROUP_EDF,
     };
 
     // list of kown elements
@@ -111,6 +112,18 @@ namespace ModuleElem
         float (*getFloat)(void *context);
     } getter_t;
 
+    // backup data
+    typedef struct {
+        byte Byte;
+        unsigned short UShort;
+        short Short;
+        unsigned long ULong;
+        long Long;
+        bool Bool;
+        const char* CString;
+        float Float;
+    } backup_t;
+
     // callback type
     typedef void (*persist_t)(bool read_or_write, void* context);
 
@@ -126,6 +139,7 @@ namespace ModuleElem
         bool dirty;
         const char* label;
         const char* help;
+        backup_t backup;
     };
 
     // getter to string

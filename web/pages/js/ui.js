@@ -8,7 +8,7 @@ class PopupInitTpl extends PopupTpl {
             infoBoxProxy.setOffshoreIps(data['form-init-stationIp'], data['form-init-apIp']);
             this.popup.close();
             return;
-        });
+        }, true);
         this.form.addInput(new ManagedInput('form-init-stationIp', (value, event) => {
             const data = this.store();
             data.set('localIpClass', IPAddress.validateIP(value) ? 'valid' : 'invalid');
@@ -131,7 +131,6 @@ function proxyInfoBox() {
 
     addEventListener('DOMContentLoaded', () => {
         component('#rms-info', () => {
-            console.log('Render rms info', rmsProxy.value);
             if (rmsProxy.value.offshore) {
                 let apClass = '';
                 let stationClass = '';
@@ -193,15 +192,42 @@ function proxyConfigForms() {
         for (const [name, param] of Object.entries(group.params)) {
             let input;
             switch (param.type) {
-                case 'ip':
+                case ConfigParam.TYPE_BOOL:
+                    input = new CheckboxFormInputHelper(name, param.value);
+                    break;
+                case ConfigParam.TYPE_IP:
                     input = new IpFormInputHelper(name, IPAddress.toString(param.value));
                     break;
                 default:
-                    input = new FormInputHelper(name, param.type, param.value);
+                    let type = 'text';
+                    if ([ConfigParam.TYPE_FLOAT, ConfigParam.TYPE_USHORT, ConfigParam.TYPE_SHORT, ConfigParam.TYPE_LONG, ConfigParam.TYPE_ULONG].includes(param.type)) {
+                        type = 'number';
+                    }
+                    input = new FormInputHelper(name, type, param.value);
+                    switch (param.type) {
+                        case ConfigParam.TYPE_USHORT:
+                            input.attr.min = 0;
+                            input.attr.max = 65535;
+                            break;
+                        case ConfigParam.TYPE_SHORT:
+                            input.attr.min = -32768;
+                            input.attr.max = 32767;
+                            break;
+                        case ConfigParam.TYPE_LONG:
+                            input.attr.min = -2147483648;
+                            input.attr.max = 2147483647;
+                            break;
+                        case ConfigParam.TYPE_ULONG:
+                            input.attr.min = 0;
+                            input.attr.max = 4294967295;
+                            break;
+                    }
             }
             input.id = `config-param-${name}`;
             input.label = param.label;
-            input.help = param.help;
+            input.help = param.help === undefined ? '' : param.help;
+            input.help = `${input.help} <span class="type">(${param.type})</span>`;
+            input.attr.class = 'param';
             fieldset.push(input);
         }
 
@@ -236,6 +262,11 @@ function proxyConfigForms() {
 
 */
 
+    /**
+     * @type {Object.<string, ManagedForm>}
+     */
+    const forms = {};
+
     const renderTabs = () => {
         let tabsHtml = '';
         for (const [name, group] of Object.entries(rms.configParamsGroups)) {
@@ -244,8 +275,46 @@ function proxyConfigForms() {
         return tabsHtml;
     };
 
-    addEventListener('rms.config', event => {
+    addEventListener('rms:config', event => {
+        for (const [name, group] of Object.entries(rms.configParamsGroups)) {
+            const form = new ManagedForm(`config-form-${name}`, (data) => {
+                for (const [name, param] of Object.entries(group.params)) {
+                    switch (param.type) {
+                        case ConfigParam.TYPE_IP:
+                            data[name] = (new IPAddress(data[name])).toUL();
+                            break;
+                        case ConfigParam.TYPE_BOOL:
+                            data[name] = Boolean(data[name]);
+                            break;
+                        case ConfigParam.TYPE_FLOAT:
+                            data[name] = Number(data[name]);
+                            break;
+                        case ConfigParam.TYPE_USHORT:
+                        case ConfigParam.TYPE_SHORT:
+                        case ConfigParam.TYPE_LONG:
+                        case ConfigParam.TYPE_ULONG:
+                            data[name] = Math.floor(Number(data[name]));
+                            break;
+                        case ConfigParam.TYPE_CSTRING:
+                            data[name] = String(data[name]);
+                            break;
+                    }
+                }
+                console.log(data);
+            });
+
+            forms[name] = form;
+        }
         render('#config-forms', renderTabs());
+    });
+
+    // handle post render
+    addEventListener('reef:render', event => {
+        if ('config-forms' == event.target.id) {
+            for (const [name, form] of Object.entries(forms)) {
+                form.addListeners();
+            }
+        }
     });
 
     return formProxy;
@@ -270,7 +339,7 @@ function businessListeners() {
         });
     });
 
-    addEventListener('rms.hello', event => {
+    addEventListener('rms:hello', event => {
         infoBoxProxy.hello();
     });
 }

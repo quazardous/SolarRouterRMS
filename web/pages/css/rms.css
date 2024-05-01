@@ -110,3 +110,11 @@ button[confirm]:hover, button.confirm:hover{
 .tabs > .input:checked + .label + .panel {
     display: block;
 }
+
+.type {
+    color: #888;
+}
+
+#config-forms input.param {
+    display: block;
+}

@@ -17,6 +17,15 @@ class ConfigParam {
     getLabel() {
         return this.name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^(.)(.*)$/, (_, first, rest) => first.toUpperCase() + rest);
     }
+
+    static TYPE_IP = 'ip';
+    static TYPE_FLOAT = 'float';
+    static TYPE_BOOL = 'bool';
+    static TYPE_SHORT = 'short';
+    static TYPE_USHORT = 'ushort';
+    static TYPE_LONG = 'long';
+    static TYPE_ULONG = 'ulong';
+    static TYPE_CSTRING = 'cstring';
 }
 
 class ConfigParamGroup {
@@ -225,22 +234,22 @@ class SolarRouterRMS {
             console.log('Guessing Offshore Mode');
             return this.guessHelloOffshore()
                 .then(data => {
-                    self.emit('rms.hello', {rms:self, hello: data.data, mode: data.mode});
+                    self.emit('rms:hello', {rms:self, hello: data.data, mode: data.mode});
                     return true;
                 })
                 .catch(error => {
-                    self.emit('rms.hello', {rms:self, hello: false, mode: this.mode});
+                    self.emit('rms:hello', {rms:self, hello: false, mode: this.mode});
                 }); 
         } else {
             if ([SolarRouterRMS.MODE_DIRECT, SolarRouterRMS.MODE_AP, SolarRouterRMS.MODE_STATION].includes(this.mode)) {
                 return this.queryHello()
                     .then(data => {
-                        self.emit('rms.hello', {rms:self, mode: this.mode, hello: data});
+                        self.emit('rms:hello', {rms:self, mode: this.mode, hello: data});
                         return true;
                     })
                     .catch(error => {
                         self.configParamsDone = false;
-                        self.emit('rms.hello', {rms:self, mode: this.mode, hello: false});
+                        self.emit('rms:hello', {rms:self, mode: this.mode, hello: false});
                     });
             }
         }
@@ -259,7 +268,6 @@ class SolarRouterRMS {
      * @param {*} data 
      */
     emit(event, data) {
-        console.log('Emit:', event, data);
         const e = new CustomEvent(event, { detail: data });
         window.dispatchEvent(e);
     }
@@ -283,7 +291,7 @@ class SolarRouterRMS {
             for (const key in data.configs) {
                 this.addConfigParam(key, data.configs[key]);
             }
-            this.emit('rms.config', {rms: self, config: data.configs});
+            this.emit('rms:config', {rms: self, config: data.configs});
         });
     }
 }

@@ -6,6 +6,7 @@
 #include "ModuleDebug.h"
 #include "ModuleTime.h"
 #include "ModuleWifi.h"
+#include "ModuleConfig.h"
 #include "ModulePowerMeter.h"
 #include <ArduinoJson.h>
 #include "HelperJson.h"
@@ -14,6 +15,7 @@
 namespace ModuleEDF
 {
     void Call_EDF_data();
+    void config();
 
     WiFiClientSecure clientSecuEDF;
     int LastHeureEDF = -1;
@@ -28,6 +30,7 @@ namespace ModuleEDF
 
     void boot() {
         // noop
+        config();
     }
 
     void setupTimer(unsigned long msNow) {
@@ -50,6 +53,15 @@ namespace ModuleEDF
                 ModuleDebug::stockMessage("Pas de connexion WIFI pour EDF");
             }
         }
+    }
+
+    ModuleElem::elem_map_t config_map[] = {
+        RMS_CONFIG_ELEM_MAP(GROUP_EDF, ELEM_TEMPO_EDF_ON, TYPE_BOOL, Bool, setTempo, getTempo, NULL, bool, NULL, NULL),
+    };
+    const int config_map_size = sizeof(config_map) / sizeof(ModuleElem::elem_map_t);
+
+    void config() {
+        ModuleConfig::registerConfig(config_map, config_map_size);
     }
 
     void Call_EDF_data()
