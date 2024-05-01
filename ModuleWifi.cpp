@@ -102,18 +102,14 @@ namespace ModuleWifi
                 // Wifi status
                 String m = "IP address: " + String(WiFi.localIP());
                 ModuleCore::log(m);
-                ModuleDebug::getDebug().println(m);
                 m = "WIFI signal:" + String(WiFi.RSSI());
                 ModuleCore::log(m);
-                ModuleDebug::getDebug().println(m);
 
                 if (!WiFi.isConnected()) {
                     ModuleCore::log("WIFI: Not connected");
-                    ModuleDebug::getDebug().println("WIFI: Not connected");
                 }
                 // m = "WIFIbug:" + String(wifiBug);
                 // ModuleCore::log(m);
-                // ModuleDebug::getDebug().println(m);
             } else {
                 ModuleCore::log("AP Mode. IP address: " + WiFi.softAPIP().toString());
             }

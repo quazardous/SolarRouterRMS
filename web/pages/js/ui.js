@@ -191,37 +191,41 @@ function proxyConfigForms() {
         
         for (const [name, param] of Object.entries(group.params)) {
             let input;
-            switch (param.type) {
-                case ConfigParam.TYPE_BOOL:
-                    input = new CheckboxFormInputHelper(name, param.value);
-                    break;
-                case ConfigParam.TYPE_IP:
-                    input = new IpFormInputHelper(name, IPAddress.toString(param.value));
-                    break;
-                default:
-                    let type = 'text';
-                    if ([ConfigParam.TYPE_FLOAT, ConfigParam.TYPE_USHORT, ConfigParam.TYPE_SHORT, ConfigParam.TYPE_LONG, ConfigParam.TYPE_ULONG].includes(param.type)) {
-                        type = 'number';
-                    }
-                    input = new FormInputHelper(name, type, param.value);
-                    switch (param.type) {
-                        case ConfigParam.TYPE_USHORT:
-                            input.attr.min = 0;
-                            input.attr.max = 65535;
-                            break;
-                        case ConfigParam.TYPE_SHORT:
-                            input.attr.min = -32768;
-                            input.attr.max = 32767;
-                            break;
-                        case ConfigParam.TYPE_LONG:
-                            input.attr.min = -2147483648;
-                            input.attr.max = 2147483647;
-                            break;
-                        case ConfigParam.TYPE_ULONG:
-                            input.attr.min = 0;
-                            input.attr.max = 4294967295;
-                            break;
-                    }
+            if (param.choices) {
+                input = new SelectFormInputHelper(name, param.value, param.choices);
+            } else {
+                switch (param.type) {
+                    case ConfigParam.TYPE_BOOL:
+                        input = new CheckboxFormInputHelper(name, param.value);
+                        break;
+                    case ConfigParam.TYPE_IP:
+                        input = new IpFormInputHelper(name, IPAddress.toString(param.value));
+                        break;
+                    default:
+                        let type = 'text';
+                        if ([ConfigParam.TYPE_FLOAT, ConfigParam.TYPE_USHORT, ConfigParam.TYPE_SHORT, ConfigParam.TYPE_LONG, ConfigParam.TYPE_ULONG].includes(param.type)) {
+                            type = 'number';
+                        }
+                        input = new FormInputHelper(name, type, param.value);
+                        switch (param.type) {
+                            case ConfigParam.TYPE_USHORT:
+                                input.attr.min = 0;
+                                input.attr.max = 65535;
+                                break;
+                            case ConfigParam.TYPE_SHORT:
+                                input.attr.min = -32768;
+                                input.attr.max = 32767;
+                                break;
+                            case ConfigParam.TYPE_LONG:
+                                input.attr.min = -2147483648;
+                                input.attr.max = 2147483647;
+                                break;
+                            case ConfigParam.TYPE_ULONG:
+                                input.attr.min = 0;
+                                input.attr.max = 4294967295;
+                                break;
+                        }
+                }
             }
             input.id = `config-param-${name}`;
             input.label = param.label;
@@ -230,8 +234,6 @@ function proxyConfigForms() {
             input.attr.class = 'param';
             fieldset.push(input);
         }
-
-        const html = `${fieldset.map(input => `<p>${input.html()}</p>`).join('')}`
 
         const checked = firstTab ? 'checked' : '';
         firstTab = false;
@@ -301,6 +303,7 @@ function proxyConfigForms() {
                     }
                 }
                 console.log(data);
+                rms.postConfigParams(data);
             });
 
             forms[name] = form;

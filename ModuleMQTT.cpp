@@ -71,7 +71,6 @@ namespace ModuleMQTT
     {
         String m = String("-------message broker - unused-----");
         Serial.println(m);
-        ModuleDebug::getDebug().println(m);
     }
 
     void assertConnected()
@@ -252,7 +251,6 @@ namespace ModuleMQTT
         }
 
         Serial.println("Paramètres Auto-Discovery publiés !");
-        ModuleDebug::getDebug().println("Paramètres Auto-Discovery publiés !");
 
         // clientMQTT.setBufferSize(512);  // go to initial value wifi/mqtt buffer
         Discovered = true;

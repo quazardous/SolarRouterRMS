@@ -50,7 +50,6 @@ namespace ModuleSensor
             temperature = temperature_brute;
             String message = "Temperature : " + String(temperature) + "°C";;
             ModuleCore::log(message);
-            ModuleDebug::getDebug().println(message);
         }
     }
 

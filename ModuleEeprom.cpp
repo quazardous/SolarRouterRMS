@@ -258,7 +258,6 @@ namespace ModuleEeprom
         currentEepromUsage = int(100.0 * size / RMS_EEPROM_MAX_SIZE);
         String m = "EEPROM usage : " + String(currentEepromUsage) + "%" + " (" + String(size) + "/" + String(RMS_EEPROM_MAX_SIZE) + " bytes)";
         ModuleCore::log(m);
-        ModuleDebug::getDebug().println(m);
     }
 
     int readEeprom()

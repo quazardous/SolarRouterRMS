@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include <RemoteDebug.h>
 
 #define RMS_DEBUG_STOCK_MESSAGES 4
 
@@ -15,7 +14,6 @@ namespace ModuleDebug
     // getters / setters
     String* getMessages();
     int getMessageIdx();
-    RemoteDebug &getDebug();
 
     // helpers
     void stockMessage(const char *m);

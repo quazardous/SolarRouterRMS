@@ -320,7 +320,7 @@ class FormInputHelper {
 
     htmlAttr() {
         return `
-        type="${this.type}" id="${this.id}" name="${this.name}" value="${this.value}" 
+        type="${this.type}" id="${this.id}" name="${this.name}" 
         ${Object.keys(this.attr).map(key => `${key}="${this.attr[key]}"`).join(' ')}
         ${this.required?'required="required"':''}`;
     }
@@ -331,7 +331,7 @@ class FormInputHelper {
      */
     html() {
         let inputHtml = `
-            <input ${this.htmlAttr()}>
+            <input ${this.htmlAttr()} value="${this.value}">
         `;
         if (this.label) {
             inputHtml = `
@@ -364,6 +364,38 @@ class CheckboxFormInputHelper extends FormInputHelper {
         }
         return `${attr}`;
     }
+}
+
+class SelectFormInputHelper extends FormInputHelper {
+    /**
+     * @param {String} id 
+     * @param {String} value 
+     * @param {String} label 
+     */
+    constructor(id, value = '', choices = []) {
+        super(id, 'select', value);
+        this.choices = choices;
+    }
+
+    html() {
+        let inputHtml = `
+            <select ${this.htmlAttr()}>
+                ${Object.keys(this.choices).map(key => `<option value="${this.choices[key]}" ${this.value == this.choices[key] ? 'selected' : ''}>${this.choices[key]}</option>`).join('')}
+            </select>
+        `;
+        if (this.label) {
+            inputHtml = `
+            <label>${this.label}${inputHtml}</label>
+            `;
+        }
+        if (this.help) {
+            inputHtml += `
+            <help>${this.help}</help>
+            `;
+        }
+        return inputHtml;
+    }
+
 }
 
 class IpFormInputHelper extends FormInputHelper {

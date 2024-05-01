@@ -58,7 +58,6 @@ namespace ModulePowerMeterLinky
         boucle_appel_Linky++;
         if (boucle_appel_Linky > 4000)
         {
-            ModuleDebug::getDebug().println(boucle_appel_Linky);
             boucle_appel_Linky = 0;
             MySerial.flush();
             MySerial.write("Ok");
@@ -136,7 +135,6 @@ namespace ModulePowerMeterLinky
                     {
                         if (checksum != checkLinky)
                         {
-                            ModuleDebug::getDebug().println("Erreur checksum code : " + code + " " + String(checksum) + "," + String(checkLinky));
                             ModuleDebug::stockMessage("Erreur checksum code : " + code + " " + String(checksum) + "," + String(checkLinky));
                         }
                         else

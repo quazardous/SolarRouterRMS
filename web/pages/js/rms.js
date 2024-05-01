@@ -1,6 +1,6 @@
 
 class ConfigParam {
-    constructor(group, type, name, value, readonly, dirty, label, help) {
+    constructor(group, type, name, value, readonly, dirty, label, help, choices) {
         this.group = group;
         this.type = type;
         this.name = name;
@@ -9,6 +9,7 @@ class ConfigParam {
         this.dirty = dirty;
         this.label = label;
         this.help = help;
+        this.choices = choices;
         if (!this.label) {
             this.label = this.getLabel();
         }
@@ -46,7 +47,9 @@ class ConfigParamGroup {
             param.readonly,
             param.dirty,
             param.label,
-            param.help);
+            param.help,
+            param.choices
+        );
     }
 }
 
@@ -291,6 +294,15 @@ class SolarRouterRMS {
             for (const key in data.configs) {
                 this.addConfigParam(key, data.configs[key]);
             }
+            this.emit('rms:config', {rms: self, config: data.configs});
+        });
+    }
+
+    /**
+     * @param {Object.<string,*>} params 
+     */
+    postConfigParams(params) {
+        this.api.post('api/config', {update: params}).then(data => {
             this.emit('rms:config', {rms: self, config: data.configs});
         });
     }

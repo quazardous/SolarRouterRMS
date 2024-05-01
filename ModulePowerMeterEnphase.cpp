@@ -43,7 +43,6 @@ namespace ModulePowerMeterEnphase
         if (EnphaseUser[0] != '\0' && EnphasePwd[0] != '\0')
         {
             Serial.println("Essai connexion Enlighten server 1 pour obtention session_id!");
-            ModuleDebug::getDebug().println("Essai connexion Enlighten server 1 pour obtention session_id!");
             clientSecu.setInsecure(); // skip verification
             if (!clientSecu.connect(RMS_POWER_METER_ENPHASE_SESSION_SERVER, 443))
                 ModuleDebug::stockMessage("Connection failed to Enlighten server: " RMS_POWER_METER_ENPHASE_SESSION_SERVER);
@@ -78,12 +77,10 @@ namespace ModulePowerMeterEnphase
             String m = String("session_id :");
             m += String(Session_id);
             Serial.println(m);
-            ModuleDebug::getDebug().println(m);
         }
         else
         {
             Serial.println("Connexion vers Envoy-S en firmware version 5");
-            ModuleDebug::getDebug().println("Connexion vers Envoy-S en firmware version 5");
         }
         // Obtention Token
         //********************
@@ -93,7 +90,6 @@ namespace ModulePowerMeterEnphase
             adrEnphase = "https://" RMS_POWER_METER_ENPHASE_TOKEN_SERVER "/tokens";
             requestBody = "{\"session_id\":\"" + String(Session_id) + "\", \"serial_num\":" + String(EnphaseSerial) + ", \"username\":\"" + String(EnphaseUser) + "\"}";
             Serial.println("Essai connexion Enlighten server 2 pour obtention token!");
-            ModuleDebug::getDebug().println("Essai connexion Enlighten server 2 pour obtention token!");
             clientSecu.setInsecure(); // skip verification
             if (!clientSecu.connect(RMS_POWER_METER_ENPHASE_TOKEN_SERVER, 443))
                 ModuleDebug::stockMessage("Connection failed to: " RMS_POWER_METER_ENPHASE_TOKEN_SERVER);
@@ -133,7 +129,6 @@ namespace ModulePowerMeterEnphase
                 String m = String("Token : ");
                 m += JsonToken;
                 Serial.println(m);
-                ModuleDebug::getDebug().println(m);
                 if (JsonToken.length() > 50)
                 {
                     strncpy(EnphaseToken, JsonToken.c_str(), sizeof(EnphaseToken));

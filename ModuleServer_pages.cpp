@@ -66,7 +66,6 @@ namespace ModuleServer
     void handleNotFound(AsyncWebServerRequest *request)
     {
         // Page Web pas trouvé
-        ModuleCore::log("Not Found");
         String message = "Not Found\n\n";
         message += "URI: ";
         message += request->url();
@@ -79,6 +78,7 @@ namespace ModuleServer
         {
             message += " " + request->argName(i) + ": " + request->arg(i) + "\n";
         }
+        ModuleCore::log(message);
         request->send(404, "text/plain", message);
     }
 } // namespace ModuleServer

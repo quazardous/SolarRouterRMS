@@ -115,6 +115,7 @@ button[confirm]:hover, button.confirm:hover{
     color: #888;
 }
 
-#config-forms input.param {
+#config-forms input.param,
+#config-forms select.param {
     display: block;
 }

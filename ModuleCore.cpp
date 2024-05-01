@@ -109,20 +109,17 @@ namespace ModuleCore {
                 + " Avg : " + String(int(cpuLoad0->avg)) 
                 + "  Max : " + String(int(cpuLoad0->max));
             log(m);
-            ModuleDebug::getDebug().println(m);
 
             m = "Main Loop (Core 1) in ms - Min : " + String(int(cpuLoad1.min)) 
                 + " Avg : " + String(int(cpuLoad1.avg)) 
                 + "  Max : " + String(int(cpuLoad1.max));
             log(m);
-            ModuleDebug::getDebug().println(m);
 
             float since = millis() / 1000.0;
             char s[32];
             sprintf(s, "%02d:%02d", int(since / 3600), int((int(since) % 3600) / 60));
             m = "ESP32 running since " + String(s) + " hours";
             log(m);
-            ModuleDebug::getDebug().println(m);
 
             log("EEPROM Key: " + String(ModuleEeprom::getEepromKey()));
             // call to EDF data put in dedicated module
@@ -153,10 +150,10 @@ namespace ModuleCore {
     }
 
     ModuleElem::elem_map_t config_map[] = {
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_ROUTER_NAME, TYPE_CSTRING, CString, setRouterName, getRouterName, NULL, const char*, "Router Name", NULL),
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_MOBILE_PROBE_NAME, TYPE_CSTRING, CString, setMobileProbeName, getMobileProbeName, NULL, const char*, NULL, NULL),
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_FIX_PROBE_NAME, TYPE_CSTRING, CString, setFixProbeName, getFixProbeName, NULL, const char*, NULL, NULL),
-        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_TEMPERATURE_NAME, TYPE_CSTRING, CString, setTemperatureName, getTemperatureName, NULL, const char*, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_ROUTER_NAME, TYPE_CSTRING, CString, setRouterName, getRouterName, NULL, const char*, "Router Name", NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_MOBILE_PROBE_NAME, TYPE_CSTRING, CString, setMobileProbeName, getMobileProbeName, NULL, const char*, NULL, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_FIX_PROBE_NAME, TYPE_CSTRING, CString, setFixProbeName, getFixProbeName, NULL, const char*, NULL, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_MAIN, ELEM_TEMPERATURE_NAME, TYPE_CSTRING, CString, setTemperatureName, getTemperatureName, NULL, const char*, NULL, NULL, NULL),
     };
     const int config_map_size = sizeof(config_map) / sizeof(ModuleElem::elem_map_t);
 

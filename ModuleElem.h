@@ -112,6 +112,18 @@ namespace ModuleElem
         float (*getFloat)(void *context);
     } getter_t;
 
+    // data types choices
+    typedef union {
+        const byte* (*chooseByte)(size_t* len, void *context);
+        const unsigned short* (*chooseUShort)(size_t* len, void *context);
+        const short* (*chooseShort)(size_t* len, void *context);
+        const unsigned long* (*chooseULong)(size_t* len, void *context);
+        const long* (*chooseLong)(size_t* len, void *context);
+        const bool* (*chooseBool)(size_t* len, void *context);
+        const char** (*chooseCString)(size_t* len, void *context);
+        const float* (*chooseFloat)(size_t* len, void *context);
+    } choose_t;
+
     // backup data
     typedef struct {
         byte Byte;
@@ -139,6 +151,7 @@ namespace ModuleElem
         bool dirty;
         const char* label;
         const char* help;
+        choose_t choices;
         backup_t backup;
     };
 

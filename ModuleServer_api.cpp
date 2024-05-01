@@ -6,7 +6,7 @@
 #include "ModuleCore.h"
 #include "ModuleConfig.h"
 #include "version.h"
-// #include <AsyncJson.h>
+#include <AsyncJson.h>
 
 
 namespace ModuleServer
@@ -18,21 +18,6 @@ namespace ModuleServer
     void bootApi(AsyncWebServer& server) {
         // DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 
-        // AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/rest/endpoint", [](AsyncWebServerRequest *request, JsonVariant &json) {
-        //     StaticJsonDocument<200> data;
-        //     if (json.is<JsonArray>())
-        //     {
-        //         data = json.as<JsonArray>();
-        //     }
-        //     else if (json.is<JsonObject>())
-        //     {
-        //         data = json.as<JsonObject>();
-        //     }
-        //     String response;
-        //     serializeJson(data, response);
-        //     request->send(200, "application/json", response);
-        //     Serial.println(response);
-        // });
         server.on("/api/hello", HTTP_GET, [](AsyncWebServerRequest *request) {
             JsonDocument doc;
             prepareJsonDoc(doc);
@@ -45,6 +30,13 @@ namespace ModuleServer
             // request->send(response);
         });
 
+        #if RMS_WEB_SERVER_ALLOW_OFFSHORE == 1
+        // Allow CORS for Offshore mode
+        server.on("/api/config", HTTP_OPTIONS, [](AsyncWebServerRequest *request) {
+            request->send(200);
+        });
+        #endif
+
         server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request) {
             JsonDocument doc;
             prepareJsonDoc(doc);
@@ -56,6 +48,29 @@ namespace ModuleServer
             // response->addHeader("Access-Control-Allow-Origin", "*");
             // request->send(response);
         });
+
+        AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/api/config", [](AsyncWebServerRequest *request, JsonVariant &json) {
+            ModuleCore::log("POST /api/config");
+            JsonDocument in;
+            JsonDocument out;
+            if (json.is<JsonObject>())
+            {
+                in = json.as<JsonObject>();
+                String response;
+                prepareJsonDoc(out);
+                ModuleConfig::apiPostConfig(request, in, out);
+                serializeJson(out, response);
+                request->send(200, "application/json", response);
+                return;
+            }
+            // Handle error 400
+            String response;
+            out["error"] = "Bad Request";
+            serializeJson(out, response);
+            request->send(400, "application/json", response);
+        });
+
+        server.addHandler(handler);
     }
 
 } // namespace ModuleServer

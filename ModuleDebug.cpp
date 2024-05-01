@@ -5,33 +5,21 @@
 
 namespace ModuleDebug
 {
-    RemoteDebug Debug;
     String Message[RMS_DEBUG_STOCK_MESSAGES];
     int idxMessage = 0;
     
     void boot()
     {
-        Debug.begin("ESP32");
-        Debug.println("Ready");
-        Debug.print("IP address: ");
-        Debug.println(WiFi.localIP().toString());
     }
 
     void loop(unsigned long msLoop)
     {
-        // start remote debug
-        Debug.handle();
     }
 
     // getters / setters
     String* getMessages()
     {
         return Message;
-    }
-
-    RemoteDebug &getDebug()
-    {
-        return Debug;
     }
 
     // helpers
@@ -59,13 +47,11 @@ namespace ModuleDebug
     void comboLog(const String &m)
     {
         stockMessage(m);
-        Debug.println(m);
     }
 
     void comboLog(const char *m)
     {
         stockMessage(m);
-        Debug.println(m);
     }
 
     int getMessageIdx()

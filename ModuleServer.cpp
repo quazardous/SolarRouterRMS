@@ -54,6 +54,7 @@ namespace ModuleServer
 
     const String MIME_JSON = "application/json";
     const String MIME_HTML = "text/html";
+    const String MIME_PLAIN = "text/plain";
     const String MIME_CSS = "text/css";
     const String MIME_JS = "text/javascript";
 
@@ -64,6 +65,7 @@ namespace ModuleServer
         DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
         #endif
 
+        // server.enableCORS(true);
         // Init Web Server on port 80
         bootApi(server);
 
@@ -128,7 +130,6 @@ namespace ModuleServer
 
         ElegantOTA.begin(&server); // Start ElegantOTA
         server.begin();
-        ModuleDebug::getDebug().println("HTTP Async Server started");
     }
 
     void loop(unsigned long msLoop)
