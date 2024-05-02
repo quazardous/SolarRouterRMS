@@ -18,6 +18,7 @@
 namespace ModuleConfig {
 
     typedef ArrayList<ModuleElem::elem_map_t*> elem_map_list_t;
+    typedef ArrayList<ModuleElem::elem_t> elem_list_t;
 
     // events
     // must be ran after all modules have registered their config

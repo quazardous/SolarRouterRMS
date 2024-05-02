@@ -16,7 +16,7 @@ namespace ModuleElem {
     // NB: order must match the enum in ModuleElem.h
     const char* group_names[] = {
         "main",
-        "network",
+        "wifi",
         "powermeter",
         "edf",
     };

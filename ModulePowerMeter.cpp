@@ -229,8 +229,9 @@ namespace ModulePowerMeter
     }
 
     ModuleElem::elem_map_t config_map[] = {
-        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_SOURCE, TYPE_CSTRING, CString, setSourceByName, getSourceName, NULL, const char*, "Provider of the power meter data", NULL, [](size_t* len, void* context) -> const char** {
+        RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_SOURCE, TYPE_CSTRING, CString, setSourceByName, getSourceName, NULL, const char*, "Provider of the power meter data", NULL, [](size_t* len, bool* exhaustive, void* context) -> const char** {
             // remove last pseudo source
+            (*exhaustive) = true;
             (*len) = (sizeof(sourceNames) / sizeof(char*)) - 1;
             return sourceNames;
         }),

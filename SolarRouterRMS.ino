@@ -120,6 +120,7 @@ void loop()
 {
     unsigned long msLoop = millis();
     ModuleCore::loop(msLoop);
+    ModuleConfig::loop(msLoop);
     ModuleHardware::loop(msLoop);
     ModuleServer::loop(msLoop);
     ModuleTime::loop(msLoop);
@@ -131,13 +132,21 @@ void loop()
     ModuleWifi::loop(msLoop);
     ModuleEDF::loop(msLoop);
     ModuleTriggers::loop(msLoop);
-    // Dont't starve other Tasks (web server)
+    // Dont't starve other Tasks (async web server is running on Core 1)
     delay(10);
 }
 
+// loop events
+
 void onTime()
 {
-  // Called once when time is synced with ntp
+  // Called once when time is synced with NTP
+}
+
+void configUpdated(const ModuleConfig::elem_list_t* updated)
+{
+  // Called when config is updated
+  // NB: updated does not mean persisted in EEPROM
 }
 
 void dayIsGone()

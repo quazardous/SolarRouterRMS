@@ -3,10 +3,14 @@
 #include "ModuleCore.h"
 #include "ModuleHardware.h"
 #include "ModuleEeprom.h"
+#include "ModuleConfig.h"
+#include <ArrayList.h>
 #include "config.h"
 #include "rms.h"
 
 void wifiUp();
+
+#define RMS_WIFI_MAX_SSIDS 8
 
 namespace ModuleWifi
 {
@@ -14,6 +18,7 @@ namespace ModuleWifi
     IPAddress ip2ip(unsigned long ip);
     bool startScanWifi();
     bool checkScanWifi();
+    void config();
 
     unsigned long staticIp = 0;
     unsigned long gateway = 0;
@@ -37,6 +42,9 @@ namespace ModuleWifi
     unsigned long doWifiScan = 0;
     bool scanningWifi = false;
 
+    char* availableWifiSsids[RMS_WIFI_MAX_SSIDS];
+    size_t availableWifiSsidsCount = 0;
+
     void boot() {
         const char *hostname = ModuleCore::getHostname();
         // Configure WIFI
@@ -52,6 +60,11 @@ namespace ModuleWifi
             ModuleCore::log("No Wifi SSID");
         }
 
+        for (size_t i = 0; i < RMS_WIFI_MAX_SSIDS; ++i) {
+            availableWifiSsids[i] = NULL;
+        }
+
+        config();
     }
 
     void loopTimer(unsigned long mtsNow) {
@@ -126,8 +139,30 @@ namespace ModuleWifi
                 wifiStep = WIFI_STEP_BOOT;
             }
         }
+    }
 
+    ModuleElem::elem_map_t config_map[] = {
+        RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_WIFI_SSID, TYPE_CSTRING, CString, setWifiSsid, getWifiSsid, NULL, const char*, NULL, NULL, [](size_t* len, bool* exhaustive, void* context) -> const char** {
+            // remove last pseudo source
+            (*exhaustive) = false;
+            (*len) = availableWifiSsidsCount;
+            return (const char**) availableWifiSsids;
+        }),
+        RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_WIFI_PASSWORD, TYPE_CSTRING, CString, setWifiPassword, getWifiPassword, NULL, const char*, NULL, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_DHCP_ON, TYPE_BOOL, Bool, setDhcpOn, getDhcpOn, NULL, bool, NULL, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_STATIC_IP, TYPE_IP, ULong, setStaticIp, getStaticIp, NULL, unsigned long, NULL, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_GATEWAY, TYPE_IP, ULong, setGateway, getGateway, NULL, unsigned long, NULL, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_NETMASK, TYPE_IP, ULong, setNetmask, getNetmask, NULL, unsigned long, NULL, NULL, NULL),
+        RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_DNS, TYPE_IP, ULong, setDns, getDns, NULL, unsigned long, NULL, NULL, NULL),
 
+        // RMS_CONFIG_ELEM_MAP(GROUP_WIFI, ELEM_EXT_IP, TYPE_IP, ULong, setExtIp, getExtIp, NULL, unsigned long, "External IP for some providers", NULL, NULL),
+        // RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_U, TYPE_USHORT, UShort, setCalibU, getCalibU, NULL, unsigned short, NULL, NULL, NULL),
+        // RMS_CONFIG_ELEM_MAP(GROUP_POWERMETER, ELEM_CALIB_I, TYPE_USHORT, UShort, setCalibI, getCalibI, NULL, unsigned short, NULL, NULL, NULL),
+    };
+    const int config_map_size = sizeof(config_map) / sizeof(ModuleElem::elem_map_t);
+
+    void config() {
+        ModuleConfig::registerConfig(config_map, config_map_size);
     }
 
     // states
@@ -183,12 +218,21 @@ namespace ModuleWifi
             return false;
         }
         ModuleCore::log("WIFI: Scan done in " + String((millis() - doWifiScan) / 1000) + " seconds");
+        availableWifiSsidsCount = 0;
         if (status == 0) {
             ModuleCore::log("WIFI: No networks found :/");
         } else {
             ModuleCore::log("WIFI: " + String(status) + " networks found");
             for (int i = 0; i < status; ++i) {
                 ModuleCore::log(" - " + WiFi.SSID(i) + " (" + WiFi.RSSI(i) + ")");
+                if (i < RMS_WIFI_MAX_SSIDS) {
+                    availableWifiSsidsCount++;
+                    if (availableWifiSsids[i] == NULL) {
+                        availableWifiSsids[i] = (char*)malloc(sizeof(char) * 33);
+                    }
+                    strncpy(availableWifiSsids[i], WiFi.SSID(i).c_str(), 32);
+                    availableWifiSsids[i][32] = '\0';
+                }
             }
         }
         return false;

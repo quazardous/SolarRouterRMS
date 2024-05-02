@@ -9,7 +9,7 @@ namespace ModuleElem
     enum group_t
     {
         GROUP_MAIN = 0,
-        GROUP_NETWORK,
+        GROUP_WIFI,
         GROUP_POWERMETER,
         GROUP_EDF,
     };
@@ -114,14 +114,14 @@ namespace ModuleElem
 
     // data types choices
     typedef union {
-        const byte* (*chooseByte)(size_t* len, void *context);
-        const unsigned short* (*chooseUShort)(size_t* len, void *context);
-        const short* (*chooseShort)(size_t* len, void *context);
-        const unsigned long* (*chooseULong)(size_t* len, void *context);
-        const long* (*chooseLong)(size_t* len, void *context);
-        const bool* (*chooseBool)(size_t* len, void *context);
-        const char** (*chooseCString)(size_t* len, void *context);
-        const float* (*chooseFloat)(size_t* len, void *context);
+        const byte* (*chooseByte)(size_t* len, bool* exhaustive, void *context);
+        const unsigned short* (*chooseUShort)(size_t* len, bool* exhaustive, void *context);
+        const short* (*chooseShort)(size_t* len, bool* exhaustive, void *context);
+        const unsigned long* (*chooseULong)(size_t* len, bool* exhaustive, void *context);
+        const long* (*chooseLong)(size_t* len, bool* exhaustive, void *context);
+        const bool* (*chooseBool)(size_t* len, bool* exhaustive, void *context);
+        const char** (*chooseCString)(size_t* len, bool* exhaustive, void *context);
+        const float* (*chooseFloat)(size_t* len, bool* exhaustive, void *context);
     } choose_t;
 
     // backup data

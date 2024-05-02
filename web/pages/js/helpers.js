@@ -9,7 +9,7 @@ class IPAddress {
     }
 
     isValid() {
-        IPAddress.validateIP(this.ip);
+        return IPAddress.validateIP(this.ip);
     }
 
     toUL() {
@@ -17,11 +17,7 @@ class IPAddress {
             return 0;
         }
 
-        const ul = this.ip.split('.').reduce((acc, curr, index) => {
-            return acc + parseInt(curr) << (24 - (8 * index));
-        }, 0);
-
-        return ul;
+        return (this.ip.split(".").reduce((ipInt, octet) => (ipInt << 8) + parseInt(octet, 10), 0) >>> 0);
     }
 
     static validateIP(ipString) {
@@ -30,11 +26,15 @@ class IPAddress {
     }
 
     static toString(ul) {
-        const ip = [];
-        for (let i = 3; i >= 0; i--) {
-            ip[i] = (ul >>> (8 * i)) & 255;
-        }
-        return ip.join('.');
+        return (
+            (ul >>> 24) +
+            "." +
+            ((ul >> 16) & 255) +
+            "." +
+            ((ul >> 8) & 255) +
+            "." +
+            (ul & 255)
+        );
     }
 }
 

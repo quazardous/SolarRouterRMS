@@ -1,16 +1,35 @@
 
+/**
+ * Represents a configuration parameter.
+ * @class
+ */
 class ConfigParam {
-    constructor(group, type, name, value, readonly, dirty, label, help, choices, backup) {
-        this.group = group;
-        this.type = type;
-        this.name = name;
-        this.value = value;
-        this.readonly = readonly;
-        this.dirty = dirty;
-        this.label = label;
-        this.help = help;
-        this.choices = choices;
-        this.backup = backup;
+    /**
+     * @param {Object} param - The parameter object.
+     * @param {string} param.group - The group of the parameter.
+     * @param {string} param.type - The type of the parameter.
+     * @param {string} param.name - The name of the parameter.
+     * @param {*} param.value - The value of the parameter.
+     * @param {boolean} param.readonly - Indicates if the parameter is read-only.
+     * @param {boolean} param.dirty - Indicates if the parameter has been modified.
+     * @param {string} param.label - The label of the parameter.
+     * @param {string} param.help - The help text for the parameter.
+     * @param {Array<*>} param.choices - The choices for the parameter.
+     * @param {*} param.backup - The backup value of the parameter.
+     * @param {boolean} param.exhaustive - Indicates if the choices are exhaustive.
+     */
+    constructor(param) {
+        this.group = param.group;
+        this.type = param.type;
+        this.name = param.name;
+        this.value = param.value;
+        this.readonly = param.readonly;
+        this.dirty = param.dirty;
+        this.label = param.label;
+        this.help = param.help;
+        this.choices = param.choices ? param.choices : [];
+        this.exhaustive = param.exhaustive;
+        this.backup = param.backup;
         if (!this.label) {
             this.label = this.getLabel();
         }
@@ -41,18 +60,19 @@ class ConfigParamGroup {
     }
 
     addParam(name, param) {
-        this.params[name] = new ConfigParam(
-            this.name,
-            param.type,
-            name,
-            param.value,
-            param.readonly,
-            param.dirty,
-            param.label,
-            param.help,
-            param.choices,
-            param.backup
-        );
+        this.params[name] = new ConfigParam({
+            group: this.name,
+            type: param.type,
+            name: name,
+            value: param.value,
+            readonly: param.readonly,
+            dirty: param.dirty,
+            label: param.label,
+            help: param.help,
+            choices: param.choices,
+            backup: param.backup,
+            exhaustive: param.exhaustive
+        });
         if (param.dirty) {
             this.dirty = true;
         }
@@ -312,6 +332,7 @@ class SolarRouterRMS {
         return this.api.get('api/config').then(data => {
             this.setConfigParams(data.configs);
             this.emit('rms:config', {rms: self, config: data.configs});
+            return data;
         });
     }
 
@@ -322,6 +343,7 @@ class SolarRouterRMS {
         return this.api.post('api/config', {update: params}).then(data => {
             this.setConfigParams(data.configs);
             this.emit('rms:config', {rms: self, config: data.configs});
+            return data;
         });
     }
 }

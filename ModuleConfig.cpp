@@ -5,6 +5,35 @@
 // #include "ModuleElem.h"
 // #include <Hashtable.h>
 
+void configUpdated(const ModuleConfig::elem_list_t* updated);
+
+#define RMS_CONFIG_POST_CASE(Type, type, toType) \
+{ \
+    type existingValue = e->getter.get##Type(NULL); \
+    type newValue; \
+    if (update[name].is<type>()) { \
+        newValue = update[name].as<type>(); \
+    } else { \
+        newValue = String(update[name].as<const char*>()).toType(); \
+    } \
+    e->setter.set##Type(newValue, NULL); \
+    newValue = e->getter.get##Type(NULL); \
+    if (e->dirty) { \
+        if (e->backup.Type == newValue) { \
+            e->dirty = false; \
+        } \
+    } else { \
+        if (existingValue != newValue) { \
+            e->backup.Type = existingValue; \
+            e->dirty = true; \
+        } \
+    } \
+    if (existingValue != newValue) { \
+        updatedElems.add(e->element); \
+    } \
+    break; \
+}
+
 // Module focusing on configuration
 // It's a bridge between the web interface and other modules
 namespace ModuleConfig {
@@ -26,8 +55,24 @@ namespace ModuleConfig {
         }
     }
 
+    elem_list_t updatedElems;
+    unsigned long lastUpdate = 0;
+    unsigned long updateDispatched = 0;
+
     void loop(unsigned long msLoop) {
-        // Your code here
+        if (lastUpdate > updateDispatched) {
+            updateDispatched = millis();
+            elem_list_t updatedElemsUnique;
+            for (size_t i = 0; i < updatedElems.size(); i++) {
+                ModuleElem::elem_t elem = updatedElems.get(i);
+                if (!updatedElemsUnique.contains(elem)) {
+                    updatedElemsUnique.add(elem);
+                }
+            }
+            updatedElems.clear();
+            // dispatch public event for other modules
+            ::configUpdated(&updatedElemsUnique);
+        }
     }
 
     // helpers
@@ -49,6 +94,8 @@ namespace ModuleConfig {
         if (e->help != NULL) {
             obj["help"] = e->help;
         }
+        size_t len;
+        bool exhaustive;
         switch (e->type) {
             case ModuleElem::TYPE_BYTE:
                 obj["value"] = e->getter.getByte(context);
@@ -57,8 +104,7 @@ namespace ModuleConfig {
                 }
                 if (e->choices.chooseByte != NULL) {
                     JsonArray choices = obj.createNestedArray("choices");
-                    size_t len;
-                    const byte* values = e->choices.chooseByte(&len, context);
+                    const byte* values = e->choices.chooseByte(&len, &exhaustive, context);
                     for (size_t i = 0; i < len; i++) {
                         choices.add(values[i]);
                     }
@@ -71,8 +117,7 @@ namespace ModuleConfig {
                 }
                 if (e->choices.chooseUShort != NULL) {
                     JsonArray choices = obj.createNestedArray("choices");
-                    size_t len;
-                    const unsigned short* values = e->choices.chooseUShort(&len, context);
+                    const unsigned short* values = e->choices.chooseUShort(&len, &exhaustive, context);
                     for (size_t i = 0; i < len; i++) {
                         choices.add(values[i]);
                     }
@@ -85,8 +130,7 @@ namespace ModuleConfig {
                 }
                 if (e->choices.chooseShort != NULL) {
                     JsonArray choices = obj.createNestedArray("choices");
-                    size_t len;
-                    const short* values = e->choices.chooseShort(&len, context);
+                    const short* values = e->choices.chooseShort(&len, &exhaustive, context);
                     for (size_t i = 0; i < len; i++) {
                         choices.add(values[i]);
                     }
@@ -100,8 +144,7 @@ namespace ModuleConfig {
                 }
                 if (e->choices.chooseULong != NULL) {
                     JsonArray choices = obj.createNestedArray("choices");
-                    size_t len;
-                    const unsigned long* values = e->choices.chooseULong(&len, context);
+                    const unsigned long* values = e->choices.chooseULong(&len, &exhaustive, context);
                     for (size_t i = 0; i < len; i++) {
                         choices.add(values[i]);
                     }
@@ -114,8 +157,7 @@ namespace ModuleConfig {
                 }
                 if (e->choices.chooseLong != NULL) {
                     JsonArray choices = obj.createNestedArray("choices");
-                    size_t len;
-                    const long* values = e->choices.chooseLong(&len, context);
+                    const long* values = e->choices.chooseLong(&len, &exhaustive, context);
                     for (size_t i = 0; i < len; i++) {
                         choices.add(values[i]);
                     }
@@ -134,8 +176,7 @@ namespace ModuleConfig {
                 }
                 if (e->choices.chooseFloat != NULL) {
                     JsonArray choices = obj.createNestedArray("choices");
-                    size_t len;
-                    const float* values = e->choices.chooseFloat(&len, context);
+                    const float* values = e->choices.chooseFloat(&len, &exhaustive, context);
                     for (size_t i = 0; i < len; i++) {
                         choices.add(values[i]);
                     }
@@ -148,13 +189,15 @@ namespace ModuleConfig {
                 }
                 if (e->choices.chooseCString != NULL) {
                     JsonArray choices = obj.createNestedArray("choices");
-                    size_t len;
-                    const char** values = e->choices.chooseCString(&len, context);
+                    const char** values = e->choices.chooseCString(&len, &exhaustive, context);
                     for (size_t i = 0; i < len; i++) {
                         choices.add(values[i]);
                     }
                 }
                 break;
+        }
+        if (obj.containsKey("choices")) {
+            obj["exhaustive"] = exhaustive;
         }
     }
 
@@ -174,116 +217,13 @@ namespace ModuleConfig {
             if (update.containsKey(name)) {
                 switch (e->type)
                 {
-                    case ModuleElem::TYPE_BYTE:
-                    {
-                        byte existingValue = e->getter.getByte(NULL);
-                        byte newValue = update[name];
-                        e->setter.setByte(newValue, NULL);
-                        newValue = e->getter.getByte(NULL);
-                        if (e->dirty) {
-                            if (e->backup.Byte == newValue) {
-                                e->dirty = false;
-                            }
-                        } else {
-                            if (existingValue != newValue) {
-                                e->backup.Byte = existingValue;
-                                e->dirty = true;
-                            }
-                        }
-                        break;
-                    }
-                    case ModuleElem::TYPE_USHORT:
-                    {
-                        unsigned short existingValue = e->getter.getUShort(NULL);
-                        unsigned short newValue;
-                        if (update[name].is<unsigned short>()) {
-                            newValue = update[name].as<unsigned short>();
-                        } else {
-                            newValue = String(update[name].as<const char*>()).toInt();
-                        }
-                        e->setter.setUShort(newValue, NULL);
-                        newValue = e->getter.getUShort(NULL);
-                        if (e->dirty) {
-                            if (e->backup.UShort == newValue) {
-                                e->dirty = false;
-                            }
-                        } else {
-                            if (existingValue != newValue) {
-                                e->backup.UShort = existingValue;
-                                e->dirty = true;
-                            }
-                        }
-                        break;
-                    }
-                    case ModuleElem::TYPE_SHORT:
-                    {
-                        short existingValue = e->getter.getShort(NULL);
-                        short newValue;
-                        if (update[name].is<short>()) {
-                            newValue = update[name].as<short>();
-                        } else {
-                            newValue = String(update[name].as<const char*>()).toInt();
-                        }
-                        e->setter.setShort(newValue, NULL);
-                        newValue = e->getter.getShort(NULL);
-                        if (e->dirty) {
-                            if (e->backup.Short == newValue) {
-                                e->dirty = false;
-                            }
-                        } else {
-                            if (existingValue != newValue) {
-                                e->backup.Short = existingValue;
-                                e->dirty = true;
-                            }
-                        }
-                        break;
-                    }
-                    case ModuleElem::TYPE_ULONG:
-                    case ModuleElem::TYPE_IP:
-                    {
-                        unsigned long existingValue = e->getter.getULong(NULL);
-                        unsigned long newValue;
-                        if (update[name].is<unsigned long>()) {
-                            newValue = update[name].as<unsigned long>();
-                        } else {
-                            newValue = String(update[name].as<const char*>()).toInt();
-                        }
-                        e->setter.setULong(newValue, NULL);
-                        newValue = e->getter.getULong(NULL);
-                        if (e->dirty) {
-                            if (e->backup.ULong == newValue) {
-                                e->dirty = false;
-                            }
-                        } else {
-                            if (existingValue != newValue) {
-                                e->backup.ULong = existingValue;
-                                e->dirty = true;
-                            }
-                        }
-                        break;
-                    }
-                    case ModuleElem::TYPE_LONG:
-                    {
-                        long existingValue = e->getter.getLong(NULL);
-                        long newValue;
-                        if (update[name].is<long>()) {
-                            newValue = update[name].as<long>();
-                        } else {
-                            newValue = String(update[name].as<const char*>()).toInt();
-                        }
-                        e->setter.setLong(newValue, NULL);
-                        if (e->dirty) {
-                            if (e->backup.Long == newValue) {
-                                e->dirty = false;
-                            }
-                        } else {
-                            if (existingValue != newValue) {
-                                e->backup.Long = existingValue;
-                                e->dirty = true;
-                            }
-                        }
-                        break;
-                    }
+                    case ModuleElem::TYPE_BYTE: RMS_CONFIG_POST_CASE(Byte, byte, toInt)
+                    case ModuleElem::TYPE_USHORT: RMS_CONFIG_POST_CASE(UShort, unsigned short, toInt)
+                    case ModuleElem::TYPE_SHORT: RMS_CONFIG_POST_CASE(Short, short, toInt)
+                    case ModuleElem::TYPE_ULONG: 
+                    case ModuleElem::TYPE_IP: RMS_CONFIG_POST_CASE(ULong, unsigned long, toInt)
+                    case ModuleElem::TYPE_LONG: RMS_CONFIG_POST_CASE(Long, long, toInt)
+                    case ModuleElem::TYPE_FLOAT: RMS_CONFIG_POST_CASE(Float, float, toFloat)
                     case ModuleElem::TYPE_BOOL:
                     {
                         bool existingValue = e->getter.getBool(NULL);
@@ -313,28 +253,8 @@ namespace ModuleConfig {
                                 e->dirty = true;
                             }
                         }
-                        break;
-                    }
-                    case ModuleElem::TYPE_FLOAT:
-                    {
-                        float existingValue = e->getter.getFloat(NULL);
-                        float newValue;
-                        if (update[name].is<float>()) {
-                            newValue = update[name].as<float>();
-                        } else {
-                            newValue = String(update[name].as<const char*>()).toFloat();
-                        }
-                        e->setter.setFloat(newValue, NULL);
-                        newValue = e->getter.getFloat(NULL);
-                        if (e->dirty) {
-                            if (e->backup.Float == newValue) {
-                                e->dirty = false;
-                            }
-                        } else {
-                            if (existingValue != newValue) {
-                                e->backup.Float = existingValue;
-                                e->dirty = true;
-                            }
+                        if (existingValue != newValue) {
+                            updatedElems.add(e->element);
                         }
                         break;
                     }
@@ -358,11 +278,16 @@ namespace ModuleConfig {
                                 e->dirty = true;
                             }
                         }
+                        if (strcmp(existingValue.c_str(), newValue.c_str()) != 0) {
+                            updatedElems.add(e->element);
+                        }
                         break;
                     }
                 }
             }
         }
+        // tell loop to dispatch updates
+        lastUpdate = millis();
         apiGetConfig(request, out);
     }
 } // namespace ModuleConfig

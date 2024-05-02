@@ -316,6 +316,7 @@ class FormInputHelper {
         this.help = '';
         this.attr = {};
         this.required = false;
+        this.choices = [];
     }
 
     htmlAttr() {
@@ -326,7 +327,16 @@ class FormInputHelper {
     }
 
     inputHtml() {
-        return `<input ${this.htmlAttr()} value="${this.value}">`;
+        if (this.choices.length > 0) {
+            this.attr.list = `${this.id}-datalist`;
+        }
+        let html = `<input ${this.htmlAttr()} value="${this.value}">`;
+        if (this.choices.length > 0) {
+            html += `<datalist id="${this.id}-datalist">
+                ${this.choices.map(item => `<option value="${item}"></option>`).join('')}
+            </datalist>`;
+        }
+        return html;
     }
 
     /**
@@ -387,8 +397,28 @@ class SelectFormInputHelper extends FormInputHelper {
     inputHtml() {
         return `
     <select ${this.htmlAttr()}>
-        ${Object.keys(this.choices).map(key => `<option value="${this.choices[key]}" ${this.value == this.choices[key] ? 'selected' : ''}>${this.choices[key]}</option>`).join('')}
+        ${this.choices.map(value => `<option value="${value}" ${this.value == value ? 'selected' : ''}>${value}</option>`).join('')}
     </select>`;
+    }
+}
+
+class OpenSelectFormInputHelper extends FormInputHelper {
+    /**
+     * @param {String} id 
+     * @param {String} value 
+     * @param {String} label 
+     * @param {Array} list 
+     */
+    constructor(id, value = '', list = []) {
+        super(id, 'text', value);
+        this.list = list;
+    }
+    inputHtml() {
+        return `
+    <input ${this.htmlAttr()} list="${this.id}-datalist">
+    <datalist id="${this.id}-datalist">
+        ${this.list.map(item => `<option value="${item}"></option>`).join('')}
+    </datalist>`;
     }
 }
 

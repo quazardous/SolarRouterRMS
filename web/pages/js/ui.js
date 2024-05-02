@@ -182,8 +182,14 @@ function proxyConfigForms() {
         
         for (const [name, param] of Object.entries(group.params)) {
             let input;
-            if (param.choices) {
-                input = new SelectFormInputHelper(name, param.value, param.choices);
+            if (param.choices && param.exhaustive) {
+                let choices = param.choices;
+                let value = param.value;
+                if (param.type == ConfigParam.TYPE_IP) {
+                    value = IPAddress.toString(value);
+                    choices = choices.map(choice => IPAddress.toString(choice));
+                }
+                input = new SelectFormInputHelper(name, value, choices);
                 input.baseline = `<span class="actual">${param.value}</span>`;
                 if (param.dirty) {
                     input.baseline += ` <span class="dirty">${param.backup}</span>`;
@@ -199,6 +205,7 @@ function proxyConfigForms() {
                         break;
                     case ConfigParam.TYPE_IP:
                         input = new IpFormInputHelper(name, IPAddress.toString(param.value));
+                        input.choices = input.choices.map(choice => IPAddress.toString(choice));
                         input.baseline = `<span class="actual">${IPAddress.toString(param.value)}</span>`;
                         if (param.dirty) {
                             input.baseline += ` <span class="dirty">${IPAddress.toString(param.backup)}</span>`;
@@ -210,6 +217,7 @@ function proxyConfigForms() {
                             type = 'number';
                         }
                         input = new FormInputHelper(name, type, param.value);
+                        input.choices = param.choices;
                         switch (param.type) {
                             case ConfigParam.TYPE_USHORT:
                                 input.attr.min = 0;
@@ -311,7 +319,6 @@ function proxyConfigForms() {
         forms = {};
         for (const [name, group] of Object.entries(rms.configParamsGroups)) {
             const form = new ManagedForm(`config-form-${name}`, (data) => {
-                disableListerners();
                 for (const [name, param] of Object.entries(group.params)) {
                     switch (param.type) {
                         case ConfigParam.TYPE_IP:
@@ -334,7 +341,11 @@ function proxyConfigForms() {
                             break;
                     }
                 }
-                rms.postConfigParams(data);
+                rms.postConfigParams(data).then(() => {
+                    // should be done just befor the next render
+                    // because the forms are rendered again
+                    disableListerners();
+                });;
             });
 
             forms[name] = form;
