@@ -135,12 +135,13 @@ namespace ModulePowerMeter
 
         xTaskCreatePinnedToCore(  //Préparation Tâche Multi Coeur
             powerMeterLoopCallback,        /* Task function. */
-            "powerMeterLoopCallback",      /* name of task. */
+            "powerMeterLoop",      /* name of task. */
             10000,                  /* Stack size of task */
             NULL,                   /* parameter of the task */
             10,                     /* priority of the task */
             &powerMeterLoopTask,    /* Task handle to keep track of created task */
             0);                     /* pin task to core 0 */
+            
     }
 
     /* **********************
@@ -151,12 +152,14 @@ namespace ModulePowerMeter
     */
 
     void powerMeterLoopCallback(void *pvParameters) {
-        esp_task_wdt_add(NULL);  //add current thread to WDT watch
-        ping();
+        //add current thread to WDT watch
+        esp_task_wdt_add(NULL);
         for (;;) {
             unsigned long msNow = millis();
             estimate_cpu_load(msNow, &cpuLoad0);
             powerMeterLoop(msNow);
+            // don't starve IDLE task
+            vTaskDelay(1);
         }
     }
 
@@ -207,9 +210,12 @@ namespace ModulePowerMeter
                 // Après pour ne pas surcharger Wifi
                 throttle(200 + ralenti, true);
                 break;
+            default:
+                // Avoid timeout if no source is selected
+                ping();
+                throttle(1000);
             }
         }
-        delay(2);
     }
 
     // some modules have additional stuff to do in the loop
@@ -321,8 +327,8 @@ namespace ModulePowerMeter
         cpuLoad0.avg = 1;
     }
 
-    void throttle(unsigned long throttle, bool yield) {
-        if (yield) {
+    void throttle(unsigned long throttle, bool postpone) {
+        if (postpone) {
             lastTock = millis();
         }
         variableThrottle = throttle;

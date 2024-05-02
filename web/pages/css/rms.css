@@ -129,3 +129,11 @@ button[confirm]:hover, button.confirm:hover{
     font-size: smaller;
     text-decoration-line: line-through;
 }
+
+.tabs > .input:checked + .label.dirty {
+    color: red;
+}
+
+.tabs > .label.dirty {
+    color: #b80000;
+}

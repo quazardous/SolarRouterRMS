@@ -37,6 +37,7 @@ class ConfigParamGroup {
          * @var {Object.<String, ConfigParam>}
          */
         this.params = {};
+        this.dirty = false;
     }
 
     addParam(name, param) {
@@ -52,6 +53,9 @@ class ConfigParamGroup {
             param.choices,
             param.backup
         );
+        if (param.dirty) {
+            this.dirty = true;
+        }
     }
 }
 
@@ -110,7 +114,10 @@ class SolarRouterRMS {
     }
 
     setConfigParams(params, reset = true) {
-        if (reset) { this.configParams = {}; }
+        if (reset) {
+            this.configParamsGroups = {};
+            this.configParams = {};
+        }
         for (const key in params) {
             this.addConfigParam(key, params[key]);
         }
@@ -284,8 +291,11 @@ class SolarRouterRMS {
         window.dispatchEvent(e);
     }
 
-    start() {
+    start(initConfig = true) {
         this.startLoops();
+        if (this.hellok && initConfig) {
+            this.queryConfigParams();
+        }
     }
 
     loop() {
@@ -299,7 +309,7 @@ class SolarRouterRMS {
     }
 
     queryConfigParams() {
-        this.api.get('api/config').then(data => {
+        return this.api.get('api/config').then(data => {
             this.setConfigParams(data.configs);
             this.emit('rms:config', {rms: self, config: data.configs});
         });
@@ -309,7 +319,7 @@ class SolarRouterRMS {
      * @param {Object.<string,*>} params 
      */
     postConfigParams(params) {
-        this.api.post('api/config', {update: params}).then(data => {
+        return this.api.post('api/config', {update: params}).then(data => {
             this.setConfigParams(data.configs);
             this.emit('rms:config', {rms: self, config: data.configs});
         });

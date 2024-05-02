@@ -246,7 +246,7 @@ function proxyConfigForms() {
         firstTab = false;
         return `
 <input name="tabs" type="radio" id="tab-${name}" class="input" ${checked}/>
-<label for="tab-${name}" class="label">${name}</label>
+<label for="tab-${name}" class="label ${group.dirty ? 'dirty' : ''}">${name}</label>
 <div class="panel" style="width: 100%;">
 <h1>${name}</h1>
 <p style="width: 100%;">
@@ -368,7 +368,7 @@ function businessListeners() {
                 console.log('Local storage has not been initialized.');
                 multiPopup.popup('init');
             }
-            rms.start();
+            rms.start(false);
         });
     });
 

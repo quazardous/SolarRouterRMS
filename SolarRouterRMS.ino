@@ -131,6 +131,8 @@ void loop()
     ModuleWifi::loop(msLoop);
     ModuleEDF::loop(msLoop);
     ModuleTriggers::loop(msLoop);
+    // Dont't starve other Tasks (web server)
+    delay(10);
 }
 
 void onTime()

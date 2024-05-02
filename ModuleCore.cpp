@@ -55,6 +55,7 @@ namespace ModuleCore {
         // Ports Série ESP
         Serial.begin(115200);
         log("Booting");
+        log("Tick: " + String(portTICK_PERIOD_MS) + " ms");
 
         config();
     }
