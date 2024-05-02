@@ -299,9 +299,11 @@ function proxyConfigForms() {
         return tabsHtml;
     };
 
-    const disableListerners = () => {
-        for (const [name, form] of Object.entries(forms)) {
-            form.removeListeners();
+    const garbage = [];
+
+    const cleanupGarbage = () => {
+        while (garbage.length > 0) {
+            garbage.shift()();
         }
     };
 
@@ -316,6 +318,7 @@ function proxyConfigForms() {
     };
 
     addEventListener('rms:config', event => {
+        cleanupGarbage();
         forms = {};
         for (const [name, group] of Object.entries(rms.configParamsGroups)) {
             const form = new ManagedForm(`config-form-${name}`, (data) => {
@@ -341,11 +344,7 @@ function proxyConfigForms() {
                             break;
                     }
                 }
-                rms.postConfigParams(data).then(() => {
-                    // should be done just befor the next render
-                    // because the forms are rendered again
-                    disableListerners();
-                });;
+                rms.postConfigParams(data);
             });
 
             forms[name] = form;
@@ -358,6 +357,7 @@ function proxyConfigForms() {
         if ('config-forms' == event.target.id) {
             for (const [name, form] of Object.entries(forms)) {
                 form.addListeners();
+                garbage.push(() => {form.removeListeners();});
             }
         }
     });
