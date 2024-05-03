@@ -94,7 +94,7 @@ namespace ModuleCore {
         }
         unsigned long msNow = millis();
 
-        if (gracefulReboot < msNow) {
+        if (gracefulReboot > 0 && gracefulReboot < msNow) {
             log("GRACEFUL REBOOT NOW");
             ESP.restart();
         }
