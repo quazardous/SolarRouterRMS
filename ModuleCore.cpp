@@ -395,7 +395,7 @@ namespace ModuleCore {
     }
 
     void apiReboot(AsyncWebServerRequest* request, JsonDocument& doc) {
-        reboot();
+        reboot("Reboot from API");
         doc["message"] = "Will reboot soon";
     }
 
