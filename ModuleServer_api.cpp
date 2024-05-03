@@ -57,6 +57,15 @@ namespace ModuleServer
         });
 
         server.addHandler(handler);
+
+        server.on("/api/reboot", HTTP_GET, [](AsyncWebServerRequest *request) {
+            JsonDocument doc;
+            prepareJsonDoc(doc);
+            ModuleCore::apiReboot(request, doc);
+            String jsonStr;
+            serializeJson(doc, jsonStr);
+            request->send(200, MIME_JSON, jsonStr);
+        });
     }
 
 } // namespace ModuleServer

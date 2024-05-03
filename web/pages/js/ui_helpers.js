@@ -345,16 +345,19 @@ class FormInputHelper {
      */
     html() {
         let inputHtml = this.inputHtml();
+
+        if (this.baseline) {
+            inputHtml = `
+            <baseline>${inputHtml} ${this.baseline}</baseline>
+            `;
+        }
+
         if (this.label) {
             inputHtml = `
             <label>${this.label}${inputHtml}</label>
             `;
         }
-        if (this.baseline) {
-            inputHtml += `
-            <baseline>${this.baseline}</baseline>
-            `;
-        }
+
         if (this.help) {
             inputHtml += `
             <help>${this.help}</help>

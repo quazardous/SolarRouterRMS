@@ -182,34 +182,28 @@ function proxyConfigForms() {
         
         for (const [name, param] of Object.entries(group.params)) {
             let input;
+            let value = param.value;
+            let displayValue = null;
+            let backupValue = param.backup;
             if (param.choices && param.exhaustive) {
                 let choices = param.choices;
-                let value = param.value;
                 if (param.type == ConfigParam.TYPE_IP) {
                     value = IPAddress.toString(value);
                     choices = choices.map(choice => IPAddress.toString(choice));
                 }
                 input = new SelectFormInputHelper(name, value, choices);
-                input.baseline = `<span class="actual">${param.value}</span>`;
-                if (param.dirty) {
-                    input.baseline += ` <span class="dirty">${param.backup}</span>`;
-                }
             } else {
                 switch (param.type) {
                     case ConfigParam.TYPE_BOOL:
-                        input = new CheckboxFormInputHelper(name, param.value);
-                        input.baseline = `<span class="actual">${param.value ? 'true' : 'false'}</span>`;
-                        if (param.dirty) {
-                            input.baseline += ` <span class="dirty">${param.backup ? 'true' : 'false'}</span>`;
-                        }
+                        input = new CheckboxFormInputHelper(name, value);
+                        displayValue = value ? 'true' : 'false';
+                        backupValue = backupValue ? 'true' : 'false';
                         break;
                     case ConfigParam.TYPE_IP:
-                        input = new IpFormInputHelper(name, IPAddress.toString(param.value));
+                        value = IPAddress.toString(value);
+                        backupValue = IPAddress.toString(backupValue);
+                        input = new IpFormInputHelper(name, value);
                         input.choices = input.choices.map(choice => IPAddress.toString(choice));
-                        input.baseline = `<span class="actual">${IPAddress.toString(param.value)}</span>`;
-                        if (param.dirty) {
-                            input.baseline += ` <span class="dirty">${IPAddress.toString(param.backup)}</span>`;
-                        }
                         break;
                     default:
                         let type = 'text';
@@ -236,17 +230,17 @@ function proxyConfigForms() {
                                 input.attr.max = 4294967295;
                                 break;
                         }
-                        input.baseline = `<span class="actual">${param.value}</span>`;
-                        if (param.dirty) {
-                            input.baseline += ` <span class="dirty">${param.backup}</span>`;
-                        }
                 }
             }
             input.id = `config-param-${name}`;
             input.label = param.label;
             input.help = param.help === undefined ? '' : param.help;
-            input.help = `${input.help} <span class="type">(${param.type})</span>`;
             input.attr.class = 'param';
+            input.baseline = `<span class="actual" title="Active value">${displayValue ?? (value || '*empty*')}</span>`;
+            if (param.dirty) {
+                input.baseline += ` <span class="dirty" title="Persisted value">${backupValue || '*empty*'}</span>`;
+            }
+            input.baseline += ` <span class="type">(${param.type})</span>`;
             fieldset.push(input);
         }
 
@@ -261,7 +255,7 @@ function proxyConfigForms() {
     <form id="config-form-${name}" style="width: 100%;">
     <fieldset>
     ${fieldset.map(input => `<p>${input.html()}</p>`).join('')}
-    <p><button class="confirm">Save</button></p>
+    <p><button class="confirm" title="Update active config">Send</button></p>
     </fieldset>
     </form>
 </p>

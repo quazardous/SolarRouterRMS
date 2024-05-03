@@ -43,6 +43,8 @@ namespace ModuleCore {
     unsigned long previousCheckTock;
 
     unsigned long startMillis; // Start time
+    unsigned long gracefulReboot = 0;
+    unsigned long rebootEventDispatched = 0;
 
     void boot() {
         // Generate hostname
@@ -84,7 +86,18 @@ namespace ModuleCore {
     }
 
     void loop(unsigned long msLoop) {
+        if (gracefulReboot > 0 && rebootEventDispatched == 0) {
+            rebootEventDispatched = millis();
+            // fire reboot event ASAP
+            log("Dispatch reboot event");
+            ::reboot();
+        }
         unsigned long msNow = millis();
+
+        if (gracefulReboot < msNow) {
+            log("GRACEFUL REBOOT NOW");
+            ESP.restart();
+        }
         // Estimation charge coeur
         estimate_cpu_load(msNow, &cpuLoad1);
 
@@ -138,7 +151,7 @@ namespace ModuleCore {
         // }
     }
 
-    void reboot(String m, int msDelay) {
+    void panic(String m, int msDelay) {
         if (m.length() > 0) {
             Serial.println(m);
         }
@@ -148,6 +161,16 @@ namespace ModuleCore {
             delay(msDelay);
         }
         ESP.restart();
+    }
+
+    void reboot(String m, int msDelay) {
+        unsigned int newRebootTime = millis() + msDelay;
+        // allow adding more delay
+        if (newRebootTime > gracefulReboot) {
+            gracefulReboot = newRebootTime;
+        }
+        msDelay = gracefulReboot - millis();
+        log(String("Graceful reboot in ") + String(msDelay) + " ms: " + m);
     }
 
     ModuleElem::elem_map_t config_map[] = {
@@ -369,6 +392,11 @@ namespace ModuleCore {
         {
             HelperJson::e2json(doc, &hello_params_map[i]);
         }
+    }
+
+    void apiReboot(AsyncWebServerRequest* request, JsonDocument& doc) {
+        reboot();
+        doc["message"] = "Will reboot soon";
     }
 
 } // namespace ModuleCore

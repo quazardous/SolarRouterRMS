@@ -106,7 +106,7 @@ namespace ModuleWifi
             // //Test présence WIFI toutes les 30s et autres
             // if (!ModuleWifi::canConnectWifi(10000)) {
             //     if (wifiBug > 2) {
-            //         reboot("No WIFI !!!", 1000);
+            //         panic("No WIFI !!!", 1000);
             //         return;
             //     }
             // }

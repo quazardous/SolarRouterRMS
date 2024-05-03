@@ -177,4 +177,5 @@ void wifiUp()
 void reboot()
 {
   // Called before RMS reboots
+  // modules can call ModuleCore::reboot() to ask for delay
 }

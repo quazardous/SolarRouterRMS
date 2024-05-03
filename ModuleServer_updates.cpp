@@ -20,7 +20,7 @@ namespace ModuleServer
     {
         // Eventuellement Reseter l'ESP32 à distance
         request->send(200, "text/plain", "OK Reset. Attendez.");
-        ModuleCore::reboot("Reboot from Web", 1000);
+        ModuleCore::panic("Reboot from Web", 1000);
     }
 
     void handleActionsUpdate(AsyncWebServerRequest *request)
@@ -56,7 +56,7 @@ namespace ModuleServer
         String S = "";
         ModuleWifi::httpUpdateWifi(request, S);
         request->send(200, "text/html", S);
-        ModuleCore::reboot("Reboot after WiFi setup", 1000);
+        ModuleCore::panic("Reboot after WiFi setup", 1000);
     }
 
 } // namespace ModuleServer

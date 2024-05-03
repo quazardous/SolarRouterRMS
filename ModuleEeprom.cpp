@@ -117,7 +117,7 @@ namespace ModuleEeprom
     {
         if (!EEPROM.begin(RMS_EEPROM_MAX_SIZE))
         {
-            ModuleCore::reboot("Failed to initialise EEPROM", 10000);
+            ModuleCore::panic("Failed to initialise EEPROM", 10000);
         }
         // init address map
         int address = RMS_EEPROM_OFFSET_HEAD;

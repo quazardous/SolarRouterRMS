@@ -29,10 +29,17 @@ namespace ModuleCore
     // void upAndReady(bool up = true);
 
     // helpers
-    void reboot(String m = "", int delay = 0);
+
+    // instant reboot (panic)
+    // should not be used (blocks the loop)
+    void panic(String m = "", int delay = 0);
     void log(const char *m);
     void log(const String &m);
     void checkup();
+    // reboot in loop
+    // modules can call this function again to add more delay
+    // (does not block the loop)
+    void reboot(String m = "", int msDelay = 3000);
 
     // web handlers
     void httpAjaxESP32(AsyncWebServerRequest* request, String& S);
@@ -41,4 +48,5 @@ namespace ModuleCore
 
     // API handlers
     void apiHello(AsyncWebServerRequest* request, JsonDocument& doc);
+    void apiReboot(AsyncWebServerRequest* request, JsonDocument& doc);
 } // namespace ModuleCore

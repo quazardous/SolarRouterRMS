@@ -115,25 +115,42 @@ button[confirm]:hover, button.confirm:hover{
     color: #888;
 }
 
-#config-forms input.param,
-#config-forms select.param {
-    display: block;
-}
+/* #config-forms input.param:before,
+#config-forms select.param:before {
+    content: "\a";
+    white-space: pre;
+} */
 
 #config-forms baseline .actual {
-    color: green;
-    font-size: smaller;
+    color: #00b800;
 }
 #config-forms baseline .dirty {
     color: red;
-    font-size: smaller;
     text-decoration-line: line-through;
 }
 
-.tabs > .input:checked + .label.dirty {
+#config-forms baseline {
+    display: block;
+    font-size: smaller;
+}
+
+#config-forms > .input:checked + .label.dirty {
     color: red;
 }
 
-.tabs > .label.dirty {
+#config-forms label {
+    font-weight: bolder;
+}
+
+#config-forms label * {
+    font-weight: normal;
+}
+
+#config-forms > .label.dirty {
     color: #b80000;
 }
+
+/* .tabs > .label::after {
+    content: "\a";
+    white-space: pre;
+} */
