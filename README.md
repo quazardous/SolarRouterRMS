@@ -21,7 +21,7 @@ Here are some benefits:
 - adding a new config param should be effortless (just describe/declare it and it will be handled in UI and EEPROM)
 - each module should be responsible for is own stuff. You don't have to understand how they work to add your own module.
 - internal API (events and function) will support interaction between modules
-- Some module can be optionnal (plugin)
+- Some module can be optionnal (plugin can be remove from firmware with #define)
 - API centric: the RMS is fully API manageable and the new admin UI is fully headless and can be ran from de dev host (offshore mode). You don't have to compile everytime you change a CSS :p 
 
 
