@@ -15,6 +15,15 @@ New features will be merged.
 ## Licence
 [GNU Affero General Public License 3.0](https://www.gnu.org/licenses/agpl-3.0.en.html#license-text)
 
+## Refactor
+This refactor aims to add abstraction levels.
+Here are some benefits:
+- adding a new config param should be effortless (just describe/declare it and it will be handled in UI and EEPROM)
+- each module should be responsible for is own stuff. You don't have to understand how they work to add your own module.
+- internal API (events and function) will support interaction between modules
+- Some module can be optionnal (plugin)
+
+
 ## Features
 - Real-time monitoring of router power consumption/injection
 - Solar power management for energy efficiency

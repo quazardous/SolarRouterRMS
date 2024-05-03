@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.5] - 2024-04-30
+## [v0.5] - 2024-05-04
 
 ### Fix
 - Fix multi process starvation (loop vs webserver)
