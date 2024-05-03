@@ -9,7 +9,7 @@ It utilizes Arduino and other components to measure and monitor various paramete
 This repository is a fork-for-refactor of the [F1ATB André](https://f1atb.fr/fr/) firmware.  
 The original work can be found on [https://f1atb.fr](https://f1atb.fr/fr/routeur-photovoltaique-realisation-logicielle/). 
 
-This version (v0.1) is a 1:1 feature fork of v8.06.  
+The versions v0.X are  1:1 feature fork from v8.XX.  
 New features will be merged.  
 
 ## Licence
