@@ -1,6 +1,9 @@
 # SolarRouterRMS
 version: v0.5 (from v8.06)
 
+## Work In Progress
+DO NOT USE IN PRODUCTION 
+
 ## Description
 SolarRouterRMS is a project that aims to create a solar-powered router monitoring system.  
 It utilizes Arduino and other components to measure and monitor various parameters of the router, such as power consumption, temperature, and network status.
