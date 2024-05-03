@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 - Refactor of reboot event
 - Configs admin wired with API Configs
 
+### New paradigm
+- Config update is/should be bootless
+- Updating config should not be persisted (EEPROM) by default
+- Loopcentric / non blocking: modules should not use delay() or such patterns to process stuff 
+
 ## [v0.4] - 2024-04-30
 
 ### Refactor
@@ -21,7 +26,7 @@ All notable changes to this project will be documented in this file.
 ## [v0.3] - 2024-04-24
 
 ### Refactor
-- Refactor WiFi to be more async friendly
+- Refactor WiFi to be more async friendly (non blocking)
 - Use Async Web Server (web+ota)
 - Add uglifyjs/uglifycss/html_minifier to the web pages precompilation
 
